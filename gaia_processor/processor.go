@@ -16,13 +16,7 @@ import (
 )
 
 const insertQuery = `
-INSERT INTO tracelistener.balances 
-	(address, amount, denom, height)
-VALUES
-	(:address, :amount, :denom, :height) 
-ON CONFLICT (address)
-DO UPDATE SET 
-	amount = EXCLUDED.amount, denom = EXCLUDED.denom, height = EXCLUDED.height;
+UPSERT INTO tracelistener.balances (address, amount, denom, height) VALUES (:address, :amount, :denom, :height)
 `
 
 var p processor
