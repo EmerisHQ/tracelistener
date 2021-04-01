@@ -1,7 +1,10 @@
 package database
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbsqlx"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -26,9 +29,8 @@ func New(connString string) (*Instance, error) {
 }
 
 func (i *Instance) Add(query string, data []interface{}) error {
-	tx := i.d.MustBegin()
-	for _, d := range data {
-		res, err := tx.NamedExec(query, d)
+	return crdbsqlx.ExecuteTx(context.Background(), i.d, nil, func(tx *sqlx.Tx) error {
+		res, err := tx.NamedExec(query, data)
 		if err != nil {
 			return fmt.Errorf("transaction named exec error, %w", err)
 		}
@@ -41,6 +43,7 @@ func (i *Instance) Add(query string, data []interface{}) error {
 		if re == 0 {
 			return fmt.Errorf("affected rows are zero")
 		}
-	}
-	return tx.Commit()
+
+		return nil
+	})
 }
