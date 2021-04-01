@@ -3,11 +3,12 @@ module github.com/allinbits/tracelistener
 go 1.16
 
 require (
+	github.com/cockroachdb/cockroach-go/v2 v2.1.0 // indirect
 	github.com/containerd/fifo v0.0.0-20210325135022-4614834762bf
 	github.com/cosmos/cosmos-sdk v0.42.3
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/jackc/pgx/v4 v4.11.0
-	github.com/jmoiron/sqlx v1.3.1
+	github.com/jmoiron/sqlx v1.3.2-0.20210128211550-a1d5e6473423
 	github.com/spf13/cobra v1.1.3 // indirect
 	github.com/spf13/viper v1.7.1
 	go.uber.org/multierr v1.6.0 // indirect
