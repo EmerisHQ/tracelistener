@@ -59,7 +59,8 @@ func (tr *TraceWatcher) Watch() {
 				fr = bufio.NewReader(tr.DataSource)
 				continue
 			}
-			panic(err)
+
+			tr.Logger.Panicw("fatal error when reading from data source buffered reader", "error", err)
 		}
 
 		if !tr.mustConsiderData(line) {
