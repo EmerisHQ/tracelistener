@@ -78,7 +78,9 @@ func (tr *TraceWatcher) Watch() {
 			continue
 		}
 
-		tr.DataChan <- to
+		go func() {
+			tr.DataChan <- to
+		}()
 	}
 }
 
