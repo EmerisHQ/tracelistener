@@ -79,6 +79,8 @@ func (p *processor) lifecycle() {
 			if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
 				p.writebackChan <- p.flushCache()
 
+				p.l.Infow("processed new block", "height", p.lastHeight)
+
 				p.lastHeight = data.BlockHeight
 			}
 			addrBytes := data.Key
