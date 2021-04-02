@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -54,6 +55,10 @@ func (tr *TraceWatcher) Watch() {
 	for {
 		line, err := fr.ReadBytes('\n')
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				fr = bufio.NewReader(tr.DataSource)
+				continue
+			}
 			panic(err)
 		}
 
