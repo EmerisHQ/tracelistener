@@ -12,6 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
+type WritebackOp struct {
+	DatabaseExec string
+	Data         []interface{}
+}
+
 // Operation is a kind of operations a TraceWatcher observes.
 type Operation []byte
 
@@ -30,9 +35,9 @@ var (
 )
 
 type DataProcessorInfos struct {
-	OpsChan         chan TraceOperation
-	WritebackChan   chan []interface{}
-	InsertQueryTmpl string
+	OpsChan            chan TraceOperation
+	WritebackChan      chan WritebackOp
+	DatabaseMigrations []string
 }
 
 // DataProcessorFunc is the type of function used to initialize a data processor.
