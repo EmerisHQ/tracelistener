@@ -36,7 +36,7 @@ var (
 
 type DataProcessorInfos struct {
 	OpsChan            chan TraceOperation
-	WritebackChan      chan WritebackOp
+	WritebackChan      chan []WritebackOp
 	DatabaseMigrations []string
 }
 

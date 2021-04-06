@@ -1,50 +1,39 @@
 package gaia_processor
 
 import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/simapp"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/allinbits/tracelistener"
 	"go.uber.org/zap"
 )
 
-type balanceWritebackPacket struct {
-	ID          uint64 `db:"id" json:"-"`
-	Address     string `db:"address" json:"address"`
-	Amount      uint64 `db:"amount" json:"amount"`
-	Denom       string `db:"denom" json:"denom"`
-	BlockHeight uint64 `db:"height" json:"block_height"`
-}
-
-type cacheEntry struct {
-	address string
-	denom   string
+type moduleProcessor interface {
+	FlushCache() tracelistener.WritebackOp
+	OwnsKey(key []byte) bool
+	Process(data tracelistener.TraceOperation) error
+	ModuleName() string
 }
 
 var p processor
 
 type processor struct {
-	l             *zap.SugaredLogger
-	writeChan     chan tracelistener.TraceOperation
-	writebackChan chan tracelistener.WritebackOp
-	cdc           codec.Marshaler
-	lastHeight    uint64
-	heightCache   map[cacheEntry]balanceWritebackPacket
+	l                *zap.SugaredLogger
+	writeChan        chan tracelistener.TraceOperation
+	writebackChan    chan []tracelistener.WritebackOp
+	cdc              codec.Marshaler
+	lastHeight       uint64
+	moduleProcessors []moduleProcessor
 }
 
 func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 	p = processor{
 		l:             logger,
 		writeChan:     make(chan tracelistener.TraceOperation),
-		writebackChan: make(chan tracelistener.WritebackOp),
-		heightCache:   map[cacheEntry]balanceWritebackPacket{},
+		writebackChan: make(chan []tracelistener.WritebackOp),
+		moduleProcessors: []moduleProcessor{
+			&bankProcessor{heightCache: map[cacheEntry]balanceWritebackPacket{}},
+		},
 	}
 
 	cdc, _ := simapp.MakeCodecs()
@@ -61,60 +50,32 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 	}, nil
 }
 
-func (p *processor) flushCache() []interface{} {
-	if len(p.heightCache) == 0 {
-		return nil
-	}
-
-	l := make([]interface{}, 0, len(p.heightCache))
-
-	for _, v := range p.heightCache {
-		l = append(l, v)
-	}
-
-	p.heightCache = map[cacheEntry]balanceWritebackPacket{}
-
-	return l
-}
-
 func (p *processor) lifecycle() {
 	for data := range p.writeChan {
-		switch {
-		case bytes.HasPrefix(data.Key, types.BalancesPrefix): // balances
-			if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
-				p.writebackChan <- tracelistener.WritebackOp{
-					DatabaseExec: insertBalanceQuery,
-					Data:         p.flushCache(),
-				}
+		if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
+			wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
 
-				p.l.Infow("processed new block", "height", p.lastHeight)
-
-				p.lastHeight = data.BlockHeight
-			}
-			addrBytes := data.Key
-			pLen := len(types.BalancesPrefix)
-			addr := addrBytes[pLen : pLen+20]
-
-			coins := sdk.Coin{}
-
-			if err := p.cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
-				// TODO: handle this
-				fmt.Println(err)
+			for _, mp := range p.moduleProcessors {
+				wb = append(wb, mp.FlushCache())
 			}
 
-			if coins.Amount.IsNil() || coins.IsZero() || !coins.IsValid() {
+			p.writebackChan <- wb
+
+			p.l.Infow("processed new block", "height", p.lastHeight)
+
+			p.lastHeight = data.BlockHeight
+		}
+
+		for _, mp := range p.moduleProcessors {
+			if !mp.OwnsKey(data.Key) {
 				continue
 			}
 
-			hAddr := hex.EncodeToString(addr)
-			p.heightCache[cacheEntry{
-				address: hAddr,
-				denom:   coins.Denom,
-			}] = balanceWritebackPacket{
-				Address:     hAddr,
-				Amount:      coins.Amount.Uint64(),
-				Denom:       coins.Denom,
-				BlockHeight: data.BlockHeight,
+			if err := mp.Process(data); err != nil {
+				p.l.Errorw(
+					"error while processing data",
+					"data", data,
+					"moduleName", mp.ModuleName())
 			}
 		}
 	}

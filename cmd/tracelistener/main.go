@@ -66,8 +66,10 @@ func main() {
 			logger.Error("watching error", e)
 		case b := <-dpi.WritebackChan:
 			logger.Debug("writeback packet", b)
-			if err := di.Add(b.DatabaseExec, b.Data); err != nil {
-				logger.Error("database insert error ", err)
+			for _, p := range b {
+				if err := di.Add(p.DatabaseExec, p.Data); err != nil {
+					logger.Error("database insert error ", err)
+				}
 			}
 		}
 	}
