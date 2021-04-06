@@ -15,34 +15,36 @@ import (
 	"go.uber.org/zap"
 )
 
-const insertQuery = `
-UPSERT INTO tracelistener.balances (address, amount, denom, height) VALUES (:address, :amount, :denom, :height)
-`
+type balanceWritebackPacket struct {
+	ID          uint64 `db:"id" json:"-"`
+	Address     string `db:"address" json:"address"`
+	Amount      uint64 `db:"amount" json:"amount"`
+	Denom       string `db:"denom" json:"denom"`
+	BlockHeight uint64 `db:"height" json:"block_height"`
+}
+
+type cacheEntry struct {
+	address string
+	denom   string
+}
 
 var p processor
 
 type processor struct {
 	l             *zap.SugaredLogger
 	writeChan     chan tracelistener.TraceOperation
-	writebackChan chan []interface{}
+	writebackChan chan tracelistener.WritebackOp
 	cdc           codec.Marshaler
 	lastHeight    uint64
-	heightCache   map[string]GaiaWritebackPacket
-}
-
-type GaiaWritebackPacket struct {
-	Address     string `db:"address"`
-	Amount      uint64 `db:"amount"`
-	Denom       string `db:"denom"`
-	BlockHeight uint64 `db:"height"`
+	heightCache   map[cacheEntry]balanceWritebackPacket
 }
 
 func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 	p = processor{
 		l:             logger,
 		writeChan:     make(chan tracelistener.TraceOperation),
-		writebackChan: make(chan []interface{}),
-		heightCache:   map[string]GaiaWritebackPacket{},
+		writebackChan: make(chan tracelistener.WritebackOp),
+		heightCache:   map[cacheEntry]balanceWritebackPacket{},
 	}
 
 	cdc, _ := simapp.MakeCodecs()
@@ -51,9 +53,11 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 	go p.lifecycle()
 
 	return tracelistener.DataProcessorInfos{
-		OpsChan:         p.writeChan,
-		WritebackChan:   p.writebackChan,
-		InsertQueryTmpl: insertQuery,
+		OpsChan:       p.writeChan,
+		WritebackChan: p.writebackChan,
+		DatabaseMigrations: []string{
+			createBalancesTable,
+		},
 	}, nil
 }
 
@@ -68,16 +72,20 @@ func (p *processor) flushCache() []interface{} {
 		l = append(l, v)
 	}
 
-	p.heightCache = map[string]GaiaWritebackPacket{}
+	p.heightCache = map[cacheEntry]balanceWritebackPacket{}
 
 	return l
 }
 
 func (p *processor) lifecycle() {
 	for data := range p.writeChan {
-		if bytes.HasPrefix(data.Key, types.BalancesPrefix) {
+		switch {
+		case bytes.HasPrefix(data.Key, types.BalancesPrefix): // balances
 			if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
-				p.writebackChan <- p.flushCache()
+				p.writebackChan <- tracelistener.WritebackOp{
+					DatabaseExec: insertBalanceQuery,
+					Data:         p.flushCache(),
+				}
 
 				p.l.Infow("processed new block", "height", p.lastHeight)
 
@@ -90,6 +98,7 @@ func (p *processor) lifecycle() {
 			coins := sdk.Coin{}
 
 			if err := p.cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
+				// TODO: handle this
 				fmt.Println(err)
 			}
 
@@ -98,7 +107,10 @@ func (p *processor) lifecycle() {
 			}
 
 			hAddr := hex.EncodeToString(addr)
-			p.heightCache[hAddr] = GaiaWritebackPacket{
+			p.heightCache[cacheEntry{
+				address: hAddr,
+				denom:   coins.Denom,
+			}] = balanceWritebackPacket{
 				Address:     hAddr,
 				Amount:      coins.Amount.Uint64(),
 				Denom:       coins.Denom,
