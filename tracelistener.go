@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 
 	"go.uber.org/zap"
 )
@@ -71,8 +70,6 @@ func (tr *TraceWatcher) Watch() {
 		if !tr.mustConsiderData(line) {
 			continue
 		}
-
-		tr.Logger.Debug("found new data ", strings.TrimSpace(string(line)))
 
 		to := TraceOperation{}
 		if err := json.Unmarshal(line, &to); err != nil {
