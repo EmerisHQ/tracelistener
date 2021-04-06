@@ -19,13 +19,13 @@ type balanceWritebackPacket struct {
 	BlockHeight uint64 `db:"height" json:"block_height"`
 }
 
-type cacheEntry struct {
+type bankCacheEntry struct {
 	address string
 	denom   string
 }
 
 type bankProcessor struct {
-	heightCache map[cacheEntry]balanceWritebackPacket
+	heightCache map[bankCacheEntry]balanceWritebackPacket
 }
 
 func (b *bankProcessor) ModuleName() string {
@@ -43,10 +43,10 @@ func (b *bankProcessor) FlushCache() tracelistener.WritebackOp {
 		l = append(l, v)
 	}
 
-	b.heightCache = map[cacheEntry]balanceWritebackPacket{}
+	b.heightCache = map[bankCacheEntry]balanceWritebackPacket{}
 
 	return tracelistener.WritebackOp{
-		DatabaseExec: insertBalanceQuery,
+		DatabaseExec: insertBalance,
 		Data:         l,
 	}
 }
@@ -71,7 +71,7 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	}
 
 	hAddr := hex.EncodeToString(addr)
-	b.heightCache[cacheEntry{
+	b.heightCache[bankCacheEntry{
 		address: hAddr,
 		denom:   coins.Denom,
 	}] = balanceWritebackPacket{
