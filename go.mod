@@ -6,6 +6,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0 // indirect
 	github.com/containerd/fifo v0.0.0-20210325135022-4614834762bf
 	github.com/cosmos/cosmos-sdk v0.42.3
+	github.com/cosmos/gaia/v4 v4.2.0 // indirect
 	github.com/gin-gonic/gin v1.6.3 // indirect
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/golang/protobuf v1.5.2 // indirect
