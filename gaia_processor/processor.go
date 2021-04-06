@@ -57,7 +57,12 @@ func (p *processor) lifecycle() {
 			wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
 
 			for _, mp := range p.moduleProcessors {
-				wb = append(wb, mp.FlushCache())
+				cd := mp.FlushCache()
+				if cd.Data == nil {
+					continue
+				}
+
+				wb = append(wb, cd)
 			}
 
 			p.writebackChan <- wb
