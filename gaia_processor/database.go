@@ -1,7 +1,7 @@
 package gaia_processor
 
 const (
-	insertBalanceQuery = `
+	insertBalance = `
 INSERT INTO tracelistener.balances 
 	(address, amount, denom, height) 
 VALUES 
@@ -24,5 +24,30 @@ CREATE TABLE IF NOT EXISTS tracelistener.balances (
 	height integer not null,
 	unique(address, denom)
 )
+`
+
+	createConnectionsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.connections (
+	id serial unique primary key,
+	connection_id text not null,
+	client_id text not null,
+	state text not null,
+	counter_connection_id text not null,
+	counter_client_id text not null,
+	unique(connection_id, client_id)
+)
+`
+
+	insertConnection = `
+INSERT INTO tracelistener.connections 
+	(connection_id, client_id, state, counter_connection_id, counter_client_id) 
+VALUES 
+	(:connection_id, :client_id, :state, :counter_connection_id, :counter_client_id) 
+ON CONFLICT
+	(connection_id, client_id)
+DO UPDATE SET
+	state=EXCLUDED.state,
+	counter_connection_id=EXCLUDED.counter_connection_id,
+	counter_client_id=EXCLUDED.counter_client_id
 `
 )
