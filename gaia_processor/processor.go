@@ -2,9 +2,7 @@ package gaia_processor
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-
-	"github.com/allinbits/tracelistener"
+	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +34,7 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 		},
 	}
 
-	cdc, _ := simapp.MakeCodecs()
+	cdc, _ := gaia.MakeCodecs()
 	p.cdc = cdc
 
 	go p.lifecycle()
