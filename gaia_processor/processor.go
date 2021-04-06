@@ -1,6 +1,7 @@
 package gaia_processor
 
 import (
+	"github.com/allinbits/tracelistener"
 	"github.com/cosmos/cosmos-sdk/codec"
 	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
@@ -30,7 +31,8 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 		writeChan:     make(chan tracelistener.TraceOperation),
 		writebackChan: make(chan []tracelistener.WritebackOp),
 		moduleProcessors: []moduleProcessor{
-			&bankProcessor{heightCache: map[cacheEntry]balanceWritebackPacket{}},
+			&bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}},
+			&ibcProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger},
 		},
 	}
 
@@ -44,6 +46,7 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 		WritebackChan: p.writebackChan,
 		DatabaseMigrations: []string{
 			createBalancesTable,
+			createConnectionsTable,
 		},
 	}, nil
 }
