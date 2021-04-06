@@ -28,12 +28,14 @@ func main() {
 
 	logger := logging(config)
 
-	di, err := database.New(config.DatabaseConnectionURL)
+	dpi, err := gaia_processor.New(logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	dpi, err := gaia_processor.New(logger)
+	database.RegisterMigration(dpi.DatabaseMigrations...)
+
+	di, err := database.New(config.DatabaseConnectionURL)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -64,7 +66,7 @@ func main() {
 			logger.Error("watching error", e)
 		case b := <-dpi.WritebackChan:
 			logger.Debug("writeback packet", b)
-			if err := di.Add(dpi.InsertQueryTmpl, b); err != nil {
+			if err := di.Add(b.DatabaseExec, b.Data); err != nil {
 				logger.Error("database insert error ", err)
 			}
 		}
