@@ -33,6 +33,7 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 		moduleProcessors: []moduleProcessor{
 			&bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}},
 			&ibcProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger},
+			&liquidityPoolProcessor{poolsCache: map[uint64]poolWritebackPacket{}, l: logger},
 		},
 	}
 
@@ -47,6 +48,7 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 		DatabaseMigrations: []string{
 			createBalancesTable,
 			createConnectionsTable,
+			createPoolsTable,
 		},
 	}, nil
 }

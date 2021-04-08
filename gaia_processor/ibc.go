@@ -25,7 +25,7 @@ type connectionCacheEntry struct {
 	clientID     string
 }
 
-var observedKeys = [][]byte{
+var ibcObservedKeys = [][]byte{
 	[]byte(host.KeyConnectionPrefix),
 }
 
@@ -58,7 +58,7 @@ func (b *ibcProcessor) FlushCache() tracelistener.WritebackOp {
 }
 
 func (b *ibcProcessor) OwnsKey(key []byte) bool {
-	for _, k := range observedKeys {
+	for _, k := range ibcObservedKeys {
 		if bytes.HasPrefix(key, k) {
 			return true
 		}
@@ -72,7 +72,7 @@ func (b *ibcProcessor) Process(data tracelistener.TraceOperation) error {
 		return r == '/'
 	})
 
-	b.l.Debugw("store key", "fields", keyFields, "raw key", string(data.Key))
+	b.l.Debugw("ibc store key", "fields", keyFields, "raw key", string(data.Key))
 
 	// IBC keys are mostly strings
 	switch len(keyFields) {

@@ -1,6 +1,8 @@
 package gaia_processor
 
 const (
+
+	// Balance-related queries
 	insertBalance = `
 INSERT INTO tracelistener.balances 
 	(address, amount, denom, height) 
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.balances (
 )
 `
 
+	// Connection-related queries
 	createConnectionsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.connections (
 	id serial unique primary key,
@@ -49,5 +52,26 @@ DO UPDATE SET
 	state=EXCLUDED.state,
 	counter_connection_id=EXCLUDED.counter_connection_id,
 	counter_client_id=EXCLUDED.counter_client_id
+`
+
+	// Liquidity pool-related queries
+	// TODO: handle ReserveCoinDenoms
+	createPoolsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.liquidity_pools (
+	id serial unique primary key,
+	pool_id bigint not null,
+	type_id bigint not null,
+	reserve_coin_denoms text[] not null,
+	reserve_account_address text not null,
+	pool_coin_denom text not null,
+	unique(pool_id)
+)
+`
+
+	insertPool = `
+UPSERT INTO tracelistener.liquidity_pools
+	(pool_id, type_id, reserve_coin_denoms, reserve_account_address, pool_coin_denom)
+VALUES
+	(:pool_id, :type_id, :reserve_coin_denoms, :reserve_account_address, :pool_coin_denom)
 `
 )
