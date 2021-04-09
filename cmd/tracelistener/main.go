@@ -5,6 +5,8 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/allinbits/tracelistener/config"
+
 	"github.com/allinbits/tracelistener/database"
 
 	"github.com/allinbits/tracelistener/gaia_processor"
@@ -21,27 +23,36 @@ import (
 )
 
 func main() {
-	config, err := readConfig()
+	cfg, err := config.Read()
 	if err != nil {
 		panic(err)
 	}
 
-	logger := logging(config)
+	logger := logging(cfg)
 
-	dpi, err := gaia_processor.New(logger)
+	var processorFunc tracelistener.DataProcessorFunc
+
+	switch cfg.Type {
+	case "gaia":
+		processorFunc = gaia_processor.New
+	default:
+		logger.Panicw("no processor associated with type", "type", cfg.Type)
+	}
+
+	dpi, err := processorFunc(logger, cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	database.RegisterMigration(dpi.DatabaseMigrations...)
 
-	di, err := database.New(config.DatabaseConnectionURL)
+	di, err := database.New(cfg.DatabaseConnectionURL)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	ctx := context.Background()
-	f, err := fifo.OpenFifo(ctx, config.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY, 0655)
+	f, err := fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY, 0655)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -75,7 +86,7 @@ func main() {
 	}
 }
 
-func logging(c *Config) *zap.SugaredLogger {
+func logging(c *config.Config) *zap.SugaredLogger {
 	if c.Debug {
 		// we can safely ignore the error here
 		dc, _ := zap.NewDevelopment()

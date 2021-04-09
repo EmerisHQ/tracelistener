@@ -19,7 +19,7 @@ type Config struct {
 	Debug                 bool
 
 	// Processors configs
-	GaiaConfig GaiaConfig
+	Gaia GaiaConfig
 }
 
 type GaiaConfig struct {

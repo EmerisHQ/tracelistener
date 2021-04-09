@@ -55,7 +55,6 @@ DO UPDATE SET
 `
 
 	// Liquidity pool-related queries
-	// TODO: handle ReserveCoinDenoms
 	createPoolsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.liquidity_pools (
 	id serial unique primary key,
@@ -67,11 +66,68 @@ CREATE TABLE IF NOT EXISTS tracelistener.liquidity_pools (
 	unique(pool_id)
 )
 `
-
 	insertPool = `
 UPSERT INTO tracelistener.liquidity_pools
 	(pool_id, type_id, reserve_coin_denoms, reserve_account_address, pool_coin_denom)
 VALUES
 	(:pool_id, :type_id, :reserve_coin_denoms, :reserve_account_address, :pool_coin_denom)
+`
+
+	// Liquidity swaps-related queries
+	createSwapsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.liquidity_swaps (
+	id serial unique primary key,
+	msg_height bigint not null,
+	msg_index bigint not null,
+	executed bool not null,
+	succeded bool not null,
+	expiry_height bigint not null,
+	exchange_offer_coin text not null,
+	remaining_offer_coin_fee text not null,
+	reserved_offer_coin_fee text not null,
+	pool_coin_denom text not null,
+	requester_address text not null,
+	pool_id bigint not null,
+	offer_coin text not null,
+	demand_coin text not null, 
+	order_price decimal not null,
+	unique(index)
+)`
+
+	insertSwap = `
+UPSERT INTO tracelistener.liquidity_swaps
+	(
+		msg_height,
+		msg_index,
+		executed,
+		succeded,
+		expiry_height,
+		exchange_offer_coin,
+		remaining_offer_coin_fee,
+		reserved_offer_coin_fee,
+		pool_coin_denom,
+		requester_address,
+		pool_id,
+		offer_coin,
+		demand_coin,
+		order_price
+	)
+VALUES
+	(
+		:msg_height,
+		:msg_index,
+		:executed,
+		:succeded,
+		:expiry_height,
+		:exchange_offer_coin,
+		:remaining_offer_coin_fee,
+		:reserved_offer_coin_fee,
+		:pool_coin_denom,
+		:requester_address,
+		:pool_id,
+		:offer_coin,
+		:demand_coin,
+		:order_price
+	)
 `
 )

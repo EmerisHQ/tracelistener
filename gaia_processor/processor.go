@@ -1,7 +1,10 @@
 package gaia_processor
 
 import (
+	"fmt"
+
 	"github.com/allinbits/tracelistener"
+	"github.com/allinbits/tracelistener/config"
 	"github.com/cosmos/cosmos-sdk/codec"
 	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
@@ -25,16 +28,31 @@ type processor struct {
 	moduleProcessors []moduleProcessor
 }
 
-func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
+func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProcessorInfos, error) {
+	c := cfg.Gaia
+
+	if c.ProcessorsEnabled == nil {
+		c.ProcessorsEnabled = []string{"bank"}
+	}
+
+	var mp []moduleProcessor
+
+	for _, ep := range c.ProcessorsEnabled {
+		p, err := processorByName(ep, logger)
+		if err != nil {
+			return tracelistener.DataProcessorInfos{}, err
+		}
+
+		mp = append(mp, p)
+	}
+
+	logger.Debugw("gaia processor initialized", "processors", c.ProcessorsEnabled)
+
 	p = processor{
-		l:             logger,
-		writeChan:     make(chan tracelistener.TraceOperation),
-		writebackChan: make(chan []tracelistener.WritebackOp),
-		moduleProcessors: []moduleProcessor{
-			&bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}, l: logger},
-			&ibcProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger},
-			&liquidityPoolProcessor{poolsCache: map[uint64]poolWritebackPacket{}, l: logger},
-		},
+		l:                logger,
+		writeChan:        make(chan tracelistener.TraceOperation),
+		writebackChan:    make(chan []tracelistener.WritebackOp),
+		moduleProcessors: mp,
 	}
 
 	cdc, _ := gaia.MakeCodecs()
@@ -51,6 +69,21 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 			createPoolsTable,
 		},
 	}, nil
+}
+
+func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, error) {
+	switch name {
+	default:
+		return nil, fmt.Errorf("unkonwn processor %s", name)
+	case "bank":
+		return &bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}, l: logger}, nil
+	case "ibc":
+		return &ibcProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger}, nil
+	case "liquidityPool":
+		return &liquidityPoolProcessor{poolsCache: map[uint64]poolWritebackPacket{}, l: logger}, nil
+	case "liquiditySwaps":
+		return &liquiditySwapsProcessor{swapsCache: map[uint64]swapWritebackPacket{}, l: logger}, nil
+	}
 }
 
 func (p *processor) lifecycle() {

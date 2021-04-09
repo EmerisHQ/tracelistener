@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/allinbits/tracelistener/config"
+
 	"go.uber.org/zap"
 )
 
@@ -40,7 +42,7 @@ type DataProcessorInfos struct {
 }
 
 // DataProcessorFunc is the type of function used to initialize a data processor.
-type DataProcessorFunc func(logger *zap.SugaredLogger) (DataProcessorInfos, error)
+type DataProcessorFunc func(logger *zap.SugaredLogger, cfg *config.Config) (DataProcessorInfos, error)
 
 // TraceWatcher watches DataSource for WatchedOps, sends observed data over DataChan.
 // Any observing error will be sent over ErrorChan.
