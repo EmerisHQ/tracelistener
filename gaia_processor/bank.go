@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	"go.uber.org/zap"
+
 	"github.com/allinbits/tracelistener"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -25,6 +27,7 @@ type bankCacheEntry struct {
 }
 
 type bankProcessor struct {
+	l           *zap.SugaredLogger
 	heightCache map[bankCacheEntry]balanceWritebackPacket
 }
 
@@ -71,6 +74,14 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	}
 
 	hAddr := hex.EncodeToString(addr)
+	b.l.Debugw("new bank store write",
+		"operation", data.Operation,
+		"address", hAddr,
+		"new_balance", coins.String(),
+		"height", data.BlockHeight,
+		"txHash", data.TxHash,
+	)
+
 	b.heightCache[bankCacheEntry{
 		address: hAddr,
 		denom:   coins.Denom,
