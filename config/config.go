@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"errors"
@@ -17,6 +17,13 @@ type Config struct {
 	LogPath               string `validate:"required"`
 	Type                  string `validate:"required"`
 	Debug                 bool
+
+	// Processors configs
+	GaiaConfig GaiaConfig
+}
+
+type GaiaConfig struct {
+	ProcessorsEnabled []string
 }
 
 func (c Config) Validate() error {
@@ -40,7 +47,7 @@ func (c Config) Validate() error {
 	return fmt.Errorf("missing configuration file fields: %v", strings.Join(missingFields, ", "))
 }
 
-func readConfig() (*Config, error) {
+func Read() (*Config, error) {
 	viper.SetDefault("FIFOPath", "./.tracelistener.fifo")
 	viper.SetDefault("LogPath", "./tracelistener.log")
 

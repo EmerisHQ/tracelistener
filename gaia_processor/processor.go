@@ -31,7 +31,7 @@ func New(logger *zap.SugaredLogger) (tracelistener.DataProcessorInfos, error) {
 		writeChan:     make(chan tracelistener.TraceOperation),
 		writebackChan: make(chan []tracelistener.WritebackOp),
 		moduleProcessors: []moduleProcessor{
-			&bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}},
+			&bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}, l: logger},
 			&ibcProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger},
 			&liquidityPoolProcessor{poolsCache: map[uint64]poolWritebackPacket{}, l: logger},
 		},
