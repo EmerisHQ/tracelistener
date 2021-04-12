@@ -2,24 +2,16 @@ package main
 
 import (
 	"context"
-	"os"
 	"syscall"
 
-	"github.com/allinbits/tracelistener/config"
-
-	"github.com/allinbits/tracelistener/database"
-
-	"github.com/allinbits/tracelistener/gaia_processor"
+	"github.com/allinbits/navigator-utils/logging"
 
 	"github.com/allinbits/tracelistener"
-
-	"go.uber.org/zap/zapcore"
-
-	"go.uber.org/zap"
-
-	"gopkg.in/natefinch/lumberjack.v2"
-
+	"github.com/allinbits/tracelistener/config"
+	"github.com/allinbits/tracelistener/database"
+	"github.com/allinbits/tracelistener/gaia_processor"
 	"github.com/containerd/fifo"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -28,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	logger := logging(cfg)
+	logger := buildLogger(cfg)
 
 	var processorFunc tracelistener.DataProcessorFunc
 
@@ -86,40 +78,9 @@ func main() {
 	}
 }
 
-func logging(c *config.Config) *zap.SugaredLogger {
-	if c.Debug {
-		// we can safely ignore the error here
-		dc, _ := zap.NewDevelopment()
-		return dc.Sugar()
-	}
-
-	var cores []zapcore.Core
-
-	l := &lumberjack.Logger{
-		Filename:   c.LogPath,
-		MaxSize:    20,
-		MaxBackups: 3,
-		MaxAge:     28,
-		Compress:   true,
-	}
-
-	fileLogger := zapcore.AddSync(l)
-	jsonWriter := zapcore.AddSync(os.Stdout)
-
-	cores = append(cores, zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		fileLogger,
-		zap.InfoLevel,
-	))
-
-	// we use development encoder config in CLI output because it's easier to read
-	cores = append(cores, zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		jsonWriter,
-		zap.InfoLevel,
-	))
-
-	logger := zap.New(zapcore.NewTee(cores...))
-
-	return logger.WithOptions(zap.AddCaller()).Sugar()
+func buildLogger(c *config.Config) *zap.SugaredLogger {
+	return logging.New(logging.LoggingConfig{
+		LogPath: c.LogPath,
+		Debug:   c.Debug,
+	})
 }

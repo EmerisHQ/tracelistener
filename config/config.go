@@ -1,13 +1,11 @@
 package config
 
 import (
-	"errors"
-	"fmt"
-	"strings"
+	"github.com/allinbits/navigator-utils/validation"
+
+	"github.com/allinbits/navigator-utils/configuration"
 
 	"github.com/go-playground/validator/v10"
-
-	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -31,41 +29,15 @@ func (c Config) Validate() error {
 	if err == nil {
 		return nil
 	}
-	var ve validator.ValidationErrors
-	if !errors.As(err, &ve) {
-		return err
-	}
 
-	missingFields := []string{}
-	for _, e := range ve {
-		switch e.Tag() {
-		case "required":
-			missingFields = append(missingFields, e.StructField())
-		}
-	}
-
-	return fmt.Errorf("missing configuration file fields: %v", strings.Join(missingFields, ", "))
+	return validation.MissingFieldsErr(err, false)
 }
 
 func Read() (*Config, error) {
-	viper.SetDefault("FIFOPath", "./.tracelistener.fifo")
-	viper.SetDefault("LogPath", "./tracelistener.log")
-
-	viper.SetConfigName("tracelistener")
-	viper.SetConfigType("toml")
-	viper.AddConfigPath("/etc/tracelistener/")
-	viper.AddConfigPath("$HOME/.tracelistener")
-	viper.AddConfigPath(".")
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
-	}
-
 	var c Config
-	if err := viper.Unmarshal(&c); err != nil {
-		return nil, fmt.Errorf("config error: %s \n", err)
-	}
 
-	return &c, c.Validate()
+	return &c, configuration.ReadConfig(&c, "tracelistener", map[string]string{
+		"FIFOPath": "./.tracelistener.fifo",
+		"LogPath":  "./tracelistener.log",
+	})
 }
