@@ -13,11 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type WritebackOp struct {
-	DatabaseExec string
-	Data         []interface{}
-}
-
 // Operation is a kind of operations a TraceWatcher observes.
 type Operation []byte
 
@@ -34,6 +29,36 @@ var (
 	// IterRangeOp is a write trace operation
 	IterRangeOp Operation = []byte("iterRange")
 )
+
+// BasicDatabaseEntry contains a list of all the fields each database row must contain in order to be
+// inserted correctly.
+type BasicDatabaseEntry struct {
+	ChainName string `db:"chain_name"`
+}
+
+// DatabaseEntrier is implemented by each object that wants to be inserted in a database.
+// It is usually used in conjunction to BasicDatabaseEntry.
+type DatabaseEntrier interface {
+	// WithChainName sets the ChainName field of the BasicDatabaseEntry struct.
+	WithChainName(cn string) DatabaseEntrier
+}
+
+// WritebackOp represents a unit of database writeback operated by a processor.
+// It contains the database query to be executed along with a slice of DatabaseEntrier data.
+type WritebackOp struct {
+	DatabaseExec string
+	Data         []DatabaseEntrier
+}
+
+// InterfaceSlice returns Data as a slice of interface{}.
+func (wo WritebackOp) InterfaceSlice() []interface{} {
+	dataIface := make([]interface{}, 0, len(wo.Data))
+	for _, d := range wo.Data {
+		dataIface = append(dataIface, d)
+	}
+
+	return dataIface
+}
 
 type DataProcessorInfos struct {
 	OpsChan            chan TraceOperation

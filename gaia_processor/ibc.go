@@ -13,11 +13,18 @@ import (
 )
 
 type connectionWritebackPacket struct {
+	tracelistener.BasicDatabaseEntry
+
 	ConnectionID        string `db:"connection_id" json:"connection_id"`
 	ClientID            string `db:"client_id" json:"client_id"`
 	State               string `db:"state" json:"state"`
 	CounterConnectionID string `db:"counter_connection_id" json:"counter_connection_id"`
 	CounterClientID     string `db:"counter_client_id" json:"counter_client_id"`
+}
+
+func (c connectionWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
+	c.ChainName = cn
+	return c
 }
 
 type connectionCacheEntry struct {
@@ -43,7 +50,7 @@ func (b *ibcProcessor) FlushCache() tracelistener.WritebackOp {
 		return tracelistener.WritebackOp{}
 	}
 
-	l := make([]interface{}, 0, len(b.connectionsCache))
+	l := make([]tracelistener.DatabaseEntrier, 0, len(b.connectionsCache))
 
 	for _, c := range b.connectionsCache {
 		l = append(l, c)

@@ -14,11 +14,18 @@ import (
 )
 
 type balanceWritebackPacket struct {
+	tracelistener.BasicDatabaseEntry
+
 	ID          uint64 `db:"id" json:"-"`
 	Address     string `db:"address" json:"address"`
 	Amount      uint64 `db:"amount" json:"amount"`
 	Denom       string `db:"denom" json:"denom"`
 	BlockHeight uint64 `db:"height" json:"block_height"`
+}
+
+func (b balanceWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
+	b.ChainName = cn
+	return b
 }
 
 type bankCacheEntry struct {
@@ -40,7 +47,7 @@ func (b *bankProcessor) FlushCache() tracelistener.WritebackOp {
 		return tracelistener.WritebackOp{}
 	}
 
-	l := make([]interface{}, 0, len(b.heightCache))
+	l := make([]tracelistener.DatabaseEntrier, 0, len(b.heightCache))
 
 	for _, v := range b.heightCache {
 		l = append(l, v)

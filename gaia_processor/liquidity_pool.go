@@ -9,12 +9,19 @@ import (
 )
 
 type poolWritebackPacket struct {
+	tracelistener.BasicDatabaseEntry
+
 	ID                    uint64   `db:"id"`
 	PoolID                uint64   `db:"pool_id"`
 	TypeID                uint32   `db:"type_id"`
 	ReserveCoinDenoms     []string `db:"reserve_coin_denoms"`
 	ReserveAccountAddress string   `db:"reserve_account_address"`
 	PoolCoinDenom         string   `db:"pool_coin_denom"`
+}
+
+func (bwp poolWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
+	bwp.ChainName = cn
+	return bwp
 }
 
 type liquidityPoolProcessor struct {
@@ -31,7 +38,7 @@ func (b *liquidityPoolProcessor) FlushCache() tracelistener.WritebackOp {
 		return tracelistener.WritebackOp{}
 	}
 
-	l := make([]interface{}, 0, len(b.poolsCache))
+	l := make([]tracelistener.DatabaseEntrier, 0, len(b.poolsCache))
 
 	for _, c := range b.poolsCache {
 		l = append(l, c)

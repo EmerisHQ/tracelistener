@@ -9,8 +9,8 @@ import (
 )
 
 type Config struct {
-	FIFOPath string `validate:"required"`
-	//NodeRPC               string `validate:"required"`
+	FIFOPath              string `validate:"required"`
+	ChainName             string `validate:"required"`
 	DatabaseConnectionURL string `validate:"required"`
 	LogPath               string `validate:"required"`
 	Type                  string `validate:"required"`

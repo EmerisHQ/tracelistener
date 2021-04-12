@@ -9,6 +9,12 @@ import (
 )
 
 type swapWritebackPacket struct {
+	tracelistener.BasicDatabaseEntry
+}
+
+func (bwp swapWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
+	bwp.ChainName = cn
+	return bwp
 }
 
 type liquiditySwapsProcessor struct {
@@ -25,7 +31,7 @@ func (b *liquiditySwapsProcessor) FlushCache() tracelistener.WritebackOp {
 		return tracelistener.WritebackOp{}
 	}
 
-	l := make([]interface{}, 0, len(b.swapsCache))
+	l := make([]tracelistener.DatabaseEntrier, 0, len(b.swapsCache))
 
 	for _, c := range b.swapsCache {
 		l = append(l, c)

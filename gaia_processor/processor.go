@@ -25,6 +25,7 @@ type processor struct {
 	writebackChan    chan []tracelistener.WritebackOp
 	cdc              codec.Marshaler
 	lastHeight       uint64
+	chainName        string
 	moduleProcessors []moduleProcessor
 }
 
@@ -49,6 +50,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	logger.Debugw("gaia processor initialized", "processors", c.ProcessorsEnabled)
 
 	p = processor{
+		chainName:        cfg.ChainName,
 		l:                logger,
 		writeChan:        make(chan tracelistener.TraceOperation),
 		writebackChan:    make(chan []tracelistener.WritebackOp),
@@ -95,6 +97,10 @@ func (p *processor) lifecycle() {
 				cd := mp.FlushCache()
 				if cd.Data == nil {
 					continue
+				}
+
+				for i := 0; i < len(cd.Data); i++ {
+					cd.Data[i] = cd.Data[i].WithChainName(p.chainName)
 				}
 
 				wb = append(wb, cd)
