@@ -3,7 +3,7 @@ module github.com/allinbits/tracelistener
 go 1.16
 
 require (
-	github.com/allinbits/navigator-utils v0.0.0-20210408141122-4a04d7fa6ee8
+	github.com/allinbits/navigator-utils v0.0.0-20210412094409-feec6840cb43
 	github.com/containerd/fifo v0.0.0-20210325135022-4614834762bf
 	github.com/cosmos/cosmos-sdk v0.42.3
 	github.com/cosmos/gaia/v4 v4.2.0
