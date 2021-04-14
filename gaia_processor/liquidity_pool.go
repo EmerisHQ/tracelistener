@@ -28,6 +28,10 @@ type liquidityPoolProcessor struct {
 	poolsCache map[uint64]poolWritebackPacket
 }
 
+func (*liquidityPoolProcessor) TableSchema() string {
+	return createPoolsTable
+}
+
 func (b *liquidityPoolProcessor) ModuleName() string {
 	return "liquidity_pools"
 }

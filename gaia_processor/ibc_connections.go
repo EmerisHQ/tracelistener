@@ -36,16 +36,20 @@ var ibcObservedKeys = [][]byte{
 	[]byte(host.KeyConnectionPrefix),
 }
 
-type ibcProcessor struct {
+type ibcConnectionsProcessor struct {
 	l                *zap.SugaredLogger
 	connectionsCache map[connectionCacheEntry]connectionWritebackPacket
 }
 
-func (b *ibcProcessor) ModuleName() string {
-	return "ibc"
+func (*ibcConnectionsProcessor) TableSchema() string {
+	return createConnectionsTable
 }
 
-func (b *ibcProcessor) FlushCache() tracelistener.WritebackOp {
+func (b *ibcConnectionsProcessor) ModuleName() string {
+	return "ibc_connections"
+}
+
+func (b *ibcConnectionsProcessor) FlushCache() tracelistener.WritebackOp {
 	if len(b.connectionsCache) == 0 {
 		return tracelistener.WritebackOp{}
 	}
@@ -64,7 +68,7 @@ func (b *ibcProcessor) FlushCache() tracelistener.WritebackOp {
 	}
 }
 
-func (b *ibcProcessor) OwnsKey(key []byte) bool {
+func (b *ibcConnectionsProcessor) OwnsKey(key []byte) bool {
 	for _, k := range ibcObservedKeys {
 		if bytes.HasPrefix(key, k) {
 			return true
@@ -74,7 +78,7 @@ func (b *ibcProcessor) OwnsKey(key []byte) bool {
 	return false
 }
 
-func (b *ibcProcessor) Process(data tracelistener.TraceOperation) error {
+func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) error {
 	keyFields := strings.FieldsFunc(string(data.Key), func(r rune) bool {
 		return r == '/'
 	})

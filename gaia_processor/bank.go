@@ -37,6 +37,10 @@ type bankProcessor struct {
 	heightCache map[bankCacheEntry]balanceWritebackPacket
 }
 
+func (*bankProcessor) TableSchema() string {
+	return createBalancesTable
+}
+
 func (b *bankProcessor) ModuleName() string {
 	return "bank"
 }
