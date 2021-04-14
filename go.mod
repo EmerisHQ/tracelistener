@@ -3,7 +3,7 @@ module github.com/allinbits/tracelistener
 go 1.16
 
 require (
-	github.com/allinbits/navigator-utils v0.0.0-20210412094409-feec6840cb43
+	github.com/allinbits/navigator-utils v0.0.0-20210414132536-93d878231418
 	github.com/containerd/fifo v0.0.0-20210325135022-4614834762bf
 	github.com/cosmos/cosmos-sdk v0.42.3
 	github.com/cosmos/gaia/v4 v4.2.0
@@ -21,3 +21,5 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 replace github.com/jmoiron/sqlx => github.com/abraithwaite/sqlx v1.3.2-0.20210331022513-df9bf9884350
+
+replace github.com/allinbits/navigator-utils => /Users/gsora/Documents/Tendermint/navigator/navigator-utils
