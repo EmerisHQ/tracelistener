@@ -95,9 +95,8 @@ CREATE TABLE IF NOT EXISTS tracelistener.liquidity_swaps (
 	requester_address text not null,
 	pool_id bigint not null,
 	offer_coin text not null,
-	demand_coin text not null, 
-	order_price decimal not null,
-	unique(index)
+	order_price string not null,
+	unique(msg_index)
 )`
 
 	insertSwap = `
