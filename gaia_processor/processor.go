@@ -15,6 +15,7 @@ type moduleProcessor interface {
 	OwnsKey(key []byte) bool
 	Process(data tracelistener.TraceOperation) error
 	ModuleName() string
+	TableSchema() string
 }
 
 var p processor
@@ -37,6 +38,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	}
 
 	var mp []moduleProcessor
+	var tableSchemas []string
 
 	for _, ep := range c.ProcessorsEnabled {
 		p, err := processorByName(ep, logger)
@@ -45,6 +47,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		}
 
 		mp = append(mp, p)
+		tableSchemas = append(tableSchemas, p.TableSchema())
 	}
 
 	logger.Debugw("gaia processor initialized", "processors", c.ProcessorsEnabled)
@@ -63,13 +66,9 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	go p.lifecycle()
 
 	return tracelistener.DataProcessorInfos{
-		OpsChan:       p.writeChan,
-		WritebackChan: p.writebackChan,
-		DatabaseMigrations: []string{
-			createBalancesTable,
-			createConnectionsTable,
-			createPoolsTable,
-		},
+		OpsChan:            p.writeChan,
+		WritebackChan:      p.writebackChan,
+		DatabaseMigrations: tableSchemas,
 	}, nil
 }
 
@@ -77,13 +76,13 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 	switch name {
 	default:
 		return nil, fmt.Errorf("unkonwn processor %s", name)
-	case "bank":
+	case (&bankProcessor{}).ModuleName():
 		return &bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}, l: logger}, nil
-	case "ibc":
-		return &ibcProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger}, nil
-	case "liquidityPool":
+	case (&ibcConnectionsProcessor{}).ModuleName():
+		return &ibcConnectionsProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger}, nil
+	case (&liquidityPoolProcessor{}).ModuleName():
 		return &liquidityPoolProcessor{poolsCache: map[uint64]poolWritebackPacket{}, l: logger}, nil
-	case "liquiditySwaps":
+	case (&liquiditySwapsProcessor{}).ModuleName():
 		return &liquiditySwapsProcessor{swapsCache: map[uint64]swapWritebackPacket{}, l: logger}, nil
 	}
 }
