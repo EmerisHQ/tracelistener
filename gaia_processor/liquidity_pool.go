@@ -11,7 +11,6 @@ import (
 type poolWritebackPacket struct {
 	tracelistener.BasicDatabaseEntry
 
-	ID                    uint64   `db:"id"`
 	PoolID                uint64   `db:"pool_id"`
 	TypeID                uint32   `db:"type_id"`
 	ReserveCoinDenoms     []string `db:"reserve_coin_denoms"`

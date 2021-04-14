@@ -34,6 +34,7 @@ var (
 // inserted correctly.
 type BasicDatabaseEntry struct {
 	ChainName string `db:"chain_name"`
+	ID        uint64 `db:"id" json:"-"`
 }
 
 // DatabaseEntrier is implemented by each object that wants to be inserted in a database.

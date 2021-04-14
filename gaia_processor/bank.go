@@ -16,7 +16,6 @@ import (
 type balanceWritebackPacket struct {
 	tracelistener.BasicDatabaseEntry
 
-	ID          uint64 `db:"id" json:"-"`
 	Address     string `db:"address" json:"address"`
 	Amount      uint64 `db:"amount" json:"amount"`
 	Denom       string `db:"denom" json:"denom"`
