@@ -64,6 +64,8 @@ github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/allinbits/navigator-utils v0.0.0-20210415095918-7537dfaead51 h1:E+ev3KE/BFQ7YGXwErpxvoFEkMrjRm96cSTEooHxat0=
 github.com/allinbits/navigator-utils v0.0.0-20210415095918-7537dfaead51/go.mod h1:1fxphEO7WufxZkk13uGO8sSKAK/oXujF1mhdCErb7rE=
+github.com/allinbits/navigator-utils v0.0.0-20210415125637-589c53e56fce h1:ioKUfRP98/wDgZEdTvZ51/TvAX1wSrwCW/+h8FGOTPk=
+github.com/allinbits/navigator-utils v0.0.0-20210415125637-589c53e56fce/go.mod h1:1fxphEO7WufxZkk13uGO8sSKAK/oXujF1mhdCErb7rE=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=

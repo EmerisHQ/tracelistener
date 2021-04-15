@@ -12,7 +12,7 @@ type Config struct {
 	FIFOPath              string `validate:"required"`
 	ChainName             string `validate:"required"`
 	DatabaseConnectionURL string `validate:"required"`
-	LogPath               string `validate:"required"`
+	LogPath               string
 	Type                  string `validate:"required"`
 	Debug                 bool
 
@@ -38,6 +38,5 @@ func Read() (*Config, error) {
 
 	return &c, configuration.ReadConfig(&c, "tracelistener", map[string]string{
 		"FIFOPath": "./.tracelistener.fifo",
-		"LogPath":  "./tracelistener.log",
 	})
 }
