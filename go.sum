@@ -62,10 +62,8 @@ github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuy
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
-github.com/allinbits/navigator-utils v0.0.0-20210408141122-4a04d7fa6ee8 h1:gQ19wC4YCF9CY8fLchvFY+xMs/nis2u/HYQM1fCbfug=
-github.com/allinbits/navigator-utils v0.0.0-20210408141122-4a04d7fa6ee8/go.mod h1:T5qpZ+tQV5UJcSi2imKrOlISU9SAUDvjX04JXfuS2Ro=
-github.com/allinbits/navigator-utils v0.0.0-20210412094409-feec6840cb43 h1:KnUGQkm0Ez5sm88ygPo17Z9Z3Y68tCmzhJ07gU8SpuI=
-github.com/allinbits/navigator-utils v0.0.0-20210412094409-feec6840cb43/go.mod h1:T5qpZ+tQV5UJcSi2imKrOlISU9SAUDvjX04JXfuS2Ro=
+github.com/allinbits/navigator-utils v0.0.0-20210414132536-93d878231418 h1:ot1RiA+dB1RW1ac3l/68cIw+py3+cNOV7n6tsnYomqw=
+github.com/allinbits/navigator-utils v0.0.0-20210414132536-93d878231418/go.mod h1:T5qpZ+tQV5UJcSi2imKrOlISU9SAUDvjX04JXfuS2Ro=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
