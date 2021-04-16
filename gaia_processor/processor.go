@@ -85,7 +85,11 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 	case (&liquiditySwapsProcessor{}).ModuleName():
 		return &liquiditySwapsProcessor{swapsCache: map[uint64]swapWritebackPacket{}, l: logger}, nil
 	case (&delegationsProcessor{}).ModuleName():
-		return &delegationsProcessor{heightCache: map[delegationCacheEntry]delegationWritebackPacket{}, l: logger}, nil
+		return &delegationsProcessor{
+			insertHeightCache: map[delegationCacheEntry]delegationWritebackPacket{},
+			deleteHeightCache: map[delegationCacheEntry]delegationWritebackPacket{},
+			l:                 logger,
+		}, nil
 	}
 }
 
