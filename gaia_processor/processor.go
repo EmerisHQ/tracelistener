@@ -11,7 +11,7 @@ import (
 )
 
 type moduleProcessor interface {
-	FlushCache() tracelistener.WritebackOp
+	FlushCache() []tracelistener.WritebackOp
 	OwnsKey(key []byte) bool
 	Process(data tracelistener.TraceOperation) error
 	ModuleName() string
@@ -96,15 +96,16 @@ func (p *processor) lifecycle() {
 
 			for _, mp := range p.moduleProcessors {
 				cd := mp.FlushCache()
-				if cd.Data == nil {
-					continue
-				}
+				for _, entry := range cd {
+					if entry.Data == nil {
+						continue
+					}
 
-				for i := 0; i < len(cd.Data); i++ {
-					cd.Data[i] = cd.Data[i].WithChainName(p.chainName)
+					for i := 0; i < len(entry.Data); i++ {
+						entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
+					}
+					wb = append(wb, entry)
 				}
-
-				wb = append(wb, cd)
 			}
 
 			p.writebackChan <- wb
