@@ -72,8 +72,14 @@ func main() {
 				for _, asd := range p.Data {
 					logger.Debugw("writeback unit", "data", asd)
 				}
-				if err := di.Add(p.DatabaseExec, p.InterfaceSlice()); err != nil {
-					logger.Error("database insert error ", err)
+
+				is := p.InterfaceSlice()
+				if len(is) == 0 {
+					continue
+				}
+
+				if err := di.Add(p.DatabaseExec, is); err != nil {
+					logger.Error("database error ", err)
 				}
 			}
 		}
