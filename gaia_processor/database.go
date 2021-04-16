@@ -159,4 +159,12 @@ ON CONFLICT
 DO UPDATE SET
 	amount=EXCLUDED.amount
 `
+
+	deleteDelegation = `
+DELETE FROM tracelistener.delegations
+WHERE
+	delegator_address=:delegator_address
+AND
+	validator_address=:validator_address
+`
 )

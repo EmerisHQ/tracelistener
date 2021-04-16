@@ -30,8 +30,9 @@ type delegationCacheEntry struct {
 }
 
 type delegationsProcessor struct {
-	l           *zap.SugaredLogger
-	heightCache map[delegationCacheEntry]delegationWritebackPacket
+	l                 *zap.SugaredLogger
+	insertHeightCache map[delegationCacheEntry]delegationWritebackPacket
+	deleteHeightCache map[delegationCacheEntry]delegationWritebackPacket
 }
 
 func (*delegationsProcessor) TableSchema() string {
@@ -42,22 +43,37 @@ func (b *delegationsProcessor) ModuleName() string {
 	return "delegations"
 }
 
-func (b *delegationsProcessor) FlushCache() tracelistener.WritebackOp {
-	if len(b.heightCache) == 0 {
-		return tracelistener.WritebackOp{}
+func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
+	insert := make([]tracelistener.DatabaseEntrier, 0, len(b.insertHeightCache))
+	delete := make([]tracelistener.DatabaseEntrier, 0, len(b.deleteHeightCache))
+
+	if len(b.insertHeightCache) != 0 {
+		for _, v := range b.insertHeightCache {
+			insert = append(insert, v)
+		}
+
+		b.insertHeightCache = map[delegationCacheEntry]delegationWritebackPacket{}
 	}
 
-	l := make([]tracelistener.DatabaseEntrier, 0, len(b.heightCache))
-
-	for _, v := range b.heightCache {
-		l = append(l, v)
+	if len(b.deleteHeightCache) == 0 && insert == nil {
+		return nil
 	}
 
-	b.heightCache = map[delegationCacheEntry]delegationWritebackPacket{}
+	for _, v := range b.deleteHeightCache {
+		delete = append(delete, v)
+	}
 
-	return tracelistener.WritebackOp{
-		DatabaseExec: insertDelegation,
-		Data:         l,
+	b.deleteHeightCache = map[delegationCacheEntry]delegationWritebackPacket{}
+
+	return []tracelistener.WritebackOp{
+		{
+			DatabaseExec: insertDelegation,
+			Data:         insert,
+		},
+		{
+			DatabaseExec: deleteDelegation,
+			Data:         delete,
+		},
 	}
 }
 
@@ -66,6 +82,22 @@ func (b *delegationsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error {
+	if data.Operation == tracelistener.DeleteOp.String() {
+		delegatorAddr := hex.EncodeToString(data.Key[1:21])
+		validatorAddr := hex.EncodeToString(data.Key[21:41])
+		b.l.Debugw("new delegation delete", "delegatorAddr", delegatorAddr, "validatorAddr", validatorAddr)
+
+		b.deleteHeightCache[delegationCacheEntry{
+			validator: validatorAddr,
+			delegator: delegatorAddr,
+		}] = delegationWritebackPacket{
+			Delegator: delegatorAddr,
+			Validator: validatorAddr,
+		}
+
+		return nil
+	}
+
 	delegation := types.Delegation{}
 
 	if err := p.cdc.UnmarshalBinaryBare(data.Value, &delegation); err != nil {
@@ -91,7 +123,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		"txHash", data.TxHash,
 	)
 
-	b.heightCache[delegationCacheEntry{
+	b.insertHeightCache[delegationCacheEntry{
 		validator: validator,
 		delegator: delegator,
 	}] = delegationWritebackPacket{
