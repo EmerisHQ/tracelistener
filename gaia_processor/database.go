@@ -137,4 +137,26 @@ VALUES
 		:order_price
 	)
 `
+
+	// Account delegations-related queries
+	createDelegationsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.delegations (
+	id serial unique primary key,
+	delegator_address text not null,
+	validator_address text not null,
+	amount string not null,
+	unique(delegator_address, validator_address)
+)
+`
+
+	insertDelegation = `
+INSERT INTO tracelistener.delegations
+	(delegator_address, validator_address, amount) 
+VALUES 
+	(:delegator_address, :validator_address, :amount)  
+ON CONFLICT
+	(delegator_address, validator_address)
+DO UPDATE SET
+	amount=EXCLUDED.amount
+`
 )
