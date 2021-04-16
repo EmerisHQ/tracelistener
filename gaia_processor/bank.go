@@ -45,9 +45,9 @@ func (b *bankProcessor) ModuleName() string {
 	return "bank"
 }
 
-func (b *bankProcessor) FlushCache() tracelistener.WritebackOp {
+func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 	if len(b.heightCache) == 0 {
-		return tracelistener.WritebackOp{}
+		return nil
 	}
 
 	l := make([]tracelistener.DatabaseEntrier, 0, len(b.heightCache))
@@ -58,9 +58,11 @@ func (b *bankProcessor) FlushCache() tracelistener.WritebackOp {
 
 	b.heightCache = map[bankCacheEntry]balanceWritebackPacket{}
 
-	return tracelistener.WritebackOp{
-		DatabaseExec: insertBalance,
-		Data:         l,
+	return []tracelistener.WritebackOp{
+		{
+			DatabaseExec: insertBalance,
+			Data:         l,
+		},
 	}
 }
 

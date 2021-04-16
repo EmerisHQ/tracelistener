@@ -49,9 +49,9 @@ func (b *ibcConnectionsProcessor) ModuleName() string {
 	return "ibc_connections"
 }
 
-func (b *ibcConnectionsProcessor) FlushCache() tracelistener.WritebackOp {
+func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 	if len(b.connectionsCache) == 0 {
-		return tracelistener.WritebackOp{}
+		return nil
 	}
 
 	l := make([]tracelistener.DatabaseEntrier, 0, len(b.connectionsCache))
@@ -62,9 +62,11 @@ func (b *ibcConnectionsProcessor) FlushCache() tracelistener.WritebackOp {
 
 	b.connectionsCache = map[connectionCacheEntry]connectionWritebackPacket{}
 
-	return tracelistener.WritebackOp{
-		DatabaseExec: insertConnection,
-		Data:         l,
+	return []tracelistener.WritebackOp{
+		{
+			DatabaseExec: insertConnection,
+			Data:         l,
+		},
 	}
 }
 

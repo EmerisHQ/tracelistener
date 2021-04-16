@@ -36,9 +36,9 @@ func (b *liquidityPoolProcessor) ModuleName() string {
 	return "liquidity_pools"
 }
 
-func (b *liquidityPoolProcessor) FlushCache() tracelistener.WritebackOp {
+func (b *liquidityPoolProcessor) FlushCache() []tracelistener.WritebackOp {
 	if len(b.poolsCache) == 0 {
-		return tracelistener.WritebackOp{}
+		return nil
 	}
 
 	l := make([]tracelistener.DatabaseEntrier, 0, len(b.poolsCache))
@@ -49,9 +49,11 @@ func (b *liquidityPoolProcessor) FlushCache() tracelistener.WritebackOp {
 
 	b.poolsCache = map[uint64]poolWritebackPacket{}
 
-	return tracelistener.WritebackOp{
-		DatabaseExec: insertPool,
-		Data:         l,
+	return []tracelistener.WritebackOp{
+		{
+			DatabaseExec: insertPool,
+			Data:         l,
+		},
 	}
 }
 

@@ -44,9 +44,9 @@ func (b *liquiditySwapsProcessor) ModuleName() string {
 	return "liquidity_swaps"
 }
 
-func (b *liquiditySwapsProcessor) FlushCache() tracelistener.WritebackOp {
+func (b *liquiditySwapsProcessor) FlushCache() []tracelistener.WritebackOp {
 	if len(b.swapsCache) == 0 {
-		return tracelistener.WritebackOp{}
+		return nil
 	}
 
 	l := make([]tracelistener.DatabaseEntrier, 0, len(b.swapsCache))
@@ -57,9 +57,11 @@ func (b *liquiditySwapsProcessor) FlushCache() tracelistener.WritebackOp {
 
 	b.swapsCache = map[uint64]swapWritebackPacket{}
 
-	return tracelistener.WritebackOp{
-		DatabaseExec: insertSwap,
-		Data:         l,
+	return []tracelistener.WritebackOp{
+		{
+			DatabaseExec: insertSwap,
+			Data:         l,
+		},
 	}
 }
 
