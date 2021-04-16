@@ -16,6 +16,11 @@ import (
 // Operation is a kind of operations a TraceWatcher observes.
 type Operation []byte
 
+// String implements fmt.Stringer on Operation.
+func (o Operation) String() string {
+	return string(o)
+}
+
 var (
 	// WriteOp is a write trace operation
 	WriteOp Operation = []byte("write")
@@ -105,7 +110,8 @@ func (tr *TraceWatcher) Watch() {
 			continue
 		}
 
-		if len(to.Value) == 0 {
+		if to.Operation == WriteOp.String() && len(to.Value) == 0 {
+			tr.Logger.Debugw("not considering data", "operation", to.Operation)
 			continue
 		}
 
