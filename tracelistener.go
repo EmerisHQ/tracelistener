@@ -33,7 +33,7 @@ var (
 // BasicDatabaseEntry contains a list of all the fields each database row must contain in order to be
 // inserted correctly.
 type BasicDatabaseEntry struct {
-	ChainName string `db:"chain_name"`
+	ChainName string `db:"chain_name" json:"chain_name"`
 	ID        uint64 `db:"id" json:"-"`
 }
 
