@@ -127,6 +127,7 @@ func (p *processor) lifecycle() {
 			if err := mp.Process(data); err != nil {
 				p.l.Errorw(
 					"error while processing data",
+					"error", err,
 					"data", data,
 					"moduleName", mp.ModuleName())
 			}
