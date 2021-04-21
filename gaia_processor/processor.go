@@ -34,7 +34,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	c := cfg.Gaia
 
 	if c.ProcessorsEnabled == nil {
-		c.ProcessorsEnabled = []string{"bank"}
+		c.ProcessorsEnabled = []string{"bank", "delegations"}
 	}
 
 	var mp []moduleProcessor
