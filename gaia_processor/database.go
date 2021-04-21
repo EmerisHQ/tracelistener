@@ -167,4 +167,22 @@ WHERE
 AND
 	validator_address=:validator_address
 `
+
+	// Denom traces-related queries
+	createDenomTracesTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
+	id serial unique primary key,
+	path text not null,
+	base_denom text not null,
+	hash text not null,
+	unique(path)
+)
+`
+
+	insertDenomTrace = `
+UPSERT INTO tracelistener.delegations
+	(path, base_denom, hash) 
+VALUES 
+	(:path, :base_denom, :hash)
+`
 )

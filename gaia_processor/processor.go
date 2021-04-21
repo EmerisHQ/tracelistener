@@ -90,6 +90,11 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 			deleteHeightCache: map[delegationCacheEntry]delegationWritebackPacket{},
 			l:                 logger,
 		}, nil
+	case (&ibcDenomTracesProcessor{}).ModuleName():
+		return &ibcDenomTracesProcessor{
+			l:                logger,
+			denomTracesCache: map[string]denomTracesWritebackPacket{},
+		}, nil
 	}
 }
 
