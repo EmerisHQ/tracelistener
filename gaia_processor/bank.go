@@ -17,7 +17,7 @@ type balanceWritebackPacket struct {
 	tracelistener.BasicDatabaseEntry
 
 	Address     string `db:"address" json:"address"`
-	Amount      uint64 `db:"amount" json:"amount"`
+	Amount      string `db:"amount" json:"amount"`
 	Denom       string `db:"denom" json:"denom"`
 	BlockHeight uint64 `db:"height" json:"block_height"`
 }
@@ -99,7 +99,7 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		denom:   coins.Denom,
 	}] = balanceWritebackPacket{
 		Address:     hAddr,
-		Amount:      coins.Amount.Uint64(),
+		Amount:      coins.String(),
 		Denom:       coins.Denom,
 		BlockHeight: data.BlockHeight,
 	}
