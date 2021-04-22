@@ -180,10 +180,15 @@ CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 `
 
 	insertDenomTrace = `
-UPSERT INTO tracelistener.delegations
+INSERT INTO tracelistener.denom_traces
 	(path, base_denom, hash) 
 VALUES 
 	(:path, :base_denom, :hash)
+ON CONFLICT
+	(path)
+DO UPDATE SET
+	base_denom=EXCLUDED.base_denom,
+	hash=EXCLUDED.hash
 `
 
 	// IBC channels-related queries
