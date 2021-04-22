@@ -198,14 +198,20 @@ CREATE TABLE IF NOT EXISTS tracelistener.channels (
 	channel_id text not null,
 	port text not null,
 	state integer not null,
-	hops []text not null
+	hops text[] not null,
+	unique(channel_id, port)
 )
 `
 
 	insertChannel = `
-UPSERT INTO tracelistener.channels
+INSERT INTO tracelistener.channels
 	(channel_id, port, state, hops) 
 VALUES 
 	(:channel_id, :port, :state, :hops)
+ON CONFLICT
+	(channel_id, port)
+DO UPDATE SET
+	state=EXCLUDED.state,
+	hops=EXCLUDED.hops
 `
 )
