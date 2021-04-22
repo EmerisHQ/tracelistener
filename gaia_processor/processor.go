@@ -50,7 +50,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		tableSchemas = append(tableSchemas, p.TableSchema())
 	}
 
-	logger.Debugw("gaia processor initialized", "processors", c.ProcessorsEnabled)
+	logger.Infow("gaia processor initialized", "processors", c.ProcessorsEnabled)
 
 	p = processor{
 		chainName:        cfg.ChainName,
