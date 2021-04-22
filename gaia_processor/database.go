@@ -185,4 +185,22 @@ UPSERT INTO tracelistener.delegations
 VALUES 
 	(:path, :base_denom, :hash)
 `
+
+	// IBC channels-related queries
+	createChannelsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.channels (
+	id serial unique primary key,
+	channel_id text not null,
+	port text not null,
+	state integer not null,
+	hops []text not null
+)
+`
+
+	insertChannel = `
+UPSERT INTO tracelistener.channels
+	(channel_id, port, state, hops) 
+VALUES 
+	(:channel_id, :port, :state, :hops)
+`
 )

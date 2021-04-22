@@ -95,6 +95,8 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 			l:                logger,
 			denomTracesCache: map[string]denomTracesWritebackPacket{},
 		}, nil
+	case (&ibcChannelsProcessor{}).ModuleName():
+		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]channelWritebackPacket{}, l: logger}, nil
 	}
 }
 
