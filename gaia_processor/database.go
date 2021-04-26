@@ -142,20 +142,21 @@ VALUES
 	createDelegationsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.delegations (
 	id serial unique primary key,
+	chain_name text not null,
 	delegator_address text not null,
 	validator_address text not null,
 	amount string not null,
-	unique(delegator_address, validator_address)
+	unique(chain_name, delegator_address, validator_address)
 )
 `
 
 	insertDelegation = `
 INSERT INTO tracelistener.delegations
-	(delegator_address, validator_address, amount) 
+	(chain_name, delegator_address, validator_address, amount) 
 VALUES 
-	(:delegator_address, :validator_address, :amount)  
+	(:chain_name, :delegator_address, :validator_address, :amount)  
 ON CONFLICT
-	(delegator_address, validator_address)
+	(chain_name, delegator_address, validator_address)
 DO UPDATE SET
 	amount=EXCLUDED.amount
 `
@@ -166,26 +167,29 @@ WHERE
 	delegator_address=:delegator_address
 AND
 	validator_address=:validator_address
+AND
+	chain_name=:chain_name
 `
 
 	// Denom traces-related queries
 	createDenomTracesTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 	id serial unique primary key,
+	chain_name text not null,
 	path text not null,
 	base_denom text not null,
 	hash text not null,
-	unique(path)
+	unique(chain_name, path, base_denom)
 )
 `
 
 	insertDenomTrace = `
 INSERT INTO tracelistener.denom_traces
-	(path, base_denom, hash) 
+	(chain_name, path, base_denom, hash) 
 VALUES 
-	(:path, :base_denom, :hash)
+	(chain_name, :path, :base_denom, :hash)
 ON CONFLICT
-	(path)
+	(chain_name, path, base_denom)
 DO UPDATE SET
 	base_denom=EXCLUDED.base_denom,
 	hash=EXCLUDED.hash
@@ -195,21 +199,22 @@ DO UPDATE SET
 	createChannelsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.channels (
 	id serial unique primary key,
+	chain_name text not nill,
 	channel_id text not null,
 	port text not null,
 	state integer not null,
 	hops text[] not null,
-	unique(channel_id, port)
+	unique(chain_name, channel_id, port)
 )
 `
 
 	insertChannel = `
 INSERT INTO tracelistener.channels
-	(channel_id, port, state, hops) 
+	(chain_name, channel_id, port, state, hops) 
 VALUES 
-	(:channel_id, :port, :state, :hops)
+	(:chain_name, :channel_id, :port, :state, :hops)
 ON CONFLICT
-	(channel_id, port)
+	(chain_name, channel_id, port)
 DO UPDATE SET
 	state=EXCLUDED.state,
 	hops=EXCLUDED.hops
