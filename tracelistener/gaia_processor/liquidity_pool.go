@@ -2,30 +2,16 @@ package gaia_processor
 
 import (
 	"bytes"
+	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
 	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
 	"go.uber.org/zap"
 )
 
-type poolWritebackPacket struct {
-	tracelistener.BasicDatabaseEntry
-
-	PoolID                uint64   `db:"pool_id"`
-	TypeID                uint32   `db:"type_id"`
-	ReserveCoinDenoms     []string `db:"reserve_coin_denoms"`
-	ReserveAccountAddress string   `db:"reserve_account_address"`
-	PoolCoinDenom         string   `db:"pool_coin_denom"`
-}
-
-func (bwp poolWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
-	bwp.ChainName = cn
-	return bwp
-}
-
 type liquidityPoolProcessor struct {
 	l          *zap.SugaredLogger
-	poolsCache map[uint64]poolWritebackPacket
+	poolsCache map[uint64]models.PoolRow
 }
 
 func (*liquidityPoolProcessor) TableSchema() string {
@@ -41,13 +27,13 @@ func (b *liquidityPoolProcessor) FlushCache() []tracelistener.WritebackOp {
 		return nil
 	}
 
-	l := make([]tracelistener.DatabaseEntrier, 0, len(b.poolsCache))
+	l := make([]models.DatabaseEntrier, 0, len(b.poolsCache))
 
 	for _, c := range b.poolsCache {
 		l = append(l, c)
 	}
 
-	b.poolsCache = map[uint64]poolWritebackPacket{}
+	b.poolsCache = map[uint64]models.PoolRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -68,7 +54,7 @@ func (b *liquidityPoolProcessor) Process(data tracelistener.TraceOperation) erro
 		return err
 	}
 
-	b.poolsCache[pool.Id] = poolWritebackPacket{
+	b.poolsCache[pool.Id] = models.PoolRow{
 		PoolID:                pool.Id,
 		TypeID:                pool.TypeId,
 		ReserveCoinDenoms:     pool.ReserveCoinDenoms,

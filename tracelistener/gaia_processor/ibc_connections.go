@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"bytes"
+	"github.com/allinbits/demeris-backend/models"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
@@ -11,21 +12,6 @@ import (
 
 	"github.com/allinbits/demeris-backend/tracelistener"
 )
-
-type connectionWritebackPacket struct {
-	tracelistener.BasicDatabaseEntry
-
-	ConnectionID        string `db:"connection_id" json:"connection_id"`
-	ClientID            string `db:"client_id" json:"client_id"`
-	State               string `db:"state" json:"state"`
-	CounterConnectionID string `db:"counter_connection_id" json:"counter_connection_id"`
-	CounterClientID     string `db:"counter_client_id" json:"counter_client_id"`
-}
-
-func (c connectionWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
-	c.ChainName = cn
-	return c
-}
 
 type connectionCacheEntry struct {
 	connectionID string
@@ -38,7 +24,7 @@ var ibcObservedKeys = [][]byte{
 
 type ibcConnectionsProcessor struct {
 	l                *zap.SugaredLogger
-	connectionsCache map[connectionCacheEntry]connectionWritebackPacket
+	connectionsCache map[connectionCacheEntry]models.IBCConnectionRow
 }
 
 func (*ibcConnectionsProcessor) TableSchema() string {
@@ -54,13 +40,13 @@ func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 		return nil
 	}
 
-	l := make([]tracelistener.DatabaseEntrier, 0, len(b.connectionsCache))
+	l := make([]models.DatabaseEntrier, 0, len(b.connectionsCache))
 
 	for _, c := range b.connectionsCache {
 		l = append(l, c)
 	}
 
-	b.connectionsCache = map[connectionCacheEntry]connectionWritebackPacket{}
+	b.connectionsCache = map[connectionCacheEntry]models.IBCConnectionRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -98,7 +84,7 @@ func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) err
 			b.connectionsCache[connectionCacheEntry{
 				connectionID: keyFields[1],
 				clientID:     ce.ClientId,
-			}] = connectionWritebackPacket{
+			}] = models.IBCConnectionRow{
 				ConnectionID:        keyFields[1],
 				ClientID:            ce.ClientId,
 				State:               ce.State.String(),

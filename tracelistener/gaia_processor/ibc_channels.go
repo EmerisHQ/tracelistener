@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"bytes"
+	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
 
@@ -11,20 +12,6 @@ import (
 	"github.com/allinbits/demeris-backend/tracelistener"
 )
 
-type channelWritebackPacket struct {
-	tracelistener.BasicDatabaseEntry
-
-	ChannelID string   `db:"channel_id" json:"channel_id"`
-	Hops      []string `db:"hops" json:"hops"`
-	Port      string   `db:"port" json:"port"`
-	State     int32    `db:"state" json:"state"`
-}
-
-func (c channelWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
-	c.ChainName = cn
-	return c
-}
-
 type channelCacheEntry struct {
 	channelID string
 	portID    string
@@ -32,7 +19,7 @@ type channelCacheEntry struct {
 
 type ibcChannelsProcessor struct {
 	l             *zap.SugaredLogger
-	channelsCache map[channelCacheEntry]channelWritebackPacket
+	channelsCache map[channelCacheEntry]models.IBCChannelRow
 }
 
 func (*ibcChannelsProcessor) TableSchema() string {
@@ -48,13 +35,13 @@ func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
 		return nil
 	}
 
-	l := make([]tracelistener.DatabaseEntrier, 0, len(b.channelsCache))
+	l := make([]models.DatabaseEntrier, 0, len(b.channelsCache))
 
 	for _, c := range b.channelsCache {
 		l = append(l, c)
 	}
 
-	b.channelsCache = map[channelCacheEntry]channelWritebackPacket{}
+	b.channelsCache = map[channelCacheEntry]models.IBCChannelRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -83,7 +70,7 @@ func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error 
 	b.channelsCache[channelCacheEntry{
 		channelID: channelID,
 		portID:    portID,
-	}] = channelWritebackPacket{
+	}] = models.IBCChannelRow{
 		ChannelID: channelID,
 		Hops:      result.GetConnectionHops(),
 		Port:      portID,

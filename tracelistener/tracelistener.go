@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/allinbits/demeris-backend/models"
 	"io"
 
 	"github.com/allinbits/demeris-backend/tracelistener/config"
@@ -35,25 +36,11 @@ var (
 	IterRangeOp Operation = []byte("iterRange")
 )
 
-// BasicDatabaseEntry contains a list of all the fields each database row must contain in order to be
-// inserted correctly.
-type BasicDatabaseEntry struct {
-	ChainName string `db:"chain_name" json:"chain_name"`
-	ID        uint64 `db:"id" json:"-"`
-}
-
-// DatabaseEntrier is implemented by each object that wants to be inserted in a database.
-// It is usually used in conjunction to BasicDatabaseEntry.
-type DatabaseEntrier interface {
-	// WithChainName sets the ChainName field of the BasicDatabaseEntry struct.
-	WithChainName(cn string) DatabaseEntrier
-}
-
 // WritebackOp represents a unit of database writeback operated by a processor.
 // It contains the database query to be executed along with a slice of DatabaseEntrier data.
 type WritebackOp struct {
 	DatabaseExec string
-	Data         []DatabaseEntrier
+	Data         []models.DatabaseEntrier
 }
 
 // InterfaceSlice returns Data as a slice of interface{}.
