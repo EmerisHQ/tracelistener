@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"fmt"
+	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
 	"github.com/allinbits/demeris-backend/tracelistener/config"
@@ -77,26 +78,26 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 	default:
 		return nil, fmt.Errorf("unkonwn processor %s", name)
 	case (&bankProcessor{}).ModuleName():
-		return &bankProcessor{heightCache: map[bankCacheEntry]balanceWritebackPacket{}, l: logger}, nil
+		return &bankProcessor{heightCache: map[bankCacheEntry]models.BalanceRow{}, l: logger}, nil
 	case (&ibcConnectionsProcessor{}).ModuleName():
-		return &ibcConnectionsProcessor{connectionsCache: map[connectionCacheEntry]connectionWritebackPacket{}, l: logger}, nil
+		return &ibcConnectionsProcessor{connectionsCache: map[connectionCacheEntry]models.IBCConnectionRow{}, l: logger}, nil
 	case (&liquidityPoolProcessor{}).ModuleName():
-		return &liquidityPoolProcessor{poolsCache: map[uint64]poolWritebackPacket{}, l: logger}, nil
+		return &liquidityPoolProcessor{poolsCache: map[uint64]models.PoolRow{}, l: logger}, nil
 	case (&liquiditySwapsProcessor{}).ModuleName():
-		return &liquiditySwapsProcessor{swapsCache: map[uint64]swapWritebackPacket{}, l: logger}, nil
+		return &liquiditySwapsProcessor{swapsCache: map[uint64]models.SwapRow{}, l: logger}, nil
 	case (&delegationsProcessor{}).ModuleName():
 		return &delegationsProcessor{
-			insertHeightCache: map[delegationCacheEntry]delegationWritebackPacket{},
-			deleteHeightCache: map[delegationCacheEntry]delegationWritebackPacket{},
+			insertHeightCache: map[delegationCacheEntry]models.DelegationRow{},
+			deleteHeightCache: map[delegationCacheEntry]models.DelegationRow{},
 			l:                 logger,
 		}, nil
 	case (&ibcDenomTracesProcessor{}).ModuleName():
 		return &ibcDenomTracesProcessor{
 			l:                logger,
-			denomTracesCache: map[string]denomTracesWritebackPacket{},
+			denomTracesCache: map[string]models.IBCDenomTraceRow{},
 		}, nil
 	case (&ibcChannelsProcessor{}).ModuleName():
-		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]channelWritebackPacket{}, l: logger}, nil
+		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]models.IBCChannelRow{}, l: logger}, nil
 	}
 }
 

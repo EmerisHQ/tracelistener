@@ -2,38 +2,16 @@ package gaia_processor
 
 import (
 	"bytes"
+	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
 	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
 	"go.uber.org/zap"
 )
 
-type swapWritebackPacket struct {
-	tracelistener.BasicDatabaseEntry
-
-	MsgHeight            int64  `db:"msg_height"`
-	MsgIndex             uint64 `db:"msg_index"`
-	Executed             bool   `db:"executed"`
-	Succeeded            bool   `db:"succeeded"`
-	ExpiryHeight         int64  `db:"expiry_height"`
-	ExchangedOfferCoin   string `db:"exchanged_offer_coin"`
-	RemainingOfferCoin   string `db:"remaining_offer_coin"`
-	ReservedOfferCoinFee string `db:"reserved_offer_coin_fee"`
-	PoolCoinDenom        string `db:"pool_coin_denom"`
-	RequesterAddress     string `db:"requester_address"`
-	PoolID               uint64 `db:"pool_id"`
-	OfferCoin            string `db:"offer_coin"`
-	OrderPrice           string `db:"order_price"`
-}
-
-func (bwp swapWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
-	bwp.ChainName = cn
-	return bwp
-}
-
 type liquiditySwapsProcessor struct {
 	l          *zap.SugaredLogger
-	swapsCache map[uint64]swapWritebackPacket
+	swapsCache map[uint64]models.SwapRow
 }
 
 func (*liquiditySwapsProcessor) TableSchema() string {
@@ -49,13 +27,13 @@ func (b *liquiditySwapsProcessor) FlushCache() []tracelistener.WritebackOp {
 		return nil
 	}
 
-	l := make([]tracelistener.DatabaseEntrier, 0, len(b.swapsCache))
+	l := make([]models.DatabaseEntrier, 0, len(b.swapsCache))
 
 	for _, c := range b.swapsCache {
 		l = append(l, c)
 	}
 
-	b.swapsCache = map[uint64]swapWritebackPacket{}
+	b.swapsCache = map[uint64]models.SwapRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -78,8 +56,7 @@ func (b *liquiditySwapsProcessor) Process(data tracelistener.TraceOperation) err
 
 	b.l.Debugw("new SwapMsgState", "content", swap.String())
 
-	wbObj := swapWritebackPacket{
-		BasicDatabaseEntry:   tracelistener.BasicDatabaseEntry{},
+	wbObj := models.SwapRow{
 		MsgHeight:            swap.MsgHeight,
 		MsgIndex:             swap.MsgIndex,
 		Executed:             swap.Executed,

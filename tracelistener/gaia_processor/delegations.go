@@ -3,26 +3,13 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
 )
-
-type delegationWritebackPacket struct {
-	tracelistener.BasicDatabaseEntry
-
-	Delegator   string `db:"delegator_address" json:"delegator"`
-	Validator   string `db:"validator_address" json:"validator"`
-	Amount      string `db:"amount" json:"amount"`
-	BlockHeight uint64 `db:"height" json:"block_height"`
-}
-
-func (b delegationWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
-	b.ChainName = cn
-	return b
-}
 
 type delegationCacheEntry struct {
 	delegator string
@@ -31,8 +18,8 @@ type delegationCacheEntry struct {
 
 type delegationsProcessor struct {
 	l                 *zap.SugaredLogger
-	insertHeightCache map[delegationCacheEntry]delegationWritebackPacket
-	deleteHeightCache map[delegationCacheEntry]delegationWritebackPacket
+	insertHeightCache map[delegationCacheEntry]models.DelegationRow
+	deleteHeightCache map[delegationCacheEntry]models.DelegationRow
 }
 
 func (*delegationsProcessor) TableSchema() string {
@@ -44,15 +31,15 @@ func (b *delegationsProcessor) ModuleName() string {
 }
 
 func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
-	insert := make([]tracelistener.DatabaseEntrier, 0, len(b.insertHeightCache))
-	delete := make([]tracelistener.DatabaseEntrier, 0, len(b.deleteHeightCache))
+	insert := make([]models.DatabaseEntrier, 0, len(b.insertHeightCache))
+	deleteEntries := make([]models.DatabaseEntrier, 0, len(b.deleteHeightCache))
 
 	if len(b.insertHeightCache) != 0 {
 		for _, v := range b.insertHeightCache {
 			insert = append(insert, v)
 		}
 
-		b.insertHeightCache = map[delegationCacheEntry]delegationWritebackPacket{}
+		b.insertHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 	}
 
 	if len(b.deleteHeightCache) == 0 && insert == nil {
@@ -60,10 +47,10 @@ func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 	}
 
 	for _, v := range b.deleteHeightCache {
-		delete = append(delete, v)
+		deleteEntries = append(deleteEntries, v)
 	}
 
-	b.deleteHeightCache = map[delegationCacheEntry]delegationWritebackPacket{}
+	b.deleteHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -72,7 +59,7 @@ func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 		},
 		{
 			DatabaseExec: deleteDelegation,
-			Data:         delete,
+			Data:         deleteEntries,
 		},
 	}
 }
@@ -90,7 +77,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		b.deleteHeightCache[delegationCacheEntry{
 			validator: validatorAddr,
 			delegator: delegatorAddr,
-		}] = delegationWritebackPacket{
+		}] = models.DelegationRow{
 			Delegator: delegatorAddr,
 			Validator: validatorAddr,
 		}
@@ -126,7 +113,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 	b.insertHeightCache[delegationCacheEntry{
 		validator: validator,
 		delegator: delegator,
-	}] = delegationWritebackPacket{
+	}] = models.DelegationRow{
 		Delegator:   delegator,
 		Validator:   validator,
 		Amount:      delegation.Shares.String(),

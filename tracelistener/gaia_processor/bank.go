@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/allinbits/demeris-backend/models"
 
 	"go.uber.org/zap"
 
@@ -13,20 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
-type balanceWritebackPacket struct {
-	tracelistener.BasicDatabaseEntry
-
-	Address     string `db:"address" json:"address"`
-	Amount      string `db:"amount" json:"amount"`
-	Denom       string `db:"denom" json:"denom"`
-	BlockHeight uint64 `db:"height" json:"block_height"`
-}
-
-func (b balanceWritebackPacket) WithChainName(cn string) tracelistener.DatabaseEntrier {
-	b.ChainName = cn
-	return b
-}
-
 type bankCacheEntry struct {
 	address string
 	denom   string
@@ -34,7 +21,7 @@ type bankCacheEntry struct {
 
 type bankProcessor struct {
 	l           *zap.SugaredLogger
-	heightCache map[bankCacheEntry]balanceWritebackPacket
+	heightCache map[bankCacheEntry]models.BalanceRow
 }
 
 func (*bankProcessor) TableSchema() string {
@@ -50,13 +37,13 @@ func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 		return nil
 	}
 
-	l := make([]tracelistener.DatabaseEntrier, 0, len(b.heightCache))
+	l := make([]models.DatabaseEntrier, 0, len(b.heightCache))
 
 	for _, v := range b.heightCache {
 		l = append(l, v)
 	}
 
-	b.heightCache = map[bankCacheEntry]balanceWritebackPacket{}
+	b.heightCache = map[bankCacheEntry]models.BalanceRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -97,7 +84,7 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	b.heightCache[bankCacheEntry{
 		address: hAddr,
 		denom:   coins.Denom,
-	}] = balanceWritebackPacket{
+	}] = models.BalanceRow{
 		Address:     hAddr,
 		Amount:      coins.String(),
 		Denom:       coins.Denom,
