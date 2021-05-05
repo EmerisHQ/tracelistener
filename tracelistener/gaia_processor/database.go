@@ -142,6 +142,7 @@ VALUES
 	createDelegationsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.delegations (
 	id serial unique primary key,
+	chain_name text not null,
 	delegator_address text not null,
 	validator_address text not null,
 	amount string not null,
@@ -151,9 +152,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.delegations (
 
 	insertDelegation = `
 INSERT INTO tracelistener.delegations
-	(delegator_address, validator_address, amount) 
+	(delegator_address, validator_address, amount, chain_name) 
 VALUES 
-	(:delegator_address, :validator_address, :amount)  
+	(:delegator_address, :validator_address, :amount, :chain_name)  
 ON CONFLICT
 	(delegator_address, validator_address)
 DO UPDATE SET
@@ -172,6 +173,7 @@ AND
 	createDenomTracesTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 	id serial unique primary key,
+	chain_name text not null,
 	path text not null,
 	base_denom text not null,
 	hash text not null,
@@ -181,9 +183,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 
 	insertDenomTrace = `
 INSERT INTO tracelistener.denom_traces
-	(path, base_denom, hash) 
+	(path, base_denom, hash, chain_name) 
 VALUES 
-	(:path, :base_denom, :hash)
+	(:path, :base_denom, :hash, :chain_name)
 ON CONFLICT
 	(path)
 DO UPDATE SET
@@ -195,6 +197,7 @@ DO UPDATE SET
 	createChannelsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.channels (
 	id serial unique primary key,
+	chain_name text not null,
 	channel_id text not null,
 	port text not null,
 	state integer not null,
@@ -205,9 +208,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.channels (
 
 	insertChannel = `
 INSERT INTO tracelistener.channels
-	(channel_id, port, state, hops) 
+	(channel_id, port, state, hops, chain_name) 
 VALUES 
-	(:channel_id, :port, :state, :hops)
+	(:channel_id, :port, :state, :hops, :chain_name)
 ON CONFLICT
 	(channel_id, port)
 DO UPDATE SET
