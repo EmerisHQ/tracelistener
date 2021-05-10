@@ -35,7 +35,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	c := cfg.Gaia
 
 	if c.ProcessorsEnabled == nil {
-		c.ProcessorsEnabled = []string{"bank", "delegations"}
+		c.ProcessorsEnabled = []string{"bank", "delegations", "auth"}
 	}
 
 	var mp []moduleProcessor
@@ -98,6 +98,11 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 		}, nil
 	case (&ibcChannelsProcessor{}).ModuleName():
 		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]models.IBCChannelRow{}, l: logger}, nil
+	case (&authProcessor{}).ModuleName():
+		return &authProcessor{
+			l:           logger,
+			heightCache: map[authCacheEntry]models.AuthRow{},
+		}, nil
 	}
 }
 

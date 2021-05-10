@@ -135,3 +135,18 @@ func (bwp SwapRow) WithChainName(cn string) DatabaseEntrier {
 	bwp.ChainName = cn
 	return bwp
 }
+
+// AuthRow represents an account auth row inserted into the database.
+type AuthRow struct {
+	TracelistenerDatabaseRow
+
+	Address        string `db:"address" json:"address"`
+	SequenceNumber uint64 `db:"sequence_number" json:"sequence_number"`
+	AccountNumber  uint64 `db:"account_number" json:"account_number"`
+}
+
+// WithChainName implements the DatabaseEntrier interface.
+func (b AuthRow) WithChainName(cn string) DatabaseEntrier {
+	b.ChainName = cn
+	return b
+}

@@ -217,4 +217,30 @@ DO UPDATE SET
 	state=EXCLUDED.state,
 	hops=EXCLUDED.hops
 `
+
+	// Auth-related queries
+	createAuthTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.auth (
+	id serial unique primary key,
+	chain_name text not null,
+	address text not null,
+	sequence_number numeric not null,
+	account_number numeric not null,
+	unique(chain_name, address, account_number)
+)
+`
+
+	insertAuth = `
+INSERT INTO tracelistener.auth 
+	(chain_name, address, sequence_number, account_number) 
+VALUES 
+	(:chain_name, :address, :sequence_number, :account_number) 
+ON CONFLICT
+	(chain_name, address, account_number)
+DO UPDATE SET 
+	chain_name=EXCLUDED.chain_name,
+	address=EXCLUDED.address,
+	sequence_number=EXCLUDED.sequence_number,
+	account_number=EXCLUDED.account_number
+`
 )
