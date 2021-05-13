@@ -5,28 +5,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
-	"sync"
-
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-
-	types3 "github.com/cosmos/cosmos-sdk/types"
-
-	types2 "github.com/cosmos/cosmos-sdk/codec/types"
-
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/allinbits/demeris-backend/models"
-
-	"go.uber.org/zap"
-
 	"github.com/allinbits/demeris-backend/tracelistener"
+	types3 "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"go.uber.org/zap"
 )
-
-var registerTypes = sync.Once{}
-
-func register(t types2.InterfaceRegistry) {
-	types.RegisterInterfaces(t)
-}
 
 type authCacheEntry struct {
 	address        string
