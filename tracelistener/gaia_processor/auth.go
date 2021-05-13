@@ -3,8 +3,11 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	types3 "github.com/cosmos/cosmos-sdk/types"
 
@@ -90,7 +93,17 @@ func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
 		return err
 	}
 
-	hAddr := hex.EncodeToString(acc.GetAddress())
+	baseAcc, ok := acc.(*types.BaseAccount)
+	if !ok {
+		return fmt.Errorf("cannot cast account to BaseAccount, type %T", baseAcc)
+	}
+
+	_, bz, err := bech32.DecodeAndConvert(baseAcc.Address)
+	if err != nil {
+		return fmt.Errorf("cannot parse %s as bech32, %w", baseAcc.Address, err)
+	}
+
+	hAddr := hex.EncodeToString(bz)
 	b.l.Debugw("new auth store write",
 		"operation", data.Operation,
 		"address", hAddr,
