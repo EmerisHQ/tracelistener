@@ -1,5 +1,10 @@
 FROM golang:1.16 as builder
 
+ARG GIT_TOKEN
+
+RUN go env -w GOPRIVATE=github.com/allinbits/*
+RUN git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
+
 WORKDIR /app
 COPY go.mod go.sum* ./
 RUN go mod download
