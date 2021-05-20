@@ -79,9 +79,14 @@ func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
 		return err
 	}
 
+	if _, ok := acc.(*types.ModuleAccount); ok {
+		// ignore moduleaccounts
+		return nil
+	}
+
 	baseAcc, ok := acc.(*types.BaseAccount)
 	if !ok {
-		return fmt.Errorf("cannot cast account to BaseAccount, type %T", baseAcc)
+		return fmt.Errorf("cannot cast account to BaseAccount, type %T, account object type %T", baseAcc, acc)
 	}
 
 	_, bz, err := bech32.DecodeAndConvert(baseAcc.Address)
