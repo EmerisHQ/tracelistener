@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"syscall"
+	"time"
+
+	"github.com/allinbits/demeris-backend/tracelistener/blocktime"
 
 	"github.com/allinbits/demeris-backend/utils/logging"
 
@@ -37,11 +40,20 @@ func main() {
 	}
 
 	database.RegisterMigration(dpi.DatabaseMigrations...)
+	database.RegisterMigration(blocktime.CreateTable)
 
 	di, err := database.New(cfg.DatabaseConnectionURL)
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	blw := blocktime.New(
+		di.Instance,
+		cfg.ChainName,
+		logger,
+	)
+
+	go connectTendermint(blw, logger)
 
 	ctx := context.Background()
 	f, err := fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY, 0655)
@@ -91,4 +103,18 @@ func buildLogger(c *config.Config) *zap.SugaredLogger {
 		LogPath: c.LogPath,
 		Debug:   c.Debug,
 	})
+}
+
+func connectTendermint(b *blocktime.Watcher, l *zap.SugaredLogger) {
+	connected := false
+
+	for !connected {
+		if err := b.Connect(); err != nil {
+			l.Errorw("cannot connect to tendermint rpc, retrying in 5 seconds", "error", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		connected = true
+	}
 }

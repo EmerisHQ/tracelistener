@@ -5,7 +5,7 @@ import (
 )
 
 type Instance struct {
-	d          *dbutils.Instance
+	Instance   *dbutils.Instance
 	connString string
 }
 
@@ -18,7 +18,7 @@ func New(connString string) (*Instance, error) {
 	}
 
 	ii := &Instance{
-		d:          i,
+		Instance:   i,
 		connString: connString,
 	}
 
@@ -28,5 +28,5 @@ func New(connString string) (*Instance, error) {
 }
 
 func (i *Instance) Add(query string, data []interface{}) error {
-	return i.d.Exec(query, data, nil)
+	return i.Instance.Exec(query, data, nil)
 }
