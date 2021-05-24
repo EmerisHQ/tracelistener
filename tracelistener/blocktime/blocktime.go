@@ -3,7 +3,6 @@ package blocktime
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/allinbits/demeris-backend/models"
 
@@ -40,12 +39,6 @@ const (
 		block_time=EXCLUDED.block_time;
 	`
 )
-
-type blockTimeObject struct {
-	models.TracelistenerDatabaseRow
-
-	BlockTime time.Time `db:"block_time"`
-}
 
 type Watcher struct {
 	di        *database.Instance
@@ -98,7 +91,7 @@ func (w *Watcher) lifecycle() {
 			continue
 		}
 
-		if err := w.insertBlockTime(blockTimeObject{
+		if err := w.insertBlockTime(models.BlockTimeRow{
 			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
 				ChainName: w.chainName,
 			},
@@ -109,6 +102,6 @@ func (w *Watcher) lifecycle() {
 	}
 }
 
-func (w *Watcher) insertBlockTime(blo blockTimeObject) error {
+func (w *Watcher) insertBlockTime(blo models.BlockTimeRow) error {
 	return w.di.Exec(insertBlocktime, blo, nil)
 }
