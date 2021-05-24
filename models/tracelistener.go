@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // TracelistenerDatabaseRow contains a list of all the fields each database row must contain in order to be
 // inserted correctly.
 type TracelistenerDatabaseRow struct {
@@ -149,4 +151,11 @@ type AuthRow struct {
 func (b AuthRow) WithChainName(cn string) DatabaseEntrier {
 	b.ChainName = cn
 	return b
+}
+
+// BlockTimeRow represents a row containing the last time a chain received a block.
+type BlockTimeRow struct {
+	TracelistenerDatabaseRow
+
+	BlockTime time.Time `db:"block_time"`
 }
