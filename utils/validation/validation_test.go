@@ -14,14 +14,16 @@ import (
 	"github.com/allinbits/demeris-backend/utils/validation"
 )
 
-type e struct{}
+type e struct {
+	Arg string
+}
 
 func (e e) Tag() string {
 	return "required"
 }
 
 func (e e) ActualTag() string {
-	return "ActualTag"
+	return "Actual" + e.Arg
 }
 
 func (e e) Namespace() string {
@@ -33,7 +35,7 @@ func (e e) StructNamespace() string {
 }
 
 func (e e) Field() string {
-	return "Field"
+	return "Field" + e.Arg
 }
 
 func (e e) StructField() string {
@@ -56,7 +58,7 @@ func (e e) Type() reflect.Type {
 	panic("implement me")
 }
 
-func (e e) Translate(ut ut.Translator) string {
+func (e e) Translate(_ ut.Translator) string {
 	panic("implement me")
 }
 
@@ -81,17 +83,19 @@ func TestMissingFields(t *testing.T) {
 			"validation error",
 			validator.ValidationErrors{
 				e{},
+				e{Arg: "second"},
 			},
 			false,
-			[]string{"Field"},
+			[]string{"Field", "Fieldsecond"},
 		},
 		{
 			"validation error with field name",
 			validator.ValidationErrors{
 				e{},
+				e{Arg: "second"},
 			},
 			true,
-			[]string{"ActualTag"},
+			[]string{"Actual", "Actualsecond"},
 		},
 	}
 	for _, tt := range tests {
@@ -119,17 +123,19 @@ func TestMissingFieldsErr(t *testing.T) {
 			"validation error",
 			validator.ValidationErrors{
 				e{},
+				e{Arg: "second"},
 			},
 			false,
-			fmt.Errorf("missing fields: Field"),
+			fmt.Errorf("missing fields: Field,Fieldsecond"),
 		},
 		{
 			"validation error with field name",
 			validator.ValidationErrors{
 				e{},
+				e{Arg: "second"},
 			},
 			true,
-			fmt.Errorf("missing fields: ActualTag"),
+			fmt.Errorf("missing fields: Actual,Actualsecond"),
 		},
 	}
 	for _, tt := range tests {
