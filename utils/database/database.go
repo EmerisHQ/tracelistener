@@ -26,6 +26,10 @@ func New(connString string) (*Instance, error) {
 		DB: db,
 	}
 
+	if err := i.DB.Ping(); err != nil {
+		return nil, fmt.Errorf("cannot ping db, %w", err)
+	}
+
 	return i, nil
 }
 
