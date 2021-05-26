@@ -76,6 +76,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 		ops         []tracelistener.Operation
 		data        string
 		wantErr     bool
+		differentOp bool
 		shouldPanic bool
 		errSent     error
 	}{
@@ -87,12 +88,25 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			writeOp,
 			false,
 			false,
+			false,
+			nil,
+		},
+		{
+			"write operation is not configured and not read",
+			[]tracelistener.Operation{
+				tracelistener.ReadOp,
+			},
+			writeOp,
+			false,
+			true,
+			false,
 			nil,
 		},
 		{
 			"any operation is configured and read accordingly",
 			[]tracelistener.Operation{},
 			writeOp,
+			false,
 			false,
 			false,
 			nil,
@@ -103,6 +117,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			writeOp,
 			false,
 			false,
+			false,
 			io.EOF,
 		},
 		{
@@ -110,6 +125,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			[]tracelistener.Operation{},
 			writeOp,
 			true,
+			false,
 			true,
 			fmt.Errorf("error"),
 		},
@@ -160,7 +176,18 @@ func TestTraceWatcher_Watch(t *testing.T) {
 					return
 				}
 
-				require.NotEmpty(t, <-dataChan)
+				if !tt.differentOp {
+					require.Eventually(t, func() bool {
+						d := <-dataChan
+						return d.Key != nil
+					}, time.Second, 10*time.Millisecond)
+					return
+				}
+
+				require.Never(t, func() bool {
+					d := <-dataChan
+					return d.Key != nil
+				}, time.Second, 10*time.Millisecond)
 			}
 		})
 	}
