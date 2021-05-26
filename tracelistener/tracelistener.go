@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/allinbits/demeris-backend/models"
 	"io"
+
+	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener/config"
 
@@ -109,7 +110,7 @@ func (tr *TraceWatcher) Watch() {
 }
 
 func (tr *TraceWatcher) mustConsiderData(b []byte) bool {
-	if tr.WatchedOps == nil {
+	if tr.WatchedOps == nil || len(tr.WatchedOps) == 0 {
 		return true
 	}
 
