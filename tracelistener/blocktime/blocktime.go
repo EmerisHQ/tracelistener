@@ -77,27 +77,34 @@ func (w *Watcher) Connect() error {
 	return nil
 }
 
+func (w *Watcher) ParseBlockData(data coretypes.ResultEvent) error {
+	block, ok := data.Data.(types.EventDataNewBlock)
+	if !ok {
+		return fmt.Errorf("tried casting data to EventDataNewBlock, real type %T", block)
+	}
+
+	w.l.Debugw("new block", "block", block)
+
+	if block.Block == nil {
+		return nil
+	}
+
+	if err := w.insertBlockTime(models.BlockTimeRow{
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			ChainName: w.chainName,
+		},
+		BlockTime: block.Block.Time,
+	}); err != nil {
+		return fmt.Errorf("cannot insert block time, %w", err)
+	}
+
+	return nil
+}
+
 func (w *Watcher) lifecycle() {
 	for data := range w.tm {
-		block, ok := data.Data.(types.EventDataNewBlock)
-		if !ok {
-			w.l.Errorw("tried casting data to EventDataNewBlock", "real type", fmt.Sprintf("%T", block))
-			continue
-		}
-
-		w.l.Debugw("new block", "block", block)
-
-		if block.Block == nil {
-			continue
-		}
-
-		if err := w.insertBlockTime(models.BlockTimeRow{
-			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
-				ChainName: w.chainName,
-			},
-			BlockTime: block.Block.Time,
-		}); err != nil {
-			w.l.Errorw("cannot insert block time", "chain", w.chainName, "error", err)
+		if err := w.ParseBlockData(data); err != nil {
+			w.l.Errorw("cannot parse block data", "error", err)
 		}
 	}
 }
