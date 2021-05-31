@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"fmt"
+
 	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
@@ -11,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type moduleProcessor interface {
+type Module interface {
 	FlushCache() []tracelistener.WritebackOp
 	OwnsKey(key []byte) bool
 	Process(data tracelistener.TraceOperation) error
@@ -19,46 +20,65 @@ type moduleProcessor interface {
 	TableSchema() string
 }
 
-var p processor
+// TODO: this singleton MUST go away.
+var p Processor
 
-type processor struct {
+type Processor struct {
 	l                *zap.SugaredLogger
 	writeChan        chan tracelistener.TraceOperation
 	writebackChan    chan []tracelistener.WritebackOp
 	cdc              codec.Marshaler
+	migrations       []string
 	lastHeight       uint64
 	chainName        string
-	moduleProcessors []moduleProcessor
+	moduleProcessors []Module
 }
 
-func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProcessorInfos, error) {
+func (p *Processor) OpsChan() chan tracelistener.TraceOperation {
+	return p.writeChan
+}
+
+func (p *Processor) WritebackChan() chan []tracelistener.WritebackOp {
+	return p.writebackChan
+}
+
+func (p *Processor) DatabaseMigrations() []string {
+	return p.migrations
+}
+
+func (p *Processor) ErrorsChan() chan error {
+	return p.errorsChan
+}
+
+func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProcessor, error) {
 	c := cfg.Gaia
 
 	if c.ProcessorsEnabled == nil {
 		c.ProcessorsEnabled = []string{"bank", "delegations", "auth"}
 	}
 
-	var mp []moduleProcessor
+	var mp []Module
 	var tableSchemas []string
 
 	for _, ep := range c.ProcessorsEnabled {
 		p, err := processorByName(ep, logger)
 		if err != nil {
-			return tracelistener.DataProcessorInfos{}, err
+			return nil, err
 		}
 
 		mp = append(mp, p)
 		tableSchemas = append(tableSchemas, p.TableSchema())
 	}
 
-	logger.Infow("gaia processor initialized", "processors", c.ProcessorsEnabled)
+	logger.Infow("gaia Processor initialized", "processors", c.ProcessorsEnabled)
 
-	p = processor{
+	p = Processor{
 		chainName:        cfg.ChainName,
 		l:                logger,
 		writeChan:        make(chan tracelistener.TraceOperation),
 		writebackChan:    make(chan []tracelistener.WritebackOp),
 		moduleProcessors: mp,
+		migrations:       tableSchemas,
 	}
 
 	cdc, _ := gaia.MakeCodecs()
@@ -66,17 +86,26 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 
 	go p.lifecycle()
 
-	return tracelistener.DataProcessorInfos{
-		OpsChan:            p.writeChan,
-		WritebackChan:      p.writebackChan,
-		DatabaseMigrations: tableSchemas,
-	}, nil
+	return &p, nil
 }
 
-func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, error) {
+func (p *Processor) AddModule(m Module) error {
+	mn := m.ModuleName()
+	for _, em := range p.moduleProcessors {
+		if em.ModuleName() == mn {
+			return fmt.Errorf("cannot add module %s more than one time", mn)
+		}
+	}
+
+	p.moduleProcessors = append(p.moduleProcessors, m)
+
+	return nil
+}
+
+func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 	switch name {
 	default:
-		return nil, fmt.Errorf("unkonwn processor %s", name)
+		return nil, fmt.Errorf("unkonwn Processor %s", name)
 	case (&bankProcessor{}).ModuleName():
 		return &bankProcessor{heightCache: map[bankCacheEntry]models.BalanceRow{}, l: logger}, nil
 	case (&ibcConnectionsProcessor{}).ModuleName():
@@ -106,7 +135,7 @@ func processorByName(name string, logger *zap.SugaredLogger) (moduleProcessor, e
 	}
 }
 
-func (p *processor) lifecycle() {
+func (p *Processor) lifecycle() {
 	for data := range p.writeChan {
 		if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
 			wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
