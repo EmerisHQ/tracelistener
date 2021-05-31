@@ -39,7 +39,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	database.RegisterMigration(dpi.DatabaseMigrations...)
+	database.RegisterMigration(dpi.DatabaseMigrations()...)
 	database.RegisterMigration(blocktime.CreateTable)
 
 	di, err := database.New(cfg.DatabaseConnectionURL)
@@ -68,7 +68,7 @@ func main() {
 			tracelistener.WriteOp,
 			tracelistener.DeleteOp,
 		},
-		DataChan:  dpi.OpsChan,
+		DataChan:  dpi.OpsChan(),
 		ErrorChan: errChan,
 		Logger:    logger,
 	}
@@ -79,7 +79,14 @@ func main() {
 		select {
 		case e := <-errChan:
 			logger.Error("watching error", e)
-		case b := <-dpi.WritebackChan:
+		case e := <-dpi.ErrorsChan():
+			te := e.(tracelistener.TracingError)
+			logger.Errorw(
+				"error while processing data",
+				"error", te.InnerError,
+				"data", te.Data,
+				"moduleName", te.Module)
+		case b := <-dpi.WritebackChan():
 			for _, p := range b {
 				for _, asd := range p.Data {
 					logger.Debugw("writeback unit", "data", asd)
