@@ -27,6 +27,7 @@ type Processor struct {
 	l                *zap.SugaredLogger
 	writeChan        chan tracelistener.TraceOperation
 	writebackChan    chan []tracelistener.WritebackOp
+	errorsChan       chan error
 	cdc              codec.Marshaler
 	migrations       []string
 	lastHeight       uint64
@@ -77,6 +78,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		l:                logger,
 		writeChan:        make(chan tracelistener.TraceOperation),
 		writebackChan:    make(chan []tracelistener.WritebackOp),
+		errorsChan:       make(chan error),
 		moduleProcessors: mp,
 		migrations:       tableSchemas,
 	}
@@ -167,11 +169,11 @@ func (p *Processor) lifecycle() {
 			}
 
 			if err := mp.Process(data); err != nil {
-				p.l.Errorw(
-					"error while processing data",
-					"error", err,
-					"data", data,
-					"moduleName", mp.ModuleName())
+				p.errorsChan <- tracelistener.TracingError{
+					InnerError: err,
+					Module:     mp.ModuleName(),
+					Data:       data,
+				}
 			}
 		}
 	}
