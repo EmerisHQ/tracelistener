@@ -54,14 +54,25 @@ func (wo WritebackOp) InterfaceSlice() []interface{} {
 	return dataIface
 }
 
-type DataProcessorInfos struct {
-	OpsChan            chan TraceOperation
-	WritebackChan      chan []WritebackOp
-	DatabaseMigrations []string
+type DataProcessor interface {
+	OpsChan() chan TraceOperation
+	WritebackChan() chan []WritebackOp
+	ErrorsChan() chan error
+	DatabaseMigrations() []string
+}
+
+type TracingError struct {
+	InnerError error
+	Module     string
+	Data       TraceOperation
+}
+
+func (t TracingError) Error() string {
+	return fmt.Sprintf("%s: %s", t.Module, t.InnerError)
 }
 
 // DataProcessorFunc is the type of function used to initialize a data processor.
-type DataProcessorFunc func(logger *zap.SugaredLogger, cfg *config.Config) (DataProcessorInfos, error)
+type DataProcessorFunc func(logger *zap.SugaredLogger, cfg *config.Config) (DataProcessor, error)
 
 // TraceWatcher watches DataSource for WatchedOps, sends observed data over DataChan.
 // Any observing error will be sent over ErrorChan.
