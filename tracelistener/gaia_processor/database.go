@@ -243,4 +243,26 @@ DO UPDATE SET
 	sequence_number=EXCLUDED.sequence_number,
 	account_number=EXCLUDED.account_number
 `
+
+	createClientsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.clients (
+	id serial unique primary key,
+	chain_name text not null,
+	chain_id text not null,
+	client_id text not null,
+	unique(chain_id, client_id)
+)
+`
+
+	insertClient = `
+INSERT INTO tracelistener.clients
+	(chain_name, chain_id, client_id) 
+VALUES 
+	(:chain_name, :chain_id, :client_id)
+ON CONFLICT
+	(chain_id, client_id)
+DO UPDATE SET
+	chain_id=EXCLUDED.chain_id,
+	client_id=EXCLUDED.client_id
+`
 )

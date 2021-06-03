@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"bytes"
+
 	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"

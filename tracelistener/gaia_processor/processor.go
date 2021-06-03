@@ -129,6 +129,11 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 		}, nil
 	case (&ibcChannelsProcessor{}).ModuleName():
 		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]models.IBCChannelRow{}, l: logger}, nil
+	case (&ibcClientsProcessor{}).ModuleName():
+		return &ibcClientsProcessor{
+			l:            logger,
+			clientsCache: map[clientCacheEntry]models.IBCClientStateRow{},
+		}, nil
 	case (&authProcessor{}).ModuleName():
 		return &authProcessor{
 			l:           logger,
