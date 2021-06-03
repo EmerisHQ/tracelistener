@@ -159,3 +159,17 @@ type BlockTimeRow struct {
 
 	BlockTime time.Time `db:"block_time"`
 }
+
+// IBCClientStateRow represents the state of client as a row inserted into the database.
+type IBCClientStateRow struct {
+	TracelistenerDatabaseRow
+
+	ChainID  string `db:"chain_id" json:"chain_id"`
+	ClientID string `db:"client_id" json:"client_id"`
+}
+
+// WithChainName implements the DatabaseEntrier interface.
+func (b IBCClientStateRow) WithChainName(cn string) DatabaseEntrier {
+	b.ChainName = cn
+	return b
+}
