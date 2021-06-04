@@ -14,8 +14,9 @@ import (
 )
 
 type channelCacheEntry struct {
-	channelID string
-	portID    string
+	channelID        string
+	counterChannelID string
+	portID           string
 }
 
 type ibcChannelsProcessor struct {
@@ -63,19 +64,23 @@ func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error 
 		return err
 	}
 
+	b.l.Debugw("ibc channel data", "result", result)
+
 	portID, channelID, err := host.ParseChannelPath(string(data.Key))
 	if err != nil {
 		return err
 	}
 
 	b.channelsCache[channelCacheEntry{
-		channelID: channelID,
-		portID:    portID,
+		channelID:        channelID,
+		counterChannelID: result.Counterparty.ChannelId,
+		portID:           portID,
 	}] = models.IBCChannelRow{
-		ChannelID: channelID,
-		Hops:      result.GetConnectionHops(),
-		Port:      portID,
-		State:     int32(result.State),
+		ChannelID:        channelID,
+		CounterChannelID: result.Counterparty.ChannelId,
+		Hops:             result.GetConnectionHops(),
+		Port:             portID,
+		State:            int32(result.State),
 	}
 
 	return nil
