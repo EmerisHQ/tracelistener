@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.channels (
 	port text not null,
 	state integer not null,
 	hops text[] not null,
-	unique(channel_id, port)
+	unique(chain_name, channel_id, port)
 )
 `
 
@@ -213,7 +213,7 @@ INSERT INTO tracelistener.channels
 VALUES 
 	(:channel_id, :counter_channel_id, :port, :state, :hops, :chain_name)
 ON CONFLICT
-	(channel_id, port)
+	(chain_name, channel_id, port)
 DO UPDATE SET
 	state=EXCLUDED.state,
 	counter_channel_id=EXCLUDED.counter_channel_id,
