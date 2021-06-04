@@ -199,6 +199,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.channels (
 	id serial unique primary key,
 	chain_name text not null,
 	channel_id text not null,
+	counter_channel_id text not null,
 	port text not null,
 	state integer not null,
 	hops text[] not null,
@@ -208,14 +209,17 @@ CREATE TABLE IF NOT EXISTS tracelistener.channels (
 
 	insertChannel = `
 INSERT INTO tracelistener.channels
-	(channel_id, port, state, hops, chain_name) 
+	(channel_id, counter_channel_id, port, state, hops, chain_name) 
 VALUES 
-	(:channel_id, :port, :state, :hops, :chain_name)
+	(:channel_id, :counter_channel_id, :port, :state, :hops, :chain_name)
 ON CONFLICT
 	(channel_id, port)
 DO UPDATE SET
 	state=EXCLUDED.state,
-	hops=EXCLUDED.hops
+	counter_channel_id=EXCLUDED.counter_channel_id,
+	hops=EXCLUDED.hops,
+	port=EXCLUDED.port,
+	channel_id=EXCLUDED.channel_id
 `
 
 	// Auth-related queries

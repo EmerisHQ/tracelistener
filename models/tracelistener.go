@@ -52,10 +52,11 @@ func (b DelegationRow) WithChainName(cn string) DatabaseEntrier {
 type IBCChannelRow struct {
 	TracelistenerDatabaseRow
 
-	ChannelID string   `db:"channel_id" json:"channel_id"`
-	Hops      []string `db:"hops" json:"hops"`
-	Port      string   `db:"port" json:"port"`
-	State     int32    `db:"state" json:"state"`
+	ChannelID        string   `db:"channel_id" json:"channel_id"`
+	CounterChannelID string   `db:"counter_channel_id" json:"counter_channel_id"`
+	Hops             []string `db:"hops" json:"hops"`
+	Port             string   `db:"port" json:"port"`
+	State            int32    `db:"state" json:"state"`
 }
 
 // WithChainName implements the DatabaseEntrier interface.
