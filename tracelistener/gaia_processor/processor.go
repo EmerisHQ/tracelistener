@@ -23,6 +23,16 @@ type Module interface {
 // TODO: this singleton MUST go away.
 var p Processor
 
+var defaultProcessors = []string{
+	"bank",
+	"delegations",
+	"auth",
+	"ibc_clients",
+	"ibc_channels",
+	"ibc_connections",
+	"ibc_denom_traces",
+}
+
 type Processor struct {
 	l                *zap.SugaredLogger
 	writeChan        chan tracelistener.TraceOperation
@@ -55,7 +65,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	c := cfg.Gaia
 
 	if c.ProcessorsEnabled == nil {
-		c.ProcessorsEnabled = []string{"bank", "delegations", "auth"}
+		c.ProcessorsEnabled = defaultProcessors
 	}
 
 	var mp []Module
