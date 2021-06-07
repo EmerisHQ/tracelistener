@@ -1,11 +1,14 @@
 package validation
 
 import (
-"errors"
-"fmt"
-"strings"
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
 
-"github.com/go-playground/validator/v10"
+	"github.com/gin-gonic/gin/binding"
+
+	"github.com/go-playground/validator/v10"
 )
 
 // MissingFields returns a slice of strings containing the names of the fields marked as required and not provided,
@@ -45,3 +48,21 @@ func MissingFieldsErr(err error, fieldName bool) error {
 	return fmt.Errorf("missing fields: %v", strings.Join(f, ","))
 }
 
+func jsonTag(fld reflect.StructField) string {
+	name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+
+	if name == "-" {
+		return ""
+	}
+
+	return name
+}
+
+// JSONFields adds a function to retrieve JSON tag names on StructValidator
+// errors.
+// It is mostly used alongside gin.
+func JSONFields(structValidator binding.StructValidator) {
+	if v, ok := structValidator.Engine().(*validator.Validate); ok {
+		v.RegisterTagNameFunc(jsonTag)
+	}
+}
