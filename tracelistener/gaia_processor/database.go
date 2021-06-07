@@ -68,14 +68,23 @@ CREATE TABLE IF NOT EXISTS tracelistener.liquidity_pools (
 	reserve_coin_denoms text[] not null,
 	reserve_account_address text not null,
 	pool_coin_denom text not null,
-	unique(pool_id)
+	unique(chain_name, pool_id)
 )
 `
 	insertPool = `
-UPSERT INTO tracelistener.liquidity_pools
+INSERT INTO tracelistener.liquidity_pools
 	(chain_name, pool_id, type_id, reserve_coin_denoms, reserve_account_address, pool_coin_denom)
 VALUES
 	(:chain_name, :pool_id, :type_id, :reserve_coin_denoms, :reserve_account_address, :pool_coin_denom)
+ON CONFLICT
+	(chain_name, pool_id)
+DO UPDATE SET
+	chain_name=EXCLUDED.chain_name,
+	pool_id=EXCLUDED.pool_id,
+	type_id=EXCLUDED.type_id,
+	reserve_coin_denoms=EXCLUDED.reserve_coin_denoms,
+	reserve_account_address=EXCLUDED.reserve_account_address,
+	pool_coin_denom=EXCLUDED.pool_coin_denom
 `
 
 	// Liquidity swaps-related queries
@@ -96,11 +105,11 @@ CREATE TABLE IF NOT EXISTS tracelistener.liquidity_swaps (
 	pool_id bigint not null,
 	offer_coin text not null,
 	order_price string not null,
-	unique(msg_index)
+	unique(chain_name, msg_index)
 )`
 
 	insertSwap = `
-UPSERT INTO tracelistener.liquidity_swaps
+INSERT INTO tracelistener.liquidity_swaps
 	(
 		chain_name, 
 		msg_height,
@@ -136,6 +145,24 @@ VALUES
 		:demand_coin,
 		:order_price
 	)
+ON CONFLICT
+	(chain_name, msg_index)
+DO UPDATE SET
+		chain_name=EXCLUDED.chain_name, 
+		msg_height=EXCLUDED.msg_height,
+		msg_index=EXCLUDED.msg_index,
+		executed=EXCLUDED.executed,
+		succeded=EXCLUDED.succeded,
+		expiry_height=EXCLUDED.expiry_height,
+		exchange_offer_coin=EXCLUDED.exchange_offer_coin,
+		remaining_offer_coin_fee=EXCLUDED.remaining_offer_coin_fee,
+		reserved_offer_coin_fee=EXCLUDED.reserved_offer_coin_fee,
+		pool_coin_denom=EXCLUDED.pool_coin_denom,
+		requester_address=EXCLUDED.requester_address,
+		pool_id=EXCLUDED.pool_id,
+		offer_coin=EXCLUDED.offer_coin,
+		demand_coin=EXCLUDED.demand_coin,
+		order_price=EXCLUDED.order_price
 `
 
 	// Account delegations-related queries
@@ -146,7 +173,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.delegations (
 	delegator_address text not null,
 	validator_address text not null,
 	amount string not null,
-	unique(delegator_address, validator_address)
+	unique(chain_name, delegator_address, validator_address)
 )
 `
 
@@ -156,7 +183,7 @@ INSERT INTO tracelistener.delegations
 VALUES 
 	(:delegator_address, :validator_address, :amount, :chain_name)  
 ON CONFLICT
-	(delegator_address, validator_address)
+	(chain_name, delegator_address, validator_address)
 DO UPDATE SET
 	amount=EXCLUDED.amount
 `
@@ -177,7 +204,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 	path text not null,
 	base_denom text not null,
 	hash text not null,
-	unique(path)
+	unique(chain_name, path)
 )
 `
 
@@ -187,7 +214,7 @@ INSERT INTO tracelistener.denom_traces
 VALUES 
 	(:path, :base_denom, :hash, :chain_name)
 ON CONFLICT
-	(path)
+	(chain_name, path)
 DO UPDATE SET
 	base_denom=EXCLUDED.base_denom,
 	hash=EXCLUDED.hash
@@ -254,7 +281,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.clients (
 	chain_name text not null,
 	chain_id text not null,
 	client_id text not null,
-	unique(chain_id, client_id)
+	unique(chain_name, chain_id, client_id)
 )
 `
 
@@ -264,7 +291,7 @@ INSERT INTO tracelistener.clients
 VALUES 
 	(:chain_name, :chain_id, :client_id)
 ON CONFLICT
-	(chain_id, client_id)
+	(chain_name, chain_id, client_id)
 DO UPDATE SET
 	chain_id=EXCLUDED.chain_id,
 	client_id=EXCLUDED.client_id
