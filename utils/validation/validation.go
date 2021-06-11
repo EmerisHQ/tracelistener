@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts"
+
 	"github.com/gin-gonic/gin/binding"
 
 	"github.com/go-playground/validator/v10"
@@ -65,4 +67,30 @@ func JSONFields(structValidator binding.StructValidator) {
 	if v, ok := structValidator.Engine().(*validator.Validate); ok {
 		v.RegisterTagNameFunc(jsonTag)
 	}
+}
+
+func DerivationPath(structValidator binding.StructValidator) {
+	if v, ok := structValidator.Engine().(*validator.Validate); ok {
+		if err := v.RegisterValidation("derivationpath", func(fl validator.FieldLevel) bool {
+			path, ok := fl.Field().Interface().(string)
+			if !ok {
+				return false
+			}
+
+			if err := validateDerivationPath(path); err != nil {
+				return false
+			}
+
+			return true
+		}); err != nil {
+			panic(err)
+		}
+	}
+}
+func validateDerivationPath(dp string) error {
+	if _, err := accounts.ParseDerivationPath(dp); err != nil {
+		return err
+	}
+
+	return nil
 }
