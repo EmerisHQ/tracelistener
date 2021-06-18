@@ -105,7 +105,7 @@ func (tr *TraceWatcher) Watch() {
 
 		to := TraceOperation{}
 		if err := json.Unmarshal(line, &to); err != nil {
-			tr.ErrorChan <- fmt.Errorf("failed unmarshaling, %w", err)
+			tr.ErrorChan <- fmt.Errorf("failed unmarshaling, %w, data: %s", err, string(line))
 			continue
 		}
 
