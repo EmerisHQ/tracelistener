@@ -78,7 +78,7 @@ func main() {
 	for {
 		select {
 		case e := <-errChan:
-			logger.Error("watching error", e)
+			logger.Errorw("watching error", "error", e)
 		case e := <-dpi.ErrorsChan():
 			te := e.(tracelistener.TracingError)
 			logger.Errorw(
