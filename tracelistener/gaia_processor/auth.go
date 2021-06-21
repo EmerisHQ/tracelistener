@@ -15,9 +15,8 @@ import (
 )
 
 type authCacheEntry struct {
-	address        string
-	sequenceNumber uint64
-	accNumber      uint64
+	address   string
+	accNumber uint64
 }
 
 type authProcessor struct {
@@ -105,9 +104,8 @@ func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
 	)
 
 	b.heightCache[authCacheEntry{
-		address:        hAddr,
-		sequenceNumber: acc.GetSequence(),
-		accNumber:      acc.GetAccountNumber(),
+		address:   hAddr,
+		accNumber: acc.GetAccountNumber(),
 	}] = models.AuthRow{
 		Address:        hAddr,
 		SequenceNumber: acc.GetSequence(),
