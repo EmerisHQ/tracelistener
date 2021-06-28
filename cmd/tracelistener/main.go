@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var Version = "not specified"
+
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
@@ -24,6 +26,8 @@ func main() {
 	}
 
 	logger := buildLogger(cfg)
+
+	logger.Infow("tracelistener", "version", Version)
 
 	var processorFunc tracelistener.DataProcessorFunc
 
