@@ -64,6 +64,10 @@ func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error 
 		return err
 	}
 
+	if result.Ordering != types.UNORDERED {
+		return nil
+	}
+
 	b.l.Debugw("ibc channel data", "result", result)
 
 	portID, channelID, err := host.ParseChannelPath(string(data.Key))
