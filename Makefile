@@ -1,4 +1,6 @@
 OBJS = $(shell find cmd -type d  -mindepth 1 -execdir printf '%s\n' {} +)
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+COMMIT := $(shell git log -1 --format='%H')
 BASEPKG = github.com/allinbits/demeris-backend
 EXTRAFLAGS :=
 
@@ -13,10 +15,5 @@ generate-swagger:
 	go generate ${BASEPKG}/docs
 	@rm docs/docs.go
 
-ifdef DEBUG
-$(OBJS): DEBUG_LDFLAGS =
-else
-$(OBJS): DEBUG_LDFLAGS = -ldflags='-s -w'
-endif
 $(OBJS):
-	go build -o build/$@ $(DEBUG_LDFLAGS) ${EXTRAFLAGS} ${BASEPKG}/cmd/$@
+	go build -o build/$@ -ldflags='-X main.Version=${BRANCH}-${COMMIT}' ${EXTRAFLAGS} ${BASEPKG}/cmd/$@
