@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+
 	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
@@ -52,6 +53,10 @@ func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) err
 	dt := transferTypes.DenomTrace{}
 	if err := p.cdc.UnmarshalBinaryBare(data.Value, &dt); err != nil {
 		return err
+	}
+
+	if dt.BaseDenom == "" {
+		return nil
 	}
 
 	b.denomTracesCache[dt.Path] = models.IBCDenomTraceRow{
