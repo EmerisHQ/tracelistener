@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+
 	"github.com/allinbits/demeris-backend/models"
 
 	"go.uber.org/zap"
@@ -62,13 +63,15 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	pLen := len(types.BalancesPrefix)
 	addr := addrBytes[pLen : pLen+20]
 
-	coins := sdk.Coin{}
+	coins := sdk.Coin{
+		Amount: sdk.NewInt(0),
+	}
 
 	if err := p.cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
 		return err
 	}
 
-	if coins.Amount.IsNil() || coins.IsZero() || !coins.IsValid() {
+	if !coins.IsValid() {
 		return nil
 	}
 
