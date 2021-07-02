@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 	path text not null,
 	base_denom text not null,
 	hash text not null,
-	unique(chain_name, path)
+	unique(chain_name, hash)
 )
 `
 
@@ -214,10 +214,11 @@ INSERT INTO tracelistener.denom_traces
 VALUES 
 	(:path, :base_denom, :hash, :chain_name)
 ON CONFLICT
-	(chain_name, path)
+	(chain_name, hash)
 DO UPDATE SET
 	base_denom=EXCLUDED.base_denom,
-	hash=EXCLUDED.hash
+	hash=EXCLUDED.hash,
+	path=EXCLUDED.path
 `
 
 	// IBC channels-related queries
