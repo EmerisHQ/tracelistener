@@ -50,21 +50,28 @@ func (b *ibcDenomTracesProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) error {
+	b.l.Debugw("beginning denom trace processor", "key", string(data.Key), "value", string(data.Value))
+
 	dt := transferTypes.DenomTrace{}
 	if err := p.cdc.UnmarshalBinaryBare(data.Value, &dt); err != nil {
 		return err
 	}
 
 	if dt.BaseDenom == "" {
+		b.l.Debugw("ignoring since it's not a denom trace")
 		return nil
 	}
 
 	hash := hex.EncodeToString(dt.Hash())
 
-	b.denomTracesCache[hash] = models.IBCDenomTraceRow{
+	newObj := models.IBCDenomTraceRow{
 		Path:      dt.Path,
 		BaseDenom: dt.BaseDenom,
 		Hash:      hash,
 	}
+
+	b.l.Debugw("denom trace unmarshaled", "object", newObj)
+
+	b.denomTracesCache[hash] = newObj
 	return nil
 }
