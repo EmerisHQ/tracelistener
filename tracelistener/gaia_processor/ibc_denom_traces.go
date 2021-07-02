@@ -59,10 +59,12 @@ func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) err
 		return nil
 	}
 
-	b.denomTracesCache[dt.Path] = models.IBCDenomTraceRow{
+	hash := hex.EncodeToString(dt.Hash())
+
+	b.denomTracesCache[hash] = models.IBCDenomTraceRow{
 		Path:      dt.Path,
 		BaseDenom: dt.BaseDenom,
-		Hash:      hex.EncodeToString(dt.Hash()),
+		Hash:      hash,
 	}
 	return nil
 }
