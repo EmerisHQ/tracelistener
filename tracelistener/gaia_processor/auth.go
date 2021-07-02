@@ -58,7 +58,9 @@ func (b *authProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
+	b.l.Debugw("auth processor entered", "key", string(data.Key), "value", string(data.Value))
 	if len(data.Key) != types3.AddrLen+1 {
+		b.l.Debugw("auth got key that isn't supposed to")
 		// key len must be len(account bytes) + 1
 		return nil
 	}
@@ -72,6 +74,7 @@ func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
 		// Frojdi please bless us with the new SDK ASAP.
 
 		if strings.HasPrefix(err.Error(), "no concrete type registered for type URL") {
+			b.l.Debugw("exiting because value isnt accountI")
 			return nil
 		}
 
@@ -80,6 +83,7 @@ func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
 
 	if _, ok := acc.(*types.ModuleAccount); ok {
 		// ignore moduleaccounts
+		b.l.Debugw("exiting because moduleaccount")
 		return nil
 	}
 
