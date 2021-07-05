@@ -83,6 +83,11 @@ func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) err
 				return fmt.Errorf("cannot unmarshal connection end, %w", err)
 			}
 
+			if err := ce.ValidateBasic(); err != nil {
+				b.l.Debugw("found non-compliant connection end", "connection end", ce, "error", err)
+				return fmt.Errorf("connection end validation failed, %w", err)
+			}
+
 			b.l.Debugw("connection end", "data", ce)
 
 			b.connectionsCache[connectionCacheEntry{

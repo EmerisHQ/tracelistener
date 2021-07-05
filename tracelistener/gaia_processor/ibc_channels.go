@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/allinbits/demeris-backend/models"
 
@@ -62,6 +63,11 @@ func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error 
 	var result types.Channel
 	if err := p.cdc.UnmarshalBinaryBare(data.Value, &result); err != nil {
 		return err
+	}
+
+	if err := result.ValidateBasic(); err != nil {
+		b.l.Debugw("found non-compliant channel", "channel", result, "error", err)
+		return fmt.Errorf("cannot validate ibc channel, %w", err)
 	}
 
 	if result.Ordering != types.UNORDERED {
