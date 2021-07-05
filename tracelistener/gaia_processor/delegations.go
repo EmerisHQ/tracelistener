@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
@@ -93,12 +94,12 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 
 	delegator, err := b32Hex(delegation.DelegatorAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot convert delegator address from bech32 to hex, %w", err)
 	}
 
 	validator, err := b32Hex(delegation.ValidatorAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot convert validator address from bech32 to hex, %w", err)
 	}
 
 	b.l.Debugw("new delegation write",
