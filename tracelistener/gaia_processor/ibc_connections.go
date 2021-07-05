@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/allinbits/demeris-backend/models"
 	"strings"
 
@@ -78,7 +79,10 @@ func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) err
 	case 2:
 		if keyFields[0] == host.KeyConnectionPrefix { // this is a ConnectionEnd
 			ce := types.ConnectionEnd{}
-			p.cdc.MustUnmarshalBinaryBare(data.Value, &ce)
+			if err := p.cdc.UnmarshalBinaryBare(data.Value, &ce); err != nil {
+				return fmt.Errorf("cannot unmarshal connection end, %w", err)
+			}
+
 			b.l.Debugw("connection end", "data", ce)
 
 			b.connectionsCache[connectionCacheEntry{
