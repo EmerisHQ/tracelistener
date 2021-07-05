@@ -92,6 +92,11 @@ func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
 		return fmt.Errorf("cannot cast account to BaseAccount, type %T, account object type %T", baseAcc, acc)
 	}
 
+	if err := baseAcc.Validate(); err != nil {
+		b.l.Debugw("found invalid base account", "account", baseAcc, "error", err)
+		return fmt.Errorf("non compliant auth account, %w", err)
+	}
+
 	_, bz, err := bech32.DecodeAndConvert(baseAcc.Address)
 	if err != nil {
 		return fmt.Errorf("cannot parse %s as bech32, %w", baseAcc.Address, err)
