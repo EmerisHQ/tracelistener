@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+	"strings"
 
 	"github.com/allinbits/demeris-backend/models"
 
@@ -57,6 +58,11 @@ func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) err
 		return err
 	}
 
+	if !verifyDenomTrace(dt) {
+		b.l.Debugw("found a denom trace that isn't ICS20 compliant", "denom trace", dt)
+		return nil
+	}
+
 	if dt.BaseDenom == "" {
 		b.l.Debugw("ignoring since it's not a denom trace")
 		return nil
@@ -74,4 +80,12 @@ func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) err
 
 	b.denomTracesCache[hash] = newObj
 	return nil
+}
+
+func verifyDenomTrace(dt transferTypes.DenomTrace) bool {
+	if !strings.HasPrefix(dt.Path, "transfer/") {
+		return false
+	}
+
+	return true
 }
