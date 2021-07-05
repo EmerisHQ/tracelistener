@@ -2,6 +2,7 @@ package gaia_processor
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/exported"
@@ -71,6 +72,11 @@ func (b *ibcClientsProcessor) Process(data tracelistener.TraceOperation) error {
 		return nil
 	} else {
 		dest = res
+	}
+
+	if err := result.Validate(); err != nil {
+		b.l.Debugw("found non-compliant ibc connection", "connection", dest, "error", err)
+		return fmt.Errorf("cannot validate ibc connection, %w", err)
 	}
 
 	keySplit := strings.Split(string(data.Key), "/")
