@@ -1,7 +1,6 @@
 package tracelistener
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 )
@@ -25,8 +24,8 @@ func (t TraceOperation) String() string {
 
 type traceOperationInter struct {
 	Operation string                 `json:"operation"`
-	Key       string                 `json:"key"`
-	Value     string                 `json:"value"`
+	Key       []byte                 `json:"key"`
+	Value     []byte                 `json:"value"`
 	Metadata  map[string]interface{} `json:"metadata"`
 }
 
@@ -50,16 +49,8 @@ func (t *TraceOperation) UnmarshalJSON(bytes []byte) error {
 	}
 
 	t.Operation = toi.Operation
-	var err error
-	t.Key, err = base64.StdEncoding.DecodeString(toi.Key)
-	if err != nil {
-		return err
-	}
-
-	t.Value, err = base64.StdEncoding.DecodeString(toi.Value)
-	if err != nil {
-		return err
-	}
+	t.Key = toi.Key
+	t.Value = toi.Value
 
 	return nil
 }

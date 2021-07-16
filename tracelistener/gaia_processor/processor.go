@@ -152,26 +152,35 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 	}
 }
 
+func (p *Processor) Flush() error {
+	wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
+
+	for _, mp := range p.moduleProcessors {
+		cd := mp.FlushCache()
+		for _, entry := range cd {
+			if entry.Data == nil {
+				continue
+			}
+
+			for i := 0; i < len(entry.Data); i++ {
+				entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
+			}
+			wb = append(wb, entry)
+		}
+	}
+
+	p.writebackChan <- wb
+
+	return nil
+}
+
 func (p *Processor) lifecycle() {
 	for data := range p.writeChan {
 		if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
-			wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
-
-			for _, mp := range p.moduleProcessors {
-				cd := mp.FlushCache()
-				for _, entry := range cd {
-					if entry.Data == nil {
-						continue
-					}
-
-					for i := 0; i < len(entry.Data); i++ {
-						entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
-					}
-					wb = append(wb, entry)
-				}
+			if err := p.Flush(); err != nil {
+				p.errorsChan <- fmt.Errorf("error while flushing caches, %w", err)
+				continue
 			}
-
-			p.writebackChan <- wb
 
 			p.l.Infow("processed new block", "height", p.lastHeight)
 

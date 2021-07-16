@@ -59,6 +59,7 @@ type DataProcessor interface {
 	WritebackChan() chan []WritebackOp
 	ErrorsChan() chan error
 	DatabaseMigrations() []string
+	Flush() error
 }
 
 type TracingError struct {
@@ -109,15 +110,28 @@ func (tr *TraceWatcher) Watch() {
 			continue
 		}
 
-		if to.Operation == WriteOp.String() && len(to.Value) == 0 {
-			tr.Logger.Debugw("not considering data", "operation", to.Operation)
+		if err := tr.ParseOperation(to); err != nil {
+			tr.ErrorChan <- fmt.Errorf("failed parsing operation, %w, data: %s", err, string(line))
 			continue
 		}
-
-		go func() {
-			tr.DataChan <- to
-		}()
 	}
+}
+
+func (tr *TraceWatcher) ParseOperation(data TraceOperation) error {
+	if !tr.mustConsiderOperation(data) {
+		return nil
+	}
+
+	if data.Operation == WriteOp.String() && len(data.Value) == 0 {
+		tr.Logger.Debugw("not considering data", "operation", data.Operation)
+		return nil
+	}
+
+	go func() {
+		tr.DataChan <- data
+	}()
+
+	return nil
 }
 
 func (tr *TraceWatcher) mustConsiderData(b []byte) bool {
@@ -127,6 +141,20 @@ func (tr *TraceWatcher) mustConsiderData(b []byte) bool {
 
 	for _, op := range tr.WatchedOps {
 		if bytes.Contains(b, op) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (tr *TraceWatcher) mustConsiderOperation(op TraceOperation) bool {
+	if tr.WatchedOps == nil || len(tr.WatchedOps) == 0 {
+		return true
+	}
+
+	for _, wopts := range tr.WatchedOps {
+		if wopts.String() == op.Operation {
 			return true
 		}
 	}
