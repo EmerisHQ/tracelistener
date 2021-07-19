@@ -26,7 +26,6 @@ var p Processor
 var defaultProcessors = []string{
 	"bank",
 	"delegations",
-	"auth",
 	"ibc_clients",
 	"ibc_channels",
 	"ibc_connections",
