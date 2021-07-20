@@ -100,6 +100,8 @@ func (tr *TraceWatcher) Watch() {
 			tr.Logger.Panicw("fatal error when reading from data source buffered reader", "error", err)
 		}
 
+		tr.Logger.Debugw("new line read from reader", "line", string(line))
+
 		if !tr.mustConsiderData(line) {
 			continue
 		}

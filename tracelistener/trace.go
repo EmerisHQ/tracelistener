@@ -19,7 +19,7 @@ type TraceOperation struct {
 }
 
 func (t TraceOperation) String() string {
-	return fmt.Sprintf(`[%s] "%v" -> "%v"`, t.Operation, t.Key, t.Value)
+	return fmt.Sprintf(`[%s] "%v" -> "%v"`, t.Operation, string(t.Key), string(t.Value))
 }
 
 type traceOperationInter struct {
