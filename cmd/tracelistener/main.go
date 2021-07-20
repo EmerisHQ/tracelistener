@@ -92,7 +92,7 @@ func main() {
 	go connectTendermint(blw, logger)
 
 	ctx := context.Background()
-	watcher.DataSource, err = fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY, 0655)
+	watcher.DataSource, err = fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY|syscall.O_NONBLOCK, 0655)
 	if err != nil {
 		logger.Fatal(err)
 	}
