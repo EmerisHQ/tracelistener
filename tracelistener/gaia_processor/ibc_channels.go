@@ -15,9 +15,8 @@ import (
 )
 
 type channelCacheEntry struct {
-	channelID        string
-	counterChannelID string
-	portID           string
+	channelID string
+	portID    string
 }
 
 type ibcChannelsProcessor struct {
@@ -82,9 +81,8 @@ func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error 
 	}
 
 	b.channelsCache[channelCacheEntry{
-		channelID:        channelID,
-		counterChannelID: result.Counterparty.ChannelId,
-		portID:           portID,
+		channelID: channelID,
+		portID:    portID,
 	}] = models.IBCChannelRow{
 		ChannelID:        channelID,
 		CounterChannelID: result.Counterparty.ChannelId,

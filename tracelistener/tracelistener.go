@@ -92,6 +92,7 @@ func (tr *TraceWatcher) Watch() {
 	for {
 		line, err := fr.ReadBytes('\n')
 		if err != nil {
+			tr.Logger.Debugw("error on FIFO watch", "error", err)
 			if errors.Is(err, io.EOF) {
 				fr = bufio.NewReader(tr.DataSource)
 				continue
