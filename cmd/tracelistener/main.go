@@ -62,9 +62,10 @@ func main() {
 			tracelistener.WriteOp,
 			tracelistener.DeleteOp,
 		},
-		DataChan:  dpi.OpsChan(),
-		ErrorChan: errChan,
-		Logger:    logger,
+		DataChan:       dpi.OpsChan(),
+		ErrorChan:      errChan,
+		Logger:         logger,
+		DataSourcePath: cfg.FIFOPath,
 	}
 
 	if ca.existingDatabasePath != "" {
@@ -92,8 +93,12 @@ func main() {
 	go connectTendermint(blw, logger)
 
 	ctx := context.Background()
-	watcher.DataSource, err = fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY|syscall.O_NONBLOCK, 0655)
+	ff, err := fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY|syscall.O_NONBLOCK, 0655)
 	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if err := ff.Close(); err != nil {
 		logger.Fatal(err)
 	}
 

@@ -1,14 +1,13 @@
 package tracelistener
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
+	"time"
 
 	"github.com/allinbits/demeris-backend/models"
+	"github.com/nxadm/tail"
 
 	"github.com/allinbits/demeris-backend/tracelistener/config"
 
@@ -79,42 +78,56 @@ type DataProcessorFunc func(logger *zap.SugaredLogger, cfg *config.Config) (Data
 // Any observing error will be sent over ErrorChan.
 // If WatchedOps is nil, all store operations will be sent over DataChan.
 type TraceWatcher struct {
-	DataSource io.Reader
-	WatchedOps []Operation
-	DataChan   chan<- TraceOperation
-	ErrorChan  chan<- error
-	Logger     *zap.SugaredLogger
+	DataSourcePath string
+	WatchedOps     []Operation
+	DataChan       chan<- TraceOperation
+	ErrorChan      chan<- error
+	Logger         *zap.SugaredLogger
 }
 
 func (tr *TraceWatcher) Watch() {
-	fr := bufio.NewReader(tr.DataSource)
+	errorHappened := false
+	for { // infinite cycle, if something goes wrong in reading the fifo we restart the cycle
+		if errorHappened {
+			// if a reading error happened, don't blast the cpu with retries,
+			// wait some time then continue.
+			errorHappened = false
+			time.Sleep(250 * time.Millisecond)
+		}
 
-	for {
-		line, err := fr.ReadBytes('\n')
+		t, err := tail.TailFile(
+			tr.DataSourcePath, tail.Config{Follow: true, ReOpen: true, Pipe: true, Logger: tail.DiscardingLogger})
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				fr = bufio.NewReader(tr.DataSource)
+			tr.ErrorChan <- fmt.Errorf("tail creation error, %w", err)
+			errorHappened = true
+			break
+		}
+
+		for line := range t.Lines {
+			if line.Err != nil {
+				tr.ErrorChan <- fmt.Errorf("line reading error, line %v, error %w", line, err)
+				errorHappened = true
+				break // restart the reading loop
+			}
+
+			tr.Logger.Debugw("new line read from reader", "line", line.Text)
+
+			lineBytes := []byte(line.Text)
+
+			if !tr.mustConsiderData(lineBytes) {
 				continue
 			}
 
-			tr.Logger.Panicw("fatal error when reading from data source buffered reader", "error", err)
-		}
+			to := TraceOperation{}
+			if err := json.Unmarshal(lineBytes, &to); err != nil {
+				tr.ErrorChan <- fmt.Errorf("failed unmarshaling, %w, data: %s", err, line.Text)
+				continue
+			}
 
-		tr.Logger.Debugw("new line read from reader", "line", string(line))
-
-		if !tr.mustConsiderData(line) {
-			continue
-		}
-
-		to := TraceOperation{}
-		if err := json.Unmarshal(line, &to); err != nil {
-			tr.ErrorChan <- fmt.Errorf("failed unmarshaling, %w, data: %s", err, string(line))
-			continue
-		}
-
-		if err := tr.ParseOperation(to); err != nil {
-			tr.ErrorChan <- fmt.Errorf("failed parsing operation, %w, data: %s", err, string(line))
-			continue
+			if err := tr.ParseOperation(to); err != nil {
+				tr.ErrorChan <- fmt.Errorf("failed parsing operation, %w, data: %s", err, line.Text)
+				continue
+			}
 		}
 	}
 }
