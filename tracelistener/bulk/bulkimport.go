@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	types3 "github.com/gogo/protobuf/types"
 
 	"github.com/allinbits/demeris-backend/tracelistener/database"
 
@@ -35,6 +38,7 @@ type Importer struct {
 }
 
 func (i *Importer) Do() error {
+	importingWg := sync.WaitGroup{}
 	t0 := time.Now()
 	// spawn a goroutine that logs errors from processor's error chan
 	go func() {
@@ -48,6 +52,7 @@ func (i *Importer) Do() error {
 					"data", te.Data,
 					"moduleName", te.Module)
 			case b := <-i.Processor.WritebackChan():
+				importingWg.Add(1)
 				for _, p := range b {
 					for _, asd := range p.Data {
 						i.Logger.Debugw("writeback unit", "data", asd)
@@ -62,6 +67,9 @@ func (i *Importer) Do() error {
 						i.Logger.Error("database error ", err)
 					}
 				}
+
+				i.Logger.Debugw("finished processing writeback data")
+				importingWg.Done()
 			}
 		}
 	}()
@@ -84,7 +92,7 @@ func (i *Importer) Do() error {
 	rm := rootmulti.NewStore(db)
 
 	var keys []types2.StoreKey
-	for _, ci := range []string{"bank", "auth", "ibc", "staking"} { // todo: add liquidity
+	for _, ci := range []string{"bank", "ibc", "staking", "distribution", "transfer"} { // todo: add liquidity
 		key := types.NewKVStoreKey(ci)
 		keys = append(keys, key)
 		rm.MountStoreWithDB(key, types.StoreTypeIAVL, nil)
@@ -145,44 +153,11 @@ func (i *Importer) Do() error {
 		i.Logger.Infow("processing done", "module", key.Name(), "index", idx+1, "total", keysLen)
 	}
 
-	/*
-		for ; ii.Valid(); ii.Next() {
-
-			to := tracelistener.TraceOperation{
-				Operation: tracelistener.WriteOp.String(),
-				Key:       ii.Key(),
-				Value:     ii.Value(),
-			}
-
-			if err := i.TraceWatcher.ParseOperation(to); err != nil {
-				return fmt.Errorf("cannot parse operation %v, %w", to, err)
-			}
-
-			i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
-		}
-
-		if err := iter.Error(); err != nil {
-			return fmt.Errorf("iterator error, %w", err)
-		}
-
-		if err := i.Processor.Flush(); err != nil {
-			return fmt.Errorf("cannot flush processor cache, %w", err)
-		}
-
-		if err := iter.Close(); err != nil {
-			return fmt.Errorf("cannot close iterator, %w", err)
-		}
-
-		if err := db.Close(); err != nil {
-			return fmt.Errorf("database closing error, %w", err)
-		}
-
-	*/
-
 	if err := db.Close(); err != nil {
 		return fmt.Errorf("database closing error, %w", err)
 	}
 
+	importingWg.Wait()
 	tn := time.Now()
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
 
@@ -205,4 +180,21 @@ func getCommitInfo(db db2.DB, ver int64) (*types2.CommitInfo, error) {
 	}
 
 	return cInfo, nil
+}
+
+func getLatestVersion(db db2.DB) int64 {
+	bz, err := db.Get([]byte("s/latest"))
+	if err != nil {
+		panic(err)
+	} else if bz == nil {
+		return 0
+	}
+
+	var latestVersion int64
+
+	if err := types3.StdInt64Unmarshal(&latestVersion, bz); err != nil {
+		panic(err)
+	}
+
+	return latestVersion
 }
