@@ -282,19 +282,23 @@ CREATE TABLE IF NOT EXISTS tracelistener.clients (
 	chain_name text not null,
 	chain_id text not null,
 	client_id text not null,
+	latest_height numeric not null,
+	trusting_period numeric not null,
 	unique(chain_name, chain_id, client_id)
 )
 `
 
 	insertClient = `
 INSERT INTO tracelistener.clients
-	(chain_name, chain_id, client_id) 
+	(chain_name, chain_id, client_id, latest_height, trusting_period) 
 VALUES 
-	(:chain_name, :chain_id, :client_id)
+	(:chain_name, :chain_id, :client_id, :latest_height, :trusting_period)
 ON CONFLICT
 	(chain_name, chain_id, client_id)
 DO UPDATE SET
 	chain_id=EXCLUDED.chain_id,
-	client_id=EXCLUDED.client_id
+	client_id=EXCLUDED.client_id,
+	latest_height=EXCLUDED.latest_height,
+	trusting_period=EXCLUDED.trusting_period
 `
 )
