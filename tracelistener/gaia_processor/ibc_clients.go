@@ -86,8 +86,10 @@ func (b *ibcClientsProcessor) Process(data tracelistener.TraceOperation) error {
 		chainID:  dest.ChainId,
 		clientID: clientID,
 	}] = models.IBCClientStateRow{
-		ChainID:  dest.ChainId,
-		ClientID: clientID,
+		ChainID:        dest.ChainId,
+		ClientID:       clientID,
+		LatestHeight:   dest.LatestHeight.RevisionHeight,
+		TrustingPeriod: int64(dest.TrustingPeriod),
 	}
 
 	return nil

@@ -165,8 +165,10 @@ type BlockTimeRow struct {
 type IBCClientStateRow struct {
 	TracelistenerDatabaseRow
 
-	ChainID  string `db:"chain_id" json:"chain_id"`
-	ClientID string `db:"client_id" json:"client_id"`
+	ChainID        string `db:"chain_id" json:"chain_id"`
+	ClientID       string `db:"client_id" json:"client_id"`
+	LatestHeight   uint64 `db:"latest_height" json:"latest_height"`
+	TrustingPeriod int64  `db:"trusting_period" json:"trusting_period"`
 }
 
 // WithChainName implements the DatabaseEntrier interface.
