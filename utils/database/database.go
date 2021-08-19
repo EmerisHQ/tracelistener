@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbsqlx"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 // Instance contains a database connection instance.
@@ -17,7 +16,7 @@ type Instance struct {
 
 // New returns an Instance connected to the database pointed by connString.
 func New(connString string) (*Instance, error) {
-	db, err := sqlx.Connect("pgx", connString)
+	db, err := sqlx.Connect("postgres", connString)
 	if err != nil {
 		return nil, err
 	}
