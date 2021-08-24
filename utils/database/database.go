@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbsqlx"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -28,6 +29,10 @@ func New(connString string) (*Instance, error) {
 	if err := i.DB.Ping(); err != nil {
 		return nil, fmt.Errorf("cannot ping db, %w", err)
 	}
+
+	i.DB.DB.SetMaxOpenConns(25)
+	i.DB.DB.SetMaxIdleConns(25)
+	i.DB.DB.SetConnMaxLifetime(5 * time.Minute)
 
 	return i, nil
 }
