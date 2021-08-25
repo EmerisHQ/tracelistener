@@ -8,6 +8,12 @@ import (
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbsqlx"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+)
+
+const (
+	DriverPGX = "pgx"
+	DriverPQ  = "postgres"
 )
 
 // Instance contains a database connection instance.
@@ -17,7 +23,12 @@ type Instance struct {
 
 // New returns an Instance connected to the database pointed by connString.
 func New(connString string) (*Instance, error) {
-	db, err := sqlx.Connect("pgx", connString)
+	return NewWithDriver(connString, DriverPGX)
+}
+
+// NewWithDriver returns an Instance connected to the database pointed by connString with the given driver.
+func NewWithDriver(connString string, driver string) (*Instance, error) {
+	db, err := sqlx.Connect(driver, connString)
 	if err != nil {
 		return nil, err
 	}
