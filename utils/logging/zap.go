@@ -10,6 +10,7 @@ import (
 
 type LoggingConfig struct {
 	LogPath string
+	JSON    bool
 	Debug   bool
 }
 
@@ -19,8 +20,14 @@ type LoggingConfig struct {
 // 28 days of usage. The last 3 copies are kept for backup.
 func New(lc LoggingConfig) *zap.SugaredLogger {
 	if lc.Debug {
+		cfg := zap.NewDevelopmentConfig()
+
+		if lc.JSON {
+			cfg.Encoding = "json"
+		}
+
 		// we can safely ignore the error here
-		dc, _ := zap.NewDevelopment()
+		dc, _ := cfg.Build()
 		return dc.Sugar()
 	}
 
