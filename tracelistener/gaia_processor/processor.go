@@ -24,6 +24,7 @@ type Module interface {
 var p Processor
 
 var defaultProcessors = []string{
+	"auth",
 	"bank",
 	"delegations",
 	"ibc_clients",
