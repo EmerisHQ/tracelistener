@@ -6,16 +6,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/allinbits/demeris-backend/tracelistener44/bulk"
+	"github.com/allinbits/demeris-backend/tracelistener/bulk"
 
-	"github.com/allinbits/demeris-backend/tracelistener44/blocktime"
+	"github.com/allinbits/demeris-backend/tracelistener/blocktime"
 
 	"github.com/allinbits/demeris-backend/utils/logging"
 
-	"github.com/allinbits/demeris-backend/tracelistener44"
-	"github.com/allinbits/demeris-backend/tracelistener44/config"
-	"github.com/allinbits/demeris-backend/tracelistener44/database"
-	"github.com/allinbits/demeris-backend/tracelistener44/gaia_processor"
+	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/demeris-backend/tracelistener/config"
+	"github.com/allinbits/demeris-backend/tracelistener/database"
+	"github.com/allinbits/demeris-backend/tracelistener/gaia_processor"
 	"github.com/containerd/fifo"
 	"go.uber.org/zap"
 )
@@ -32,9 +32,9 @@ func main() {
 
 	logger := buildLogger(cfg)
 
-	logger.Infow("tracelistener44", "version", Version)
+	logger.Infow("tracelistener", "version", Version)
 
-	var processorFunc tracelistener44.DataProcessorFunc
+	var processorFunc tracelistener.DataProcessorFunc
 
 	switch cfg.Type {
 	case "gaia":
@@ -57,10 +57,10 @@ func main() {
 	}
 
 	errChan := make(chan error)
-	watcher := tracelistener44.TraceWatcher{
-		WatchedOps: []tracelistener44.Operation{
-			tracelistener44.WriteOp,
-			tracelistener44.DeleteOp,
+	watcher := tracelistener.TraceWatcher{
+		WatchedOps: []tracelistener.Operation{
+			tracelistener.WriteOp,
+			tracelistener.DeleteOp,
 		},
 		DataChan:       dpi.OpsChan(),
 		ErrorChan:      errChan,
@@ -109,7 +109,7 @@ func main() {
 		case e := <-errChan:
 			logger.Errorw("watching error", "error", e)
 		case e := <-dpi.ErrorsChan():
-			te := e.(tracelistener44.TracingError)
+			te := e.(tracelistener.TracingError)
 			logger.Errorw(
 				"error while processing data",
 				"error", te.InnerError,
