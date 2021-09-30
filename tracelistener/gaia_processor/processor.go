@@ -23,13 +23,13 @@ type Module interface {
 var p Processor
 
 var defaultProcessors = []string{
-	//"auth",
+	"auth",
 	"bank",
-	//"delegations",
-	//"ibc_clients",
-	//"ibc_channels",
-	//"ibc_connections",
-	//"ibc_denom_traces",
+	"delegations",
+	"ibc_clients",
+	"ibc_channels",
+	"ibc_connections",
+	"ibc_denom_traces",
 }
 
 type Processor struct {
