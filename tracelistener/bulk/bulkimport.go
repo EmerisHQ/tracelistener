@@ -92,7 +92,7 @@ func (i *Importer) Do() error {
 	rm := rootmulti.NewStore(db)
 
 	var keys []types2.StoreKey
-	for _, ci := range []string{"bank", "ibc", "staking", "distribution", "transfer"} { // todo: add liquidity
+	for _, ci := range []string{"bank", "ibc", "staking", "distribution", "transfer", "acc"} { // todo: add liquidity
 		key := types.NewKVStoreKey(ci)
 		keys = append(keys, key)
 		rm.MountStoreWithDB(key, types.StoreTypeIAVL, nil)
