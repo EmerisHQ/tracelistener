@@ -19,3 +19,4 @@ tracelistener
 # vendor/
 ibc
 *.log
+build/
