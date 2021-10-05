@@ -3,7 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"fmt"
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
@@ -11,7 +11,7 @@ import (
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type connectionCacheEntry struct {

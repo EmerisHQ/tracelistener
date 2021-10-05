@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 	"github.com/nxadm/tail"
 
-	"github.com/allinbits/demeris-backend/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 
 	"go.uber.org/zap"
 )

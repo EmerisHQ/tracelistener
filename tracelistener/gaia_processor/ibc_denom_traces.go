@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
 	"go.uber.org/zap"
 )

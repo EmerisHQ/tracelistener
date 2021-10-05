@@ -9,12 +9,12 @@ import (
 
 	tmIBCTypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type clientCacheEntry struct {

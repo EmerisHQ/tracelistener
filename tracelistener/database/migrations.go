@@ -1,6 +1,6 @@
 package database
 
-import dbutils "github.com/allinbits/demeris-backend/utils/database"
+import dbutils "github.com/allinbits/tracelistener/utils/database"
 
 const createDatabase = `
 CREATE DATABASE IF NOT EXISTS tracelistener;

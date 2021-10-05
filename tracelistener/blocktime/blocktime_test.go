@@ -8,16 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 	"github.com/gorilla/websocket"
 
 	"github.com/tendermint/tendermint/types"
 
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/allinbits/demeris-backend/tracelistener/blocktime"
+	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
-	"github.com/allinbits/demeris-backend/utils/database"
+	"github.com/allinbits/tracelistener/utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 

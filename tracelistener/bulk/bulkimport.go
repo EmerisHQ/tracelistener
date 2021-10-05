@@ -10,7 +10,7 @@ import (
 
 	types3 "github.com/gogo/protobuf/types"
 
-	"github.com/allinbits/demeris-backend/tracelistener/database"
+	"github.com/allinbits/tracelistener/tracelistener/database"
 
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
 
@@ -21,7 +21,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 

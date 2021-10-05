@@ -3,10 +3,10 @@ package gaia_processor
 import (
 	"fmt"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
-	"github.com/allinbits/demeris-backend/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/cosmos/cosmos-sdk/codec"
 	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
