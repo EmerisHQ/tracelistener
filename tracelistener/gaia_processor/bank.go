@@ -60,6 +60,12 @@ func (b *bankProcessor) OwnsKey(key []byte) bool {
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	addrBytes := data.Key
 	pLen := len(types.BalancesPrefix)
+
+	if len(addrBytes) < pLen+20 {
+		p.l.Errorw("found bank entry which doesn't respect balance prefix bounds check, ignoring")
+		return nil
+	}
+	
 	addr := addrBytes[pLen : pLen+20]
 
 	coins := sdk.Coin{
