@@ -6,11 +6,10 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/jmoiron/sqlx => github.com/abraithwaite/sqlx v1.3.2-0.20210331022513-df9bf9884350
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
-	k8s.io/client-go => k8s.io/client-go v0.21.1
 )
 
 require (
-	github.com/allinbits/sdk-service-meta v0.0.0-20211006131905-2fae32a7a6f6
+	github.com/allinbits/sdk-service-meta v0.0.0-20211006171131-1ba28e9d4da5
 	github.com/cockroachdb/cockroach-go/v2 v2.2.0
 	github.com/containerd/fifo v1.0.0
 	github.com/cosmos/cosmos-sdk v0.42.8
@@ -20,6 +19,7 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/gogo/protobuf v1.3.3
 	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/iamolegga/enviper v1.3.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jmoiron/sqlx v1.3.1
@@ -77,6 +77,7 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
