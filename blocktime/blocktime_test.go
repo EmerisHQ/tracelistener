@@ -2,6 +2,7 @@ package blocktime_test
 
 import (
 	"fmt"
+	blocktime2 "github.com/allinbits/tracelistener/blocktime"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +15,6 @@ import (
 	"github.com/tendermint/tendermint/types"
 
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-
-	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
 	"github.com/allinbits/tracelistener/utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
@@ -86,10 +85,10 @@ func TestWatcher_ParseBlockData(t *testing.T) {
 
 			require.NoError(t, database.RunMigrations(connString, []string{
 				"CREATE DATABASE tracelistener;",
-				blocktime.CreateTable,
+				blocktime2.CreateTable,
 			}))
 
-			w := blocktime.New(
+			w := blocktime2.New(
 				i,
 				"test",
 				zap.NewNop().Sugar(),
@@ -126,7 +125,7 @@ func TestNew(t *testing.T) {
 	cn := "chainName"
 	i := &database.Instance{}
 
-	require.NotNil(t, blocktime.New(i, cn, l))
+	require.NotNil(t, blocktime2.New(i, cn, l))
 }
 
 type fakeWS struct {
@@ -194,7 +193,7 @@ func TestWatcher_Connect(t *testing.T) {
 
 			i, err := database.New(connString)
 
-			bt := blocktime.New(
+			bt := blocktime2.New(
 				i,
 				tt.chainName,
 				zap.NewNop().Sugar(),

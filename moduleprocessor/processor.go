@@ -1,27 +1,26 @@
-package gaia_processor
+package moduleprocessor
 
 import (
 	"fmt"
 
+	"google.golang.org/grpc"
+
+	tracelistener2 "github.com/allinbits/tracelistener"
+	config2 "github.com/allinbits/tracelistener/config"
+
 	"github.com/allinbits/tracelistener/models"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/cosmos/cosmos-sdk/codec"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
 )
 
 type Module interface {
-	FlushCache() []tracelistener.WritebackOp
+	FlushCache() []tracelistener2.WritebackOp
 	OwnsKey(key []byte) bool
-	Process(data tracelistener.TraceOperation) error
+	Process(data tracelistener2.TraceOperation) error
 	ModuleName() string
 	TableSchema() string
 }
-
-// TODO: this singleton MUST go away.
-var p Processor
 
 var defaultProcessors = []string{
 	"auth",
@@ -35,8 +34,8 @@ var defaultProcessors = []string{
 
 type Processor struct {
 	l                *zap.SugaredLogger
-	writeChan        chan tracelistener.TraceOperation
-	writebackChan    chan []tracelistener.WritebackOp
+	writeChan        chan tracelistener2.TraceOperation
+	writebackChan    chan []tracelistener2.WritebackOp
 	errorsChan       chan error
 	cdc              codec.Marshaler
 	migrations       []string
@@ -45,11 +44,11 @@ type Processor struct {
 	moduleProcessors []Module
 }
 
-func (p *Processor) OpsChan() chan tracelistener.TraceOperation {
+func (p *Processor) OpsChan() chan tracelistener2.TraceOperation {
 	return p.writeChan
 }
 
-func (p *Processor) WritebackChan() chan []tracelistener.WritebackOp {
+func (p *Processor) WritebackChan() chan []tracelistener2.WritebackOp {
 	return p.writebackChan
 }
 
@@ -61,8 +60,8 @@ func (p *Processor) ErrorsChan() chan error {
 	return p.errorsChan
 }
 
-func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProcessor, error) {
-	c := cfg.Gaia
+func New(logger *zap.SugaredLogger, cfg *config2.Config) (tracelistener2.DataProcessor, error) {
+	c := cfg.ProcessorConfig
 
 	if c.ProcessorsEnabled == nil {
 		c.ProcessorsEnabled = defaultProcessors
@@ -71,8 +70,13 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	var mp []Module
 	var tableSchemas []string
 
+	conn, err := grpc.Dial(cfg.ServiceProviderAddress(), grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("did not connect: %w", err)
+	}
+
 	for _, ep := range c.ProcessorsEnabled {
-		p, err := processorByName(ep, logger)
+		p, err := processorByName(ep, logger, conn)
 		if err != nil {
 			return nil, err
 		}
@@ -81,20 +85,17 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		tableSchemas = append(tableSchemas, p.TableSchema())
 	}
 
-	logger.Infow("gaia Processor initialized", "processors", c.ProcessorsEnabled)
+	logger.Infow("moduleprocessor initialized", "processors", c.ProcessorsEnabled)
 
-	p = Processor{
+	p := Processor{
 		chainName:        cfg.ChainName,
 		l:                logger,
-		writeChan:        make(chan tracelistener.TraceOperation),
-		writebackChan:    make(chan []tracelistener.WritebackOp),
+		writeChan:        make(chan tracelistener2.TraceOperation),
+		writebackChan:    make(chan []tracelistener2.WritebackOp),
 		errorsChan:       make(chan error),
 		moduleProcessors: mp,
 		migrations:       tableSchemas,
 	}
-
-	cdc, _ := gaia.MakeCodecs()
-	p.cdc = cdc
 
 	go p.lifecycle()
 
@@ -114,46 +115,58 @@ func (p *Processor) AddModule(m Module) error {
 	return nil
 }
 
-func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
+func processorByName(name string, logger *zap.SugaredLogger, grpcConn *grpc.ClientConn) (Module, error) {
 	switch name {
 	default:
 		return nil, fmt.Errorf("unkonwn Processor %s", name)
 	case (&bankProcessor{}).ModuleName():
-		return &bankProcessor{heightCache: map[bankCacheEntry]models.BalanceRow{}, l: logger}, nil
+		return &bankProcessor{
+			heightCache: map[bankCacheEntry]models.BalanceRow{},
+			l:           logger,
+			grpcConn:    grpcConn,
+		}, nil
 	case (&ibcConnectionsProcessor{}).ModuleName():
-		return &ibcConnectionsProcessor{connectionsCache: map[connectionCacheEntry]models.IBCConnectionRow{}, l: logger}, nil
-	case (&liquidityPoolProcessor{}).ModuleName():
-		return &liquidityPoolProcessor{poolsCache: map[uint64]models.PoolRow{}, l: logger}, nil
-	case (&liquiditySwapsProcessor{}).ModuleName():
-		return &liquiditySwapsProcessor{swapsCache: map[uint64]models.SwapRow{}, l: logger}, nil
+		return &ibcConnectionsProcessor{
+			connectionsCache: map[connectionCacheEntry]models.IBCConnectionRow{},
+			l:                logger,
+			grpcConn:         grpcConn,
+		}, nil
 	case (&delegationsProcessor{}).ModuleName():
 		return &delegationsProcessor{
 			insertHeightCache: map[delegationCacheEntry]models.DelegationRow{},
 			deleteHeightCache: map[delegationCacheEntry]models.DelegationRow{},
 			l:                 logger,
+			grpcConn:          grpcConn,
 		}, nil
 	case (&ibcDenomTracesProcessor{}).ModuleName():
 		return &ibcDenomTracesProcessor{
 			l:                logger,
 			denomTracesCache: map[string]models.IBCDenomTraceRow{},
+			grpcConn:         grpcConn,
 		}, nil
 	case (&ibcChannelsProcessor{}).ModuleName():
-		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]models.IBCChannelRow{}, l: logger}, nil
+		return &ibcChannelsProcessor{
+			channelsCache: map[channelCacheEntry]models.IBCChannelRow{},
+			l:             logger,
+			grpcConn:      grpcConn,
+		}, nil
 	case (&ibcClientsProcessor{}).ModuleName():
 		return &ibcClientsProcessor{
 			l:            logger,
+			grpcConn:     grpcConn,
 			clientsCache: map[clientCacheEntry]models.IBCClientStateRow{},
 		}, nil
 	case (&authProcessor{}).ModuleName():
 		return &authProcessor{
 			l:           logger,
 			heightCache: map[authCacheEntry]models.AuthRow{},
+			grpcConn:    grpcConn,
 		}, nil
 	}
 }
 
 func (p *Processor) Flush() error {
-	wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
+	wb := make([]tracelistener2.WritebackOp, 0, len(p.moduleProcessors))
 
 	for _, mp := range p.moduleProcessors {
 		cd := mp.FlushCache()
@@ -197,7 +210,7 @@ func (p *Processor) lifecycle() {
 			}
 
 			if err := mp.Process(data); err != nil {
-				p.errorsChan <- tracelistener.TracingError{
+				p.errorsChan <- tracelistener2.TracingError{
 					InnerError: err,
 					Module:     mp.ModuleName(),
 					Data:       data,

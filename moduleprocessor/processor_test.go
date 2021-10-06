@@ -1,4 +1,4 @@
-package gaia_processor_test
+package moduleprocessor_test
 
 import (
 	"bytes"
@@ -6,27 +6,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener"
+	tracelistener2 "github.com/allinbits/tracelistener"
+	config2 "github.com/allinbits/tracelistener/config"
+	gaia_processor2 "github.com/allinbits/tracelistener/moduleprocessor"
 
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
-
-	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
 type dumbModule struct {
-	wbOp          []tracelistener.WritebackOp
+	wbOp          []tracelistener2.WritebackOp
 	key           []byte
 	alwaysOwnsKey bool
-	processFunc   func(data tracelistener.TraceOperation) error
+	processFunc   func(data tracelistener2.TraceOperation) error
 	tableSchema   string
 	moduleName    string
 }
 
-func (d dumbModule) FlushCache() []tracelistener.WritebackOp {
+func (d dumbModule) FlushCache() []tracelistener2.WritebackOp {
 	return d.wbOp
 }
 
@@ -38,7 +36,7 @@ func (d dumbModule) OwnsKey(key []byte) bool {
 	return bytes.Equal(key, d.key)
 }
 
-func (d dumbModule) Process(data tracelistener.TraceOperation) error {
+func (d dumbModule) Process(data tracelistener2.TraceOperation) error {
 	return d.processFunc(data)
 }
 
@@ -56,13 +54,13 @@ func (d dumbModule) TableSchema() string {
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     *config.Config
+		cfg     *config2.Config
 		wantErr bool
 	}{
 		{
 			"nonexistant Processor type",
-			&config.Config{
-				Gaia: config.GaiaConfig{
+			&config2.Config{
+				ProcessorConfig: config2.ProcessorConfig{
 					ProcessorsEnabled: []string{"doesn't exists"},
 				},
 			},
@@ -70,13 +68,13 @@ func TestNew(t *testing.T) {
 		},
 		{
 			"no gaia config specified, default list of processors enabled",
-			&config.Config{},
+			&config2.Config{},
 			false,
 		},
 		{
 			"gaia config specified with a list of processors enabled",
-			&config.Config{
-				Gaia: config.GaiaConfig{
+			&config2.Config{
+				ProcessorConfig: config2.ProcessorConfig{
 					ProcessorsEnabled: []string{"bank"},
 				},
 			},
@@ -86,7 +84,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gaia_processor.New(zap.NewNop().Sugar(), tt.cfg)
+			got, err := gaia_processor2.New(zap.NewNop().Sugar(), tt.cfg)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -103,22 +101,22 @@ func TestNew(t *testing.T) {
 func TestLifecycle(t *testing.T) {
 	tests := []struct {
 		name            string
-		presentMessages []tracelistener.TraceOperation
-		newMessage      tracelistener.TraceOperation
-		processorFunc   func(data tracelistener.TraceOperation) error
+		presentMessages []tracelistener2.TraceOperation
+		newMessage      tracelistener2.TraceOperation
+		processorFunc   func(data tracelistener2.TraceOperation) error
 		wantErr         bool
 		shouldSendWb    bool
 	}{
 		{
 			"no error when queueing new message accepted by the processor",
 			nil,
-			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
+			tracelistener2.TraceOperation{
+				Operation:   string(tracelistener2.WriteOp),
 				Key:         []byte("key"),
 				Value:       []byte("key"),
 				BlockHeight: 0,
 			},
-			func(_ tracelistener.TraceOperation) error {
+			func(_ tracelistener2.TraceOperation) error {
 				return nil
 			},
 			false,
@@ -127,13 +125,13 @@ func TestLifecycle(t *testing.T) {
 		{
 			"error when queueing new message accepted by the processor",
 			nil,
-			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
+			tracelistener2.TraceOperation{
+				Operation:   string(tracelistener2.WriteOp),
 				Key:         []byte("key"),
 				Value:       []byte("key"),
 				BlockHeight: 0,
 			},
-			func(_ tracelistener.TraceOperation) error {
+			func(_ tracelistener2.TraceOperation) error {
 				return fmt.Errorf("oh no, error")
 			},
 			true,
@@ -141,21 +139,21 @@ func TestLifecycle(t *testing.T) {
 		},
 		{
 			"new message, block different re: last height",
-			[]tracelistener.TraceOperation{
+			[]tracelistener2.TraceOperation{
 				{
-					Operation:   string(tracelistener.WriteOp),
+					Operation:   string(tracelistener2.WriteOp),
 					Key:         []byte("key"),
 					Value:       []byte("key"),
 					BlockHeight: 0,
 				},
 			},
-			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
+			tracelistener2.TraceOperation{
+				Operation:   string(tracelistener2.WriteOp),
 				Key:         []byte("key"),
 				Value:       []byte("key"),
 				BlockHeight: 1,
 			},
-			func(_ tracelistener.TraceOperation) error {
+			func(_ tracelistener2.TraceOperation) error {
 				return nil
 			},
 			false,
@@ -165,16 +163,16 @@ func TestLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := gaia_processor.New(
+			p, err := gaia_processor2.New(
 				zap.NewNop().Sugar(),
-				&config.Config{},
+				&config2.Config{},
 			)
 
 			require.NoError(t, err)
 			require.NotNil(t, p)
 
-			// we know p is of type gaia_processor.Processor
-			gp := p.(*gaia_processor.Processor)
+			// we know p is of type moduleprocessor.Processor
+			gp := p.(*gaia_processor2.Processor)
 			require.NotNil(t, gp)
 
 			// let's add something we can actually control
@@ -230,8 +228,8 @@ func TestLifecycle(t *testing.T) {
 func TestProcessor_AddModule(t *testing.T) {
 	tests := []struct {
 		name            string
-		existingModules []gaia_processor.Module
-		newModule       gaia_processor.Module
+		existingModules []gaia_processor2.Module
+		newModule       gaia_processor2.Module
 		wantErr         bool
 	}{
 		{
@@ -242,7 +240,7 @@ func TestProcessor_AddModule(t *testing.T) {
 		},
 		{
 			"existing modules, new module does not conflict",
-			[]gaia_processor.Module{
+			[]gaia_processor2.Module{
 				dumbModule{
 					moduleName: "dumbModuleTwo",
 				},
@@ -252,7 +250,7 @@ func TestProcessor_AddModule(t *testing.T) {
 		},
 		{
 			"existing modules, new module does conflict",
-			[]gaia_processor.Module{
+			[]gaia_processor2.Module{
 				dumbModule{},
 			},
 			dumbModule{},
@@ -262,7 +260,7 @@ func TestProcessor_AddModule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &gaia_processor.Processor{}
+			p := &gaia_processor2.Processor{}
 
 			for _, em := range tt.existingModules {
 				require.NoError(t, p.AddModule(em))

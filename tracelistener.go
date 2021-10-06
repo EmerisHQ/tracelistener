@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	config2 "github.com/allinbits/tracelistener/config"
 	"github.com/allinbits/tracelistener/models"
 	"github.com/nxadm/tail"
-
-	"github.com/allinbits/tracelistener/tracelistener/config"
 
 	"go.uber.org/zap"
 )
@@ -72,7 +71,7 @@ func (t TracingError) Error() string {
 }
 
 // DataProcessorFunc is the type of function used to initialize a data processor.
-type DataProcessorFunc func(logger *zap.SugaredLogger, cfg *config.Config) (DataProcessor, error)
+type DataProcessorFunc func(logger *zap.SugaredLogger, cfg *config2.Config) (DataProcessor, error)
 
 // TraceWatcher watches DataSource for WatchedOps, sends observed data over DataChan.
 // Any observing error will be sent over ErrorChan.

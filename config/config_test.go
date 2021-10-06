@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	config2 "github.com/allinbits/tracelistener/config"
 
 	"github.com/stretchr/testify/require"
 )
@@ -12,21 +12,21 @@ import (
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     config.Config
+		cfg     config2.Config
 		wantErr bool
 	}{
 		{
 			"configuration which doesn't passes validation",
-			config.Config{},
+			config2.Config{},
 			true,
 		},
 		{
 			"configuration which passes validation",
-			config.Config{
+			config2.Config{
 				FIFOPath:              "fifo",
 				DatabaseConnectionURL: "db",
 				ChainName:             "cn",
-				Type:                  "type",
+				Version:               "42",
 				Debug:                 false,
 			},
 			false,
@@ -76,7 +76,7 @@ func TestRead(t *testing.T) {
 
 			defer os.Clearenv()
 
-			cfg, err := config.Read()
+			cfg, err := config2.Read()
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -6,16 +6,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener/bulk"
+	"github.com/allinbits/tracelistener/moduleprocessor"
 
-	"github.com/allinbits/tracelistener/tracelistener/blocktime"
+	tracelistener2 "github.com/allinbits/tracelistener"
+	blocktime2 "github.com/allinbits/tracelistener/blocktime"
+	bulk2 "github.com/allinbits/tracelistener/bulk"
+	config2 "github.com/allinbits/tracelistener/config"
+	database2 "github.com/allinbits/tracelistener/database"
 
 	"github.com/allinbits/tracelistener/utils/logging"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/config"
-	"github.com/allinbits/tracelistener/tracelistener/database"
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
 	"github.com/containerd/fifo"
 	"go.uber.org/zap"
 )
@@ -23,7 +23,7 @@ import (
 var Version = "not specified"
 
 func main() {
-	cfg, err := config.Read()
+	cfg, err := config2.Read()
 	if err != nil {
 		panic(err)
 	}
@@ -34,33 +34,24 @@ func main() {
 
 	logger.Infow("tracelistener", "version", Version)
 
-	var processorFunc tracelistener.DataProcessorFunc
-
-	switch cfg.Type {
-	case "gaia":
-		processorFunc = gaia_processor.New
-	default:
-		logger.Panicw("no processor associated with type", "type", cfg.Type)
-	}
-
-	dpi, err := processorFunc(logger, cfg)
+	dpi, err := moduleprocessor.New(logger, cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	database.RegisterMigration(dpi.DatabaseMigrations()...)
-	database.RegisterMigration(blocktime.CreateTable)
+	database2.RegisterMigration(dpi.DatabaseMigrations()...)
+	database2.RegisterMigration(blocktime2.CreateTable)
 
-	di, err := database.New(cfg.DatabaseConnectionURL)
+	di, err := database2.New(cfg.DatabaseConnectionURL)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	errChan := make(chan error)
-	watcher := tracelistener.TraceWatcher{
-		WatchedOps: []tracelistener.Operation{
-			tracelistener.WriteOp,
-			tracelistener.DeleteOp,
+	watcher := tracelistener2.TraceWatcher{
+		WatchedOps: []tracelistener2.Operation{
+			tracelistener2.WriteOp,
+			tracelistener2.DeleteOp,
 		},
 		DataChan:       dpi.OpsChan(),
 		ErrorChan:      errChan,
@@ -69,7 +60,7 @@ func main() {
 	}
 
 	if ca.existingDatabasePath != "" {
-		importer := bulk.Importer{
+		importer := bulk2.Importer{
 			Path:         ca.existingDatabasePath,
 			TraceWatcher: watcher,
 			Processor:    dpi,
@@ -84,13 +75,15 @@ func main() {
 		return
 	}
 
-	blw := blocktime.New(
-		di.Instance,
-		cfg.ChainName,
-		logger,
-	)
+	if cfg.RunBlockWatcher {
+		blw := blocktime2.New(
+			di.Instance,
+			cfg.ChainName,
+			logger,
+		)
 
-	go connectTendermint(blw, logger)
+		go connectTendermint(blw, logger)
+	}
 
 	ctx := context.Background()
 	ff, err := fifo.OpenFifo(ctx, cfg.FIFOPath, syscall.O_CREAT|syscall.O_RDONLY|syscall.O_NONBLOCK, 0655)
@@ -109,7 +102,7 @@ func main() {
 		case e := <-errChan:
 			logger.Errorw("watching error", "error", e)
 		case e := <-dpi.ErrorsChan():
-			te := e.(tracelistener.TracingError)
+			te := e.(tracelistener2.TracingError)
 			logger.Errorw(
 				"error while processing data",
 				"error", te.InnerError,
@@ -134,14 +127,14 @@ func main() {
 	}
 }
 
-func buildLogger(c *config.Config) *zap.SugaredLogger {
+func buildLogger(c *config2.Config) *zap.SugaredLogger {
 	return logging.New(logging.LoggingConfig{
 		LogPath: c.LogPath,
 		Debug:   c.Debug,
 	})
 }
 
-func connectTendermint(b *blocktime.Watcher, l *zap.SugaredLogger) {
+func connectTendermint(b *blocktime2.Watcher, l *zap.SugaredLogger) {
 	connected := false
 
 	for !connected {

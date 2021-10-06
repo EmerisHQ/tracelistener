@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/allinbits/tracelistener/utils/validation"
 
 	"github.com/allinbits/tracelistener/utils/configuration"
@@ -13,14 +15,16 @@ type Config struct {
 	ChainName             string `validate:"required"`
 	DatabaseConnectionURL string `validate:"required"`
 	LogPath               string
-	Type                  string `validate:"required"`
+	Version               string `validate:"required"`
+	ServiceProvider       string
+	RunBlockWatcher       bool
 	Debug                 bool
 
 	// Processors configs
-	Gaia GaiaConfig
+	ProcessorConfig ProcessorConfig
 }
 
-type GaiaConfig struct {
+type ProcessorConfig struct {
 	ProcessorsEnabled []string
 }
 
@@ -33,10 +37,19 @@ func (c Config) Validate() error {
 	return validation.MissingFieldsErr(err, false)
 }
 
+func (c Config) ServiceProviderAddress() string {
+	if c.ServiceProvider != "" {
+		return c.ServiceProvider
+	}
+
+	return fmt.Sprintf("sdk-service-%s:9090", c.Version)
+}
+
 func Read() (*Config, error) {
 	var c Config
 
 	return &c, configuration.ReadConfig(&c, "tracelistener", map[string]string{
-		"FIFOPath": "./.tracelistener.fifo",
+		"FIFOPath":        "./.tracelistener.fifo",
+		"RunBlockWatcher": "true",
 	})
 }

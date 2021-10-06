@@ -3,14 +3,14 @@ package bulk
 import (
 	"errors"
 	"fmt"
+	tracelistener2 "github.com/allinbits/tracelistener"
+	database2 "github.com/allinbits/tracelistener/database"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	types3 "github.com/gogo/protobuf/types"
-
-	"github.com/allinbits/tracelistener/tracelistener/database"
 
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
 
@@ -21,7 +21,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
@@ -31,10 +30,10 @@ var (
 
 type Importer struct {
 	Path         string
-	TraceWatcher tracelistener.TraceWatcher
-	Processor    tracelistener.DataProcessor
+	TraceWatcher tracelistener2.TraceWatcher
+	Processor    tracelistener2.DataProcessor
 	Logger       *zap.SugaredLogger
-	Database     *database.Instance
+	Database     *database2.Instance
 }
 
 func (i *Importer) Do() error {
@@ -45,7 +44,7 @@ func (i *Importer) Do() error {
 		for {
 			select {
 			case e := <-i.Processor.ErrorsChan():
-				te := e.(tracelistener.TracingError)
+				te := e.(tracelistener2.TracingError)
 				i.Logger.Errorw(
 					"error while processing data",
 					"error", te.InnerError,
@@ -115,8 +114,8 @@ func (i *Importer) Do() error {
 		for ; ii.Valid(); ii.Next() {
 			writtenIdx++
 
-			to := tracelistener.TraceOperation{
-				Operation: tracelistener.WriteOp.String(),
+			to := tracelistener2.TraceOperation{
+				Operation: tracelistener2.WriteOp.String(),
 				Key:       ii.Key(),
 				Value:     ii.Value(),
 			}
