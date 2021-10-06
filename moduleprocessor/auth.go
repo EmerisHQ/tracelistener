@@ -78,19 +78,19 @@ func (b *authProcessor) Process(data tracelistener2.TraceOperation) error {
 		},
 	})
 
-	if err != nil {
-		return err
-	}
-
 	for _, r := range res {
 		b.heightCache[authCacheEntry{
-			address:   *r.Address,
-			accNumber: *r.AccountNumber,
+			address:   r.Address,
+			accNumber: r.AccountNumber,
 		}] = models.AuthRow{
-			Address:        *r.Address,
-			SequenceNumber: *r.SequenceNumber,
-			AccountNumber:  *r.AccountNumber,
+			Address:        r.Address,
+			SequenceNumber: r.SequenceNumber,
+			AccountNumber:  r.AccountNumber,
 		}
+	}
+
+	if err != nil {
+		return unwindErrors(err)
 	}
 
 	return nil

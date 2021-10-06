@@ -79,21 +79,21 @@ func (b *ibcChannelsProcessor) Process(data tracelistener2.TraceOperation) error
 		},
 	})
 
-	if err != nil {
-		return err
-	}
-
 	for _, r := range res {
 		b.channelsCache[channelCacheEntry{
-			channelID: *r.ChannelID,
-			portID:    *r.Port,
+			channelID: r.ChannelID,
+			portID:    r.Port,
 		}] = models.IBCChannelRow{
-			ChannelID:        *r.ChannelID,
-			CounterChannelID: *r.CounterChannelID,
+			ChannelID:        r.ChannelID,
+			CounterChannelID: r.CounterChannelID,
 			Hops:             r.Hops,
-			Port:             *r.Port,
-			State:            *r.State,
+			Port:             r.Port,
+			State:            r.State,
 		}
+	}
+
+	if err != nil {
+		return unwindErrors(err)
 	}
 
 	return nil

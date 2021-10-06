@@ -3,7 +3,6 @@ package moduleprocessor
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 
 	"github.com/allinbits/sdk-service-meta/tracelistener"
 
@@ -15,7 +14,6 @@ import (
 
 	"github.com/allinbits/tracelistener/models"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
 )
@@ -97,41 +95,32 @@ func (b *delegationsProcessor) Process(data tracelistener2.TraceOperation) error
 		},
 	})
 
-	if err != nil {
-		return err
-	}
-
 	for _, r := range res {
-		switch *r.Type {
+		switch r.Type {
 		case tracelistener.TypeCreateDelegation:
 			b.insertHeightCache[delegationCacheEntry{
-				delegator: *r.Delegator,
-				validator: *r.Validator,
+				delegator: r.Delegator,
+				validator: r.Validator,
 			}] = models.DelegationRow{
-				Delegator: *r.Delegator,
-				Validator: *r.Validator,
-				Amount:    *r.Amount,
+				Delegator: r.Delegator,
+				Validator: r.Validator,
+				Amount:    r.Amount,
 			}
 		case tracelistener.TypeDeleteDelegation:
 			b.deleteHeightCache[delegationCacheEntry{
-				delegator: *r.Delegator,
-				validator: *r.Validator,
+				delegator: r.Delegator,
+				validator: r.Validator,
 			}] = models.DelegationRow{
-				Delegator: *r.Delegator,
-				Validator: *r.Validator,
-				Amount:    *r.Amount,
+				Delegator: r.Delegator,
+				Validator: r.Validator,
+				Amount:    r.Amount,
 			}
 		}
 	}
 
-	return nil
-}
-
-func b32Hex(s string) (string, error) {
-	_, b, err := bech32.DecodeAndConvert(s)
 	if err != nil {
-		return "", err
+		return unwindErrors(err)
 	}
 
-	return hex.EncodeToString(b), nil
+	return nil
 }

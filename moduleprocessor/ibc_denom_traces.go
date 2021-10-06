@@ -73,16 +73,16 @@ func (b *ibcDenomTracesProcessor) Process(data tracelistener2.TraceOperation) er
 		},
 	})
 
-	if err != nil {
-		return err
+	for _, r := range res {
+		b.denomTracesCache[r.Hash] = models.IBCDenomTraceRow{
+			Path:      r.Path,
+			BaseDenom: r.BaseDenom,
+			Hash:      r.Hash,
+		}
 	}
 
-	for _, r := range res {
-		b.denomTracesCache[*r.Hash] = models.IBCDenomTraceRow{
-			Path:      *r.Path,
-			BaseDenom: *r.BaseDenom,
-			Hash:      *r.Hash,
-		}
+	if err != nil {
+		return unwindErrors(err)
 	}
 
 	return nil

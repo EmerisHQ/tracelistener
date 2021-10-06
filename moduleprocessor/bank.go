@@ -82,10 +82,6 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		},
 	})
 
-	if err != nil {
-		return err
-	}
-
 	for _, r := range res {
 		b.heightCache[bankCacheEntry{
 			address: r.Address,
@@ -96,6 +92,10 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 			Denom:       r.Denom,
 			BlockHeight: data.BlockHeight,
 		}
+	}
+
+	if err != nil {
+		return unwindErrors(err)
 	}
 
 	return nil

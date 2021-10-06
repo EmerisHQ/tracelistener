@@ -80,20 +80,20 @@ func (b *ibcClientsProcessor) Process(data tracelistener2.TraceOperation) error 
 		},
 	})
 
-	if err != nil {
-		return err
-	}
-
 	for _, r := range res {
 		b.clientsCache[clientCacheEntry{
-			chainID:  *r.ChainID,
-			clientID: *r.ClientID,
+			chainID:  r.ChainID,
+			clientID: r.ClientID,
 		}] = models.IBCClientStateRow{
-			ChainID:        *r.ChainID,
-			ClientID:       *r.ClientID,
-			LatestHeight:   *r.LatestHeight,
-			TrustingPeriod: *r.TrustingPeriod,
+			ChainID:        r.ChainID,
+			ClientID:       r.ClientID,
+			LatestHeight:   r.LatestHeight,
+			TrustingPeriod: r.TrustingPeriod,
 		}
+	}
+
+	if err != nil {
+		return unwindErrors(err)
 	}
 
 	return nil

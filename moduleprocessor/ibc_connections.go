@@ -88,21 +88,21 @@ func (b *ibcConnectionsProcessor) Process(data tracelistener2.TraceOperation) er
 		},
 	})
 
-	if err != nil {
-		return err
-	}
-
 	for _, r := range res {
 		b.connectionsCache[connectionCacheEntry{
-			connectionID: *r.ConnectionID,
-			clientID:     *r.ClientID,
+			connectionID: r.ConnectionID,
+			clientID:     r.ClientID,
 		}] = models.IBCConnectionRow{
-			ConnectionID:        *r.ConnectionID,
-			ClientID:            *r.ClientID,
-			State:               *r.State,
-			CounterConnectionID: *r.CounterConnectionID,
-			CounterClientID:     *r.CounterClientID,
+			ConnectionID:        r.ConnectionID,
+			ClientID:            r.ClientID,
+			State:               r.State,
+			CounterConnectionID: r.CounterConnectionID,
+			CounterClientID:     r.CounterClientID,
 		}
+	}
+
+	if err != nil {
+		return unwindErrors(err)
 	}
 
 	return nil
