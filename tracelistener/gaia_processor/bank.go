@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/allinbits/demeris-backend/models"
 	"go.uber.org/zap"
@@ -65,9 +66,11 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		p.l.Errorw("found bank entry which doesn't respect balance prefix bounds check, ignoring")
 		return nil
 	}
-	
-	addr := addrBytes[pLen : pLen+20]
 
+	addr := addrBytes[pLen+1 : pLen+21]
+	x := string(addr)
+	y := string(addrBytes)
+	fmt.Println(x, y)
 	coins := sdk.Coin{
 		Amount: sdk.NewInt(0),
 	}
