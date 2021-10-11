@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // TracelistenerDatabaseRow contains a list of all the fields each database row must contain in order to be
 // inserted correctly.
@@ -46,6 +49,42 @@ type DelegationRow struct {
 func (b DelegationRow) WithChainName(cn string) DatabaseEntrier {
 	b.ChainName = cn
 	return b
+}
+
+type UnbondingDelegationRow struct {
+	TracelistenerDatabaseRow
+
+	Delegator string                     `db:"delegator_address" json:"delegator"`
+	Validator string                     `db:"validator_address" json:"validator"`
+	Entries   UnbondingDelegationEntries `db:"entries" json:"entries"`
+}
+
+type UnbondingDelegationEntry struct {
+	Balance        string `db:"balance" json:"balance"`
+	InitialBalance string `db:"initial_balance" json:"initial_balance"`
+	CreationHeight int64  `db:"creation_height" json:"creation_height"`
+	CompletionTime string `db:"completion_time" json:"completion_time"`
+}
+
+type UnbondingDelegationEntries []UnbondingDelegationEntry
+
+// WithChainName implements the DatabaseEntrier interface.
+func (b UnbondingDelegationRow) WithChainName(cn string) DatabaseEntrier {
+	b.ChainName = cn
+	return b
+}
+
+func (entries *UnbondingDelegationEntries) Scan(src interface{}) error {
+	var data []byte
+	switch v := src.(type) {
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return nil // or return some error
+	}
+	return json.Unmarshal(data, entries)
 }
 
 // IBCChannelRow represents an IBC channel row inserted into the database.

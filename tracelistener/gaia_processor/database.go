@@ -196,6 +196,37 @@ AND
 	validator_address=:validator_address
 `
 
+	// Account unbonding delegations-related queries
+	createUnbondingDelegationsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.unbonding_delegations (
+	id serial unique primary key,
+	chain_name text not null,
+	delegator_address text not null,
+	validator_address text not null,
+	entries jsonb not null,
+	unique(chain_name, delegator_address, validator_address)
+)
+`
+
+	insertUnbondingDelegation = `
+INSERT INTO tracelistener.unbonding_delegations
+	(delegator_address, validator_address, entries, chain_name) 
+VALUES 
+	(:delegator_address, :validator_address, :entries, :chain_name)  
+ON CONFLICT
+	(chain_name, delegator_address, validator_address)
+DO UPDATE SET
+	entries=EXCLUDED.entries
+`
+
+	deleteUnbondingDelegation = `
+DELETE FROM tracelistener.unbonding_delegations
+WHERE
+	delegator_address=:delegator_address
+AND
+	validator_address=:validator_address
+`
+
 	// Denom traces-related queries
 	createDenomTracesTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (

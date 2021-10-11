@@ -8,7 +8,6 @@ import (
 	"github.com/allinbits/demeris-backend/models"
 
 	"github.com/allinbits/demeris-backend/tracelistener"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
 )
@@ -127,13 +126,4 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 	}
 
 	return nil
-}
-
-func b32Hex(s string) (string, error) {
-	_, b, err := bech32.DecodeAndConvert(s)
-	if err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(b), nil
 }
