@@ -27,6 +27,7 @@ var defaultProcessors = []string{
 	"auth",
 	"bank",
 	"delegations",
+	"unbonding_delegations",
 	"ibc_clients",
 	"ibc_channels",
 	"ibc_connections",
@@ -130,6 +131,12 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 		return &delegationsProcessor{
 			insertHeightCache: map[delegationCacheEntry]models.DelegationRow{},
 			deleteHeightCache: map[delegationCacheEntry]models.DelegationRow{},
+			l:                 logger,
+		}, nil
+	case (&unbondingDelegationsProcessor{}).ModuleName():
+		return &unbondingDelegationsProcessor{
+			insertHeightCache: map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{},
+			deleteHeightCache: map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{},
 			l:                 logger,
 		}, nil
 	case (&ibcDenomTracesProcessor{}).ModuleName():
