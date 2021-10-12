@@ -215,3 +215,34 @@ func (b IBCClientStateRow) WithChainName(cn string) DatabaseEntrier {
 	b.ChainName = cn
 	return b
 }
+
+// ValidatorRow represents the state of a validator as a row inserted into the database.
+type ValidatorRow struct {
+	TracelistenerDatabaseRow
+
+	OperatorAddress      string `db:"operator_address" json:"operator_address"`
+	ConsensusPubKeyType  string `db:"consensus_pubkey_type" json:"consensus_pubkey_type"`
+	ConsensusPubKeyValue []byte `db:"consensus_pubkey_value" json:"consensus_pubkey_value"`
+	Jailed               bool   `db:"jailed" json:"jailed"`
+	Status               int32  `db:"status" json:"status"`
+	Tokens               string `db:"tokens" json:"tokens"`
+	DelegatorShares      string `db:"delegator_shares" json:"delegator_shares"`
+	Moniker              string `db:"moniker" json:"moniker,omitempty"`
+	Identity             string `db:"identity" json:"identity,omitempty"`
+	Website              string `db:"website" json:"website,omitempty"`
+	SecurityContact      string `db:"security_contact" json:"security_contact,omitempty"`
+	Details              string `db:"details" json:"details,omitempty"`
+	UnbondingHeight      int64  `db:"unbonding_height" json:"unbonding_height"`
+	UnbondingTime        string `db:"unbonding_time" json:"unbonding_time"`
+	CommissionRate       string `db:"commission_rate" json:"commission_rate"`
+	MaxRate              string `db:"max_rate" json:"max_rate"`
+	MaxChangeRate        string `db:"max_change_rate" json:"max_change_rate"`
+	UpdateTime           string `db:"update_time" json:"update_time"`
+	MinSelfDelegation    string `db:"min_self_delegation" json:"min_self_delegation"`
+}
+
+// WithChainName implements the DatabaseEntrier interface.
+func (b ValidatorRow) WithChainName(cn string) DatabaseEntrier {
+	b.ChainName = cn
+	return b
+}
