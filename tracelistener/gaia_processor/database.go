@@ -332,4 +332,107 @@ DO UPDATE SET
 	latest_height=EXCLUDED.latest_height,
 	trusting_period=EXCLUDED.trusting_period
 `
+
+	createValidatorsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.validators (
+	id serial unique primary key,
+	chain_name text not null,
+	operator_address text not null,
+	consensus_pubkey_type text,
+	consensus_pubkey_value bytes,
+	jailed bool not null,
+	status integer not null,
+	tokens text not null,
+	delegator_shares text not null,
+	moniker text,
+	identity text,
+	website text,
+	security_contact text,
+	details text,
+	unbonding_height bigint,
+	unbonding_time text,
+	commission_rate text not null,
+	max_rate text not null,
+	max_change_rate text not null,
+	update_time text not null,
+	min_self_delegation text not null,
+	unique(chain_name, operator_address)
+)
+`
+
+	insertValidator = `
+INSERT INTO tracelistener.validators (
+        chain_name,
+        operator_address,
+        consensus_pubkey_type,
+        consensus_pubkey_value,
+        jailed,
+        status,
+        tokens,
+        delegator_shares,
+        moniker,
+		identity,
+		website,
+		security_contact,
+		details,
+        unbonding_height,
+        unbonding_time,
+        commission_rate,
+		max_rate,
+		max_change_rate,
+		update_time,
+        min_self_delegation
+    )
+VALUES (
+        :chain_name,
+        :operator_address,
+        :consensus_pubkey_type,
+        :consensus_pubkey_value,
+        :jailed,
+        :status,
+        :tokens,
+        :delegator_shares,
+        :moniker,
+		:identity,
+		:website,
+		:security_contact,
+		:details,
+        :unbonding_height,
+        :unbonding_time,
+        :commission_rate,
+		:max_rate,
+		:max_change_rate,
+		:update_time,
+        :min_self_delegation
+    ) ON CONFLICT (chain_name, operator_address) 
+DO UPDATE SET 
+    chain_name = EXCLUDED.chain_name,
+    operator_address = EXCLUDED.operator_address,
+    consensus_pubkey_type = EXCLUDED.consensus_pubkey_type,
+    consensus_pubkey_value = EXCLUDED.consensus_pubkey_value,
+    jailed = EXCLUDED.jailed,
+    status = EXCLUDED.status,
+    tokens = EXCLUDED.tokens,
+    delegator_shares = EXCLUDED.delegator_shares,
+    moniker = EXCLUDED.moniker,
+    identity = EXCLUDED.identity,
+    website = EXCLUDED.website,
+    security_contact = EXCLUDED.security_contact,
+    details = EXCLUDED.details,
+    unbonding_height = EXCLUDED.unbonding_height,
+    unbonding_time = EXCLUDED.unbonding_time,
+    commission_rate = EXCLUDED.commission_rate,
+	max_rate = EXCLUDED.max_rate,
+	max_change_rate = EXCLUDED.max_change_rate,
+	update_time = EXCLUDED.update_time,
+    min_self_delegation = EXCLUDED.min_self_delegation
+`
+
+	deleteValidator = `
+	DELETE from tracelistener.validators 
+	WHERE 
+		chain_name = :chain_name
+		AND
+		operator_address = :operator_address
+`
 )
