@@ -93,6 +93,8 @@ github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk5
 github.com/allegro/bigcache v1.2.1-0.20190218064605-e24eb225f156/go.mod h1:Cb/ax3seSYIx7SuZdm2G2xzfwmv3TPSk2ucNfQESPXM=
 github.com/allinbits/sdk-service-meta v0.0.0-20211006171131-1ba28e9d4da5 h1:G7hu0uY5cFiIGeJp2ntRdKYjy3vZrc/ONSKAEpgRUDA=
 github.com/allinbits/sdk-service-meta v0.0.0-20211006171131-1ba28e9d4da5/go.mod h1:G4V8izuOBdwaJY+u1GfNal9ynwfoQYO+c2EnjX4AD9c=
+github.com/allinbits/sdk-service-meta v0.0.0-20211012102821-f08b179e69f8 h1:y213XVgf6WVlGm2d5V44j9hGH3GPSR9bPtiM76PifIc=
+github.com/allinbits/sdk-service-meta v0.0.0-20211012102821-f08b179e69f8/go.mod h1:G4V8izuOBdwaJY+u1GfNal9ynwfoQYO+c2EnjX4AD9c=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/apache/arrow/go/arrow v0.0.0-20191024131854-af6fa24be0db/go.mod h1:VTxUBvSJ3s3eHAg65PNgrsn5BtqCRPdmyXh6rAfdxN0=
@@ -1044,6 +1046,7 @@ go.uber.org/zap v1.19.0 h1:mZQZefskPPCMIBCSEH0v2/iUqqLrYtaeqwD6FUGUnFE=
 go.uber.org/zap v1.19.0/go.mod h1:xg/QME4nWcxGxrpdeYfq7UvYrLh66cuVKdrbD1XF/NI=
 goa.design/goa/v3 v3.5.2 h1:8kC5fVwUOl4RVV7pArW0zGTG4Zm4vC92sX7BIOZTYbA=
 goa.design/goa/v3 v3.5.2/go.mod h1:tCVpXqn31bQkKvpqeJCE1qnGx/t+vd9uDUNBP950Hc0=
+goa.design/plugins/v3 v3.5.2 h1:uGywHgHp1cMLU0+uHvA/9zLiVnQmmExP4tNGtX/9XM0=
 goa.design/plugins/v3 v3.5.2/go.mod h1:kQFbU+BD9Kllo158sH5Bjw24TS3wAZoqEQCvB8EX20I=
 golang.org/x/crypto v0.0.0-20170930174604-9419663f5a44/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

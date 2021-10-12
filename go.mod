@@ -9,7 +9,7 @@ replace (
 )
 
 require (
-	github.com/allinbits/sdk-service-meta v0.0.0-20211006171131-1ba28e9d4da5
+	github.com/allinbits/sdk-service-meta v0.0.0-20211012102821-f08b179e69f8
 	github.com/cockroachdb/cockroach-go/v2 v2.2.0
 	github.com/containerd/fifo v1.0.0
 	github.com/cosmos/cosmos-sdk v0.42.8
@@ -139,6 +139,7 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	goa.design/goa/v3 v3.5.2 // indirect
+	goa.design/plugins/v3 v3.5.2 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b // indirect

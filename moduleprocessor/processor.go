@@ -23,13 +23,15 @@ type Module interface {
 }
 
 var defaultProcessors = []string{
-	"auth",
-	"bank",
-	"delegations",
-	"ibc_clients",
-	"ibc_channels",
-	"ibc_connections",
-	"ibc_denom_traces",
+	//"auth",
+	//"bank",
+	//"delegations",
+	"validators",
+	//"unbonding_delegations",
+	//"ibc_clients",
+	//"ibc_channels",
+	//"ibc_connections",
+	//"ibc_denom_traces",
 }
 
 type Processor struct {
@@ -138,6 +140,13 @@ func processorByName(name string, logger *zap.SugaredLogger, grpcConn *grpc.Clie
 			l:                 logger,
 			grpcConn:          grpcConn,
 		}, nil
+	case (&unbondingDelegationsProcessor{}).ModuleName():
+		return &unbondingDelegationsProcessor{
+			insertHeightCache: map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{},
+			deleteHeightCache: map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{},
+			l:                 logger,
+			grpcConn:          grpcConn,
+		}, nil
 	case (&ibcDenomTracesProcessor{}).ModuleName():
 		return &ibcDenomTracesProcessor{
 			l:                logger,
@@ -161,6 +170,13 @@ func processorByName(name string, logger *zap.SugaredLogger, grpcConn *grpc.Clie
 			l:           logger,
 			heightCache: map[authCacheEntry]models.AuthRow{},
 			grpcConn:    grpcConn,
+		}, nil
+	case (&validatorsProcessor{}).ModuleName():
+		return &validatorsProcessor{
+			l:                 logger,
+			grpcConn:          grpcConn,
+			insertHeightCache: map[validatorCacheEntry]models.ValidatorRow{},
+			deleteHeightCache: map[validatorCacheEntry]models.ValidatorRow{},
 		}, nil
 	}
 }
