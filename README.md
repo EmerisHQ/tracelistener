@@ -169,3 +169,26 @@ Build it with:
 ```shell
  docker build -t tracelistener:latest --build-arg GIT_TOKEN={YOUR-TOKEN} .
  ```
+
+## Dependencies & Licenses
+
+The list of non-{Cosmos, AiB, Tendermint} dependencies and their licenses are:
+
+|Module   	                  |License          |
+|---	                      |---  	        |
+|containerd/fifo   	          |Apache 2.0   	|
+|go.uber.org/zap   	          |MIT           	|
+|gorilla/websocket   	      |BSD-2   	        |
+|cockroachdb/cockroach-go     |Apache 2.0   	|
+|stretchr/testify   	      |MIT   	        |
+|gogo/protobuf   	          |Only on redistr. |
+|go-playground/validator   	  |MIT   	        |
+|nxadm/tail   	              |MIT   	        |
+|iamolegga/enviper   	      |MIT   	        |
+|spf13/viper   	              |MIT   	        |
+|jackc/pgx   	              |MIT   	        |
+|jmoiron/sqlx   	          |MIT   	        |
+|gin-gonic/gin   	          |MIT   	        |
+|natefinch/lumberjack  	      |MIT   	        |
+|lib/pq   	                  |Unrestricted   	|
+|ethereum/go-ethereum   	  |GNU LGPL         |
