@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/gorilla/websocket"
 
 	"github.com/tendermint/tendermint/types"

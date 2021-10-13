@@ -7,7 +7,7 @@ import (
 	"time"
 
 	config2 "github.com/allinbits/tracelistener/config"
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
 	"go.uber.org/zap"

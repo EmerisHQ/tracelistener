@@ -10,7 +10,7 @@ import (
 	tracelistener2 "github.com/allinbits/tracelistener"
 	"google.golang.org/grpc"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"go.uber.org/zap"
 )

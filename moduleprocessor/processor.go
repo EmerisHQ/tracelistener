@@ -8,7 +8,7 @@ import (
 	tracelistener2 "github.com/allinbits/tracelistener"
 	config2 "github.com/allinbits/tracelistener/config"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"go.uber.org/zap"

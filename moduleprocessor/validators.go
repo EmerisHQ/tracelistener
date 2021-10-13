@@ -15,7 +15,7 @@ import (
 
 	tracelistener2 "github.com/allinbits/tracelistener"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"go.uber.org/zap"
 )

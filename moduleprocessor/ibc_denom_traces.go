@@ -8,7 +8,7 @@ import (
 	sdkutilities "github.com/allinbits/sdk-service-meta/gen/sdk_utilities"
 
 	tracelistener2 "github.com/allinbits/tracelistener"
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"google.golang.org/grpc"
 
 	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"

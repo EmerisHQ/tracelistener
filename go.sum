@@ -91,6 +91,8 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/allegro/bigcache v1.2.1-0.20190218064605-e24eb225f156/go.mod h1:Cb/ax3seSYIx7SuZdm2G2xzfwmv3TPSk2ucNfQESPXM=
+github.com/allinbits/demeris-backend-models v0.0.0-20211013140716-885d18238ebd h1:59b6Wpc6e82QzZ7AUrjoCQOd2sPMnTqi2gjclHkU9nk=
+github.com/allinbits/demeris-backend-models v0.0.0-20211013140716-885d18238ebd/go.mod h1:ql5yhwiKjuU0U/UpKiywMGl6rLuzOQqRkqQkYAeEEp8=
 github.com/allinbits/sdk-service-meta v0.0.0-20211006171131-1ba28e9d4da5 h1:G7hu0uY5cFiIGeJp2ntRdKYjy3vZrc/ONSKAEpgRUDA=
 github.com/allinbits/sdk-service-meta v0.0.0-20211006171131-1ba28e9d4da5/go.mod h1:G4V8izuOBdwaJY+u1GfNal9ynwfoQYO+c2EnjX4AD9c=
 github.com/allinbits/sdk-service-meta v0.0.0-20211012102821-f08b179e69f8 h1:y213XVgf6WVlGm2d5V44j9hGH3GPSR9bPtiM76PifIc=
