@@ -92,7 +92,7 @@ func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperatio
 
 	unbondingDelegation := types.UnbondingDelegation{}
 
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &unbondingDelegation); err != nil {
+	if err := p.cdc.Unmarshal(data.Value, &unbondingDelegation); err != nil {
 		return err
 	}
 
