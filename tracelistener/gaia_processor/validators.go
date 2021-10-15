@@ -89,7 +89,7 @@ func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
 
 	v := types.Validator{}
 
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &v); err != nil {
+	if err := p.cdc.Unmarshal(data.Value, &v); err != nil {
 		return err
 	}
 
