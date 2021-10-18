@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/allinbits/demeris-backend/tracelistener/gaia_processor"
+	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
 
-	"github.com/allinbits/demeris-backend/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
 type dumbModule struct {

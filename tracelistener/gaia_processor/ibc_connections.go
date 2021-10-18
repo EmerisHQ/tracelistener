@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 
 	"github.com/cosmos/ibc-go/modules/core/03-connection/types"
 
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	"go.uber.org/zap"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type connectionCacheEntry struct {

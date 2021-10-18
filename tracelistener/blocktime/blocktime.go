@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 
 	"github.com/tendermint/tendermint/types"
 
@@ -12,7 +12,7 @@ import (
 
 	"github.com/tendermint/tendermint/rpc/client/http"
 
-	"github.com/allinbits/demeris-backend/utils/database"
+	"github.com/allinbits/tracelistener/utils/database"
 	"go.uber.org/zap"
 )
 

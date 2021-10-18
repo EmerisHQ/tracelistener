@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/allinbits/demeris-backend/models"
+	"github.com/allinbits/tracelistener/models"
 
 	"github.com/cosmos/ibc-go/modules/core/04-channel/types"
 
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	"go.uber.org/zap"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type channelCacheEntry struct {

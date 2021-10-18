@@ -1,7 +1,7 @@
 package database
 
 import (
-	dbutils "github.com/allinbits/demeris-backend/utils/database"
+	dbutils "github.com/allinbits/tracelistener/utils/database"
 )
 
 type Instance struct {

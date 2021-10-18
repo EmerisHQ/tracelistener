@@ -6,16 +6,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/allinbits/demeris-backend/tracelistener/bulk"
+	"github.com/allinbits/tracelistener/tracelistener/bulk"
 
-	"github.com/allinbits/demeris-backend/tracelistener/blocktime"
+	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
-	"github.com/allinbits/demeris-backend/utils/logging"
+	"github.com/allinbits/tracelistener/utils/logging"
 
-	"github.com/allinbits/demeris-backend/tracelistener"
-	"github.com/allinbits/demeris-backend/tracelistener/config"
-	"github.com/allinbits/demeris-backend/tracelistener/database"
-	"github.com/allinbits/demeris-backend/tracelistener/gaia_processor"
+	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/database"
+	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
 	"github.com/containerd/fifo"
 	"go.uber.org/zap"
 )
