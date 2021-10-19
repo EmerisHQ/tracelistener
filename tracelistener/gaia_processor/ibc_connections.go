@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/cosmos/ibc-go/modules/core/03-connection/types"
 

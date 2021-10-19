@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/cosmos/ibc-go/modules/core/04-channel/types"
 

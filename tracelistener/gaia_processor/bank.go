@@ -5,7 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
+
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
