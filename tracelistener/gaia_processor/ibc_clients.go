@@ -9,7 +9,7 @@ import (
 
 	tmIBCTypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"

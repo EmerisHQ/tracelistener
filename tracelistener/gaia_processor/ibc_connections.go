@@ -3,8 +3,9 @@ package gaia_processor
 import (
 	"bytes"
 	"fmt"
-	"github.com/allinbits/tracelistener/models"
 	"strings"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
 

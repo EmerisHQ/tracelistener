@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
 	"github.com/allinbits/tracelistener/tracelistener/config"

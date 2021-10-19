@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	types3 "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"

@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/allinbits/tracelistener/models"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/allinbits/tracelistener/tracelistener"
 	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"

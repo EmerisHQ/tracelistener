@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/allinbits/tracelistener/models"
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/tendermint/tendermint/types"
 
