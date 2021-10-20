@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - sdk-44-support
     paths:
       - Dockerfile
       - cmd/**
@@ -41,6 +42,6 @@ jobs:
           push: true
           context: .
           file: Dockerfile
-          tags: gcr.io/tendermint-dev/emeris-tracelistener:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener:${{ github.sha }}
+          tags: gcr.io/tendermint-dev/emeris-tracelistener44:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener44:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}

@@ -1,4 +1,4 @@
-FROM golang:1.16 as builder
+FROM golang:1.17 as builder
 
 ARG GIT_TOKEN
 
@@ -9,11 +9,11 @@ WORKDIR /app
 COPY go.mod go.sum* ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOPROXY=direct make tracelistener
+RUN CGO_ENABLED=0 GOPROXY=direct make
 
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates mailcap && addgroup -S app && adduser -S app -G app
-COPY --from=builder /app/build/tracelistener /usr/local/bin/tracelistener
+COPY --from=builder /app/build/tracelistener44 /usr/local/bin/tracelistener44
 USER app
-ENTRYPOINT ["/usr/local/bin/tracelistener"]
+ENTRYPOINT ["/usr/local/bin/tracelistener44"]
