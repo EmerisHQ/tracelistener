@@ -2,7 +2,8 @@ package gaia_processor
 
 import (
 	"bytes"
-	"github.com/allinbits/tracelistener/models"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/allinbits/tracelistener/tracelistener"
 	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
