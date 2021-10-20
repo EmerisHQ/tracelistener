@@ -27,6 +27,7 @@ var defaultProcessors = []string{
 	"auth",
 	"bank",
 	"delegations",
+	"supply",
 	"ibc_clients",
 	"ibc_channels",
 	"ibc_connections",
@@ -120,6 +121,8 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 		return nil, fmt.Errorf("unkonwn Processor %s", name)
 	case (&bankProcessor{}).ModuleName():
 		return &bankProcessor{heightCache: map[bankCacheEntry]models.BalanceRow{}, l: logger}, nil
+	case (&supplyProcessor{}).ModuleName():
+		return &supplyProcessor{heightCache: map[supplyCacheEntry]models.SupplyRow{}, l: logger}, nil
 	case (&ibcConnectionsProcessor{}).ModuleName():
 		return &ibcConnectionsProcessor{connectionsCache: map[connectionCacheEntry]models.IBCConnectionRow{}, l: logger}, nil
 	case (&liquidityPoolProcessor{}).ModuleName():

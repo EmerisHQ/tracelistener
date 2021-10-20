@@ -30,6 +30,30 @@ CREATE TABLE IF NOT EXISTS tracelistener.balances (
 )
 `
 
+	// Supply-related queries
+	insertSupply = `
+INSERT INTO tracelistener.supply 
+	(chain_name, amount, denom) 
+VALUES 
+	(:chain_name, :amount, :denom) 
+ON CONFLICT
+	(chain_name, denom)
+DO UPDATE SET 
+	chain_name=EXCLUDED.chain_name,
+	denom=EXCLUDED.denom,
+	amount=EXCLUDED.amount
+`
+
+	createSupplyTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.supply (
+	id serial unique primary key,
+	chain_name text not null,
+	amount text not null,
+	denom text not null,
+	unique(chain_name, denom)
+)
+`
+
 	// Connection-related queries
 	createConnectionsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.connections (
