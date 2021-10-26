@@ -60,18 +60,13 @@ func (b *bankProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
-	addrBytes := data.Key
-	pLen := len(types.BalancesPrefix)
-
-	if len(addrBytes) < pLen+20 {
-		p.l.Errorw("found bank entry which doesn't respect balance prefix bounds check, ignoring")
-		return nil
+	// AddressFromBalancesStore requires the key data without the store prefix
+	// so we simply reslice data.Key to get rid of it.
+	addrBytes, err := types.AddressFromBalancesStore(data.Key[1:])
+	if err != nil {
+		return fmt.Errorf("cannot parse address from balance store key, %w", err)
 	}
 
-	addr := addrBytes[pLen+1 : pLen+21]
-	x := string(addr)
-	y := string(addrBytes)
-	fmt.Println(x, y)
 	coins := sdk.Coin{
 		Amount: sdk.NewInt(0),
 	}
@@ -84,7 +79,7 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		return nil
 	}
 
-	hAddr := hex.EncodeToString(addr)
+	hAddr := hex.EncodeToString(addrBytes)
 	b.l.Debugw("new bank store write",
 		"operation", data.Operation,
 		"address", hAddr,
