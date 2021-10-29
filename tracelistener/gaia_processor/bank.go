@@ -70,8 +70,8 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	// 0x02<length prefix><address bytes><denom>
 	//
 	// This different schema is used when the balance associated to <denom> is being set to zero.
-	// So, to obtain this denom one must subslice rawAddress to the lenght of <address bytes> + 1
-	// to bypass the lenght prefix byte.
+	// So, to obtain this denom one must subslice rawAddress to the length of <address bytes> + 1
+	// to bypass the length prefix byte.
 	rawAddress := data.Key[1:]
 	addrBytes, err := types.AddressFromBalancesStore(rawAddress)
 	if err != nil {
