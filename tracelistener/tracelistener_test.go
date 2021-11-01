@@ -3,15 +3,15 @@ package tracelistener_test
 import (
 	"fmt"
 	"io"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
 	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/stretchr/testify/require"
 )
 
 func TestOperation_String(t *testing.T) {
@@ -71,6 +71,7 @@ func TestWritebackOp_InterfaceSlice(t *testing.T) {
 }
 
 func TestTraceWatcher_Watch(t *testing.T) {
+	op := `{"operation":"write","key":"aWJjL2Z3ZC8weGMwMDA0ZThkMzg=","value":"cG9ydHMvdHJhbnNmZXI=","metadata":null}`
 	tests := []struct {
 		name        string
 		ops         []tracelistener.Operation
@@ -85,7 +86,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			[]tracelistener.Operation{
 				tracelistener.WriteOp,
 			},
-			writeOp,
+			op,
 			false,
 			false,
 			false,
@@ -96,7 +97,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			[]tracelistener.Operation{
 				tracelistener.ReadOp,
 			},
-			writeOp,
+			op,
 			false,
 			true,
 			false,
@@ -105,7 +106,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 		{
 			"any operation is configured and read accordingly",
 			[]tracelistener.Operation{},
-			writeOp,
+			op,
 			false,
 			false,
 			false,
@@ -114,7 +115,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 		{
 			"an EOF doesn't impact anything",
 			[]tracelistener.Operation{},
-			writeOp,
+			op,
 			false,
 			false,
 			false,
@@ -123,7 +124,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 		{
 			"a random error panics",
 			[]tracelistener.Operation{},
-			writeOp,
+			op,
 			true,
 			false,
 			true,
@@ -132,17 +133,20 @@ func TestTraceWatcher_Watch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			read, write := io.Pipe()
+			f, err := os.OpenFile("./test_data.fifo", os.O_WRONLY|os.O_CREATE, 0644)
+			require.NoError(t, err)
+
+			defer f.Close()
 
 			dataChan := make(chan tracelistener.TraceOperation)
 			errChan := make(chan error)
 			l, _ := zap.NewDevelopment()
 			tw := tracelistener.TraceWatcher{
-				DataSource: read,
-				WatchedOps: tt.ops,
-				DataChan:   dataChan,
-				ErrorChan:  errChan,
-				Logger:     l.Sugar(),
+				DataSourcePath: "./test_data.fifo",
+				WatchedOps:     tt.ops,
+				DataChan:       dataChan,
+				ErrorChan:      errChan,
+				Logger:         l.Sugar(),
 			}
 
 			go func() {
@@ -155,21 +159,17 @@ func TestTraceWatcher_Watch(t *testing.T) {
 				}
 			}()
 
-			if tt.errSent != nil {
-				require.NoError(t, write.CloseWithError(tt.errSent))
-				time.Sleep(1 * time.Second)
+			if tt.errSent != nil && !tt.shouldPanic {
 
-				if !tt.shouldPanic {
-					read, write = io.Pipe()
-					tw.DataSource = read
-				}
+				tw.DataSourcePath = "./test_data.fifo"
 			}
 
-			n, err := write.Write([]byte(fmt.Sprintf("%s\n", tt.data)))
+			n, err := f.Write([]byte(tt.data))
+			require.NoError(t, err)
 
 			if !tt.shouldPanic {
 				require.NoError(t, err)
-				require.Equal(t, len(tt.data)+1, n)
+				require.Equal(t, len(tt.data), n)
 
 				if tt.wantErr {
 					require.Error(t, <-errChan)
