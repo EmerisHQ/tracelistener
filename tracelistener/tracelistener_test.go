@@ -133,16 +133,16 @@ func TestTraceWatcher_Watch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f, err := os.OpenFile("./test_data.fifo", os.O_WRONLY|os.O_CREATE, 0644)
+			f, err := os.CreateTemp("", "test_data")
 			require.NoError(t, err)
 
-			defer f.Close()
+			defer os.Remove(f.Name())
 
 			dataChan := make(chan tracelistener.TraceOperation)
 			errChan := make(chan error)
 			l, _ := zap.NewDevelopment()
 			tw := tracelistener.TraceWatcher{
-				DataSourcePath: "./test_data.fifo",
+				DataSourcePath: f.Name(),
 				WatchedOps:     tt.ops,
 				DataChan:       dataChan,
 				ErrorChan:      errChan,
@@ -161,7 +161,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 
 			if tt.errSent != nil && !tt.shouldPanic {
 
-				tw.DataSourcePath = "./test_data.fifo"
+				tw.DataSourcePath = f.Name()
 			}
 
 			n, err := f.Write([]byte(tt.data))
