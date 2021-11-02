@@ -60,12 +60,25 @@ func (b *bankProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
+	// How's a length-prefixed data.Key is made you ask?
+	// 0x02<length prefix><address bytes>
+	//
 	// AddressFromBalancesStore requires the key data without the store prefix
 	// so we simply reslice data.Key to get rid of it.
-	addrBytes, err := types.AddressFromBalancesStore(data.Key[1:])
+	//
+	// If data.Operation == "delete", the trace that's been observed has a different data.Key:
+	// 0x02<length prefix><address bytes><denom>
+	//
+	// This different schema is used when the balance associated to <denom> is being set to zero.
+	// So, to obtain this denom one must subslice rawAddress to the length of <address bytes> + 1
+	// to bypass the length prefix byte.
+	rawAddress := data.Key[1:]
+	addrBytes, err := types.AddressFromBalancesStore(rawAddress)
 	if err != nil {
 		return fmt.Errorf("cannot parse address from balance store key, %w", err)
 	}
+
+	hAddr := hex.EncodeToString(addrBytes)
 
 	coins := sdk.Coin{
 		Amount: sdk.NewInt(0),
@@ -75,11 +88,21 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		return err
 	}
 
+	// Since SDK 0.44.x x/bank now deletes keys from store when the balance is 0
+	// (picture someone who sends all their balance to another address).
+	// To work around this issue, we don't return when coin is invalid when data.Operation is "delete",
+	// and we set balance == 0 instead.
 	if !coins.IsValid() {
-		return nil
+		if data.Operation == tracelistener.DeleteOp.String() {
+			// rawAddress still contains the lenght prefix, so we have to jump it by
+			// reading 1 byte after len(addrBytes)
+			denom := rawAddress[len(addrBytes)+1:]
+			coins.Denom = string(denom)
+		} else {
+			return nil
+		}
 	}
 
-	hAddr := hex.EncodeToString(addrBytes)
 	b.l.Debugw("new bank store write",
 		"operation", data.Operation,
 		"address", hAddr,
