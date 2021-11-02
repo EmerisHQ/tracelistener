@@ -3,6 +3,8 @@ name: Run tests
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "*"
     paths:
       - cmd/**
       - tracelistener/**
