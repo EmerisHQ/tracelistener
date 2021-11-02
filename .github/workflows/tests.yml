@@ -1,0 +1,28 @@
+name: Run tests
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - cmd/**
+      - tracelistener/**
+      - utils/**
+      - go.mod
+      - go.sum
+
+jobs:
+  gotest:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.17"
+
+      - name: Echo current dir
+        run: echo $PWD; ls -la
+      - name: Run tests
+        run: go test ./...
