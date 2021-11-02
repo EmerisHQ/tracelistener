@@ -28,7 +28,10 @@ jobs:
       - name: Set allinbits org as GOPRIVATE
         run: go env -w GOPRIVATE=github.com/allinbits/*
 
-      - name: Run tests
-        run: go test ./...
+      - name: Set git rewrite for private repos
+        run: git config --global url."https://git:${repo-token}@github.com".insteadOf "https://github.com"
         with:
           repo-token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
+
+      - name: Run tests
+        run: go test ./...
