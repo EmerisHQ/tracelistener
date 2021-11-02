@@ -25,7 +25,10 @@ jobs:
         with:
           go-version: "1.17"
 
-      - name: Echo current dir
-        run: echo $PWD; ls -la
+      - name: Set allinbits org as GOPRIVATE
+        run: go env -w GOPRIVATE=github.com/allinbits/*
+
       - name: Run tests
         run: go test ./...
+        with:
+          repo-token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
