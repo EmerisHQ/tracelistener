@@ -18,6 +18,7 @@ const (
 	iterRangeOp       = `{"operation":"iterRange","key":"aGVsbG8K","value":"aGVsbG8K"}`
 	opWithBlockHeight = `{"operation":"write","key":"aGVsbG8K","value":"aGVsbG8K", "metadata": {"blockHeight":42}}`
 	opWithTxHash      = `{"operation":"write","key":"aGVsbG8K","value":"aGVsbG8K", "metadata": {"txHash": "hash"}}`
+	writeOpNoNewlines = `{"operation":"write","key":"aGVsbG8=","value":"aGVsbG8="}`
 )
 
 func TestTraceOperation_UnmarshalJSON(t1 *testing.T) {
@@ -121,7 +122,8 @@ func TestTraceOperation_UnmarshalJSON(t1 *testing.T) {
 
 func TestTraceOperation_String(t1 *testing.T) {
 	var to tracelistener.TraceOperation
-	require.NoError(t1, json.Unmarshal([]byte(writeOp), &to))
+	require.NoError(t1, json.Unmarshal([]byte(writeOpNoNewlines), &to))
 
-	require.Equal(t1, `[write] "[104 101 108 108 111 10]" -> "[104 101 108 108 111 10]"`, to.String())
+	require.NotEqual(t1, `[write] "[104 101 108 108 111 10]" -> "[104 101 108 108 111 10]"`, to.String())
+	require.Equal(t1, `[write] "hello" -> "hello"`, to.String())
 }
