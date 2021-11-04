@@ -15,8 +15,29 @@ on:
       - helm/**
 
 jobs:
-  tracelistener:
+  run-tests:
     runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.17"
+
+      - name: Set allinbits org as GOPRIVATE
+        run: go env -w GOPRIVATE=github.com/allinbits/*
+
+      - name: Set git rewrite for private repos
+        run: git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
+
+      - name: Run tests
+        run: go test ./...
+
+  build-tracelistener-image:
+    runs-on: self-hosted
+    needs: run-tests
     steps:
       - name: Checkout
         uses: actions/checkout@v2
