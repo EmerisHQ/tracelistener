@@ -2,9 +2,7 @@ name: Run tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "*"
+  pull_request:
     paths:
       - cmd/**
       - tracelistener/**
@@ -19,12 +17,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - uses: actions/cache@v2
+        with:
+          # In order:
+          # * Module download cache
+          # * Build cache (Linux)
+          # * Build cache (Mac)
+          # * Build cache (Windows)
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
           go-version: "1.17"
 
-      - name: Echo current dir
-        run: echo $PWD; ls -la
+      - name: Set allinbits org as GOPRIVATE
+        run: go env -w GOPRIVATE=github.com/allinbits/*
+
+      - name: Set git rewrite for private repos
+        run: git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
+
       - name: Run tests
         run: go test ./...
