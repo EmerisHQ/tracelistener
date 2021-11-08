@@ -4,15 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
 
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 type bankCacheEntry struct {
@@ -63,11 +61,11 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	pLen := len(types.BalancesPrefix)
 	addr := addrBytes[pLen : pLen+20]
 
-	coins := sdk.Coin{
-		Amount: sdk.NewInt(0),
-	}
+	var coins sdk.Coin
 
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
+	cdc, _ := gaia.MakeCodecs()
+
+	if err := cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
 		return err
 	}
 
@@ -82,6 +80,8 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		"new_balance", coins.String(),
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
+		"key", data.Key,
+		"value", data.Value,
 	)
 
 	b.heightCache[bankCacheEntry{
