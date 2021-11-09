@@ -5,11 +5,12 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
-	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type delegationCacheEntry struct {
@@ -92,7 +93,9 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 
 	delegation := types.Delegation{}
 
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &delegation); err != nil {
+	cdc, _ := gaia.MakeCodecs()
+
+	if err := cdc.UnmarshalBinaryBare(data.Value, &delegation); err != nil {
 		return err
 	}
 
