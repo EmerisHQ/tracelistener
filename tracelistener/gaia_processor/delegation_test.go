@@ -21,7 +21,7 @@ func TestDelegationProcess(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			"no error when queueing delete delegation message accepted by the processor",
+			"Delete operation of delegation - no error",
 			types.Delegation{},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.DeleteOp),
@@ -32,7 +32,7 @@ func TestDelegationProcess(t *testing.T) {
 			false,
 		},
 		{
-			"no error when queueing new message accepted by the processor",
+			"Write new delegation - no error",
 			types.Delegation{
 				DelegatorAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 				ValidatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
@@ -47,7 +47,7 @@ func TestDelegationProcess(t *testing.T) {
 			false,
 		},
 		{
-			"error while writing delegation - eof",
+			"Invalid addresses - error",
 			types.Delegation{
 				DelegatorAddress: "",
 				ValidatorAddress: "",

@@ -21,7 +21,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 		wantErr             bool
 	}{
 		{
-			"no error when queueing delete unbonding delegation message accepted by the processor",
+			"Delete unbonding delegation operation - no error",
 			types.UnbondingDelegation{
 				DelegatorAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 				ValidatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
@@ -35,7 +35,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			false,
 		},
 		{
-			"no error when queueing new message accepted by the processor",
+			"Write unbonding delegation - no error",
 			types.UnbondingDelegation{
 				DelegatorAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 				ValidatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
@@ -56,7 +56,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			false,
 		},
 		{
-			"error while writing unbonding delegation - eof",
+			"Invalid addresses - error",
 			types.UnbondingDelegation{
 				DelegatorAddress: "",
 				ValidatorAddress: "",

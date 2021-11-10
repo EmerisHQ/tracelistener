@@ -22,7 +22,7 @@ func TestValidatorProcess(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			"no error when queueing delete operation of validator",
+			"Delete validator operation - no error",
 			types.Validator{
 				OperatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
 				ConsensusPubkey: &types1.Any{
@@ -49,7 +49,7 @@ func TestValidatorProcess(t *testing.T) {
 			false,
 		},
 		{
-			"no error when queueing write operation of validator",
+			"Write validator operation - no error",
 			types.Validator{
 				OperatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
 				ConsensusPubkey: &types1.Any{

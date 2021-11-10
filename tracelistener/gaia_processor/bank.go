@@ -61,7 +61,9 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 	pLen := len(types.BalancesPrefix)
 	addr := addrBytes[pLen : pLen+20]
 
-	var coins sdk.Coin
+	coins := sdk.Coin{
+		Amount: sdk.NewInt(0),
+	}
 
 	cdc, _ := gaia.MakeCodecs()
 
