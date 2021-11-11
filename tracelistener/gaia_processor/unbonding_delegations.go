@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
@@ -93,9 +92,7 @@ func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperatio
 
 	unbondingDelegation := types.UnbondingDelegation{}
 
-	cdc, _ := gaia.MakeCodecs()
-
-	if err := cdc.UnmarshalBinaryBare(data.Value, &unbondingDelegation); err != nil {
+	if err := p.cdc.UnmarshalBinaryBare(data.Value, &unbondingDelegation); err != nil {
 		return err
 	}
 

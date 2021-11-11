@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
@@ -65,9 +64,7 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		Amount: sdk.NewInt(0),
 	}
 
-	cdc, _ := gaia.MakeCodecs()
-
-	if err := cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
+	if err := p.cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
 		return err
 	}
 

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
@@ -90,9 +89,7 @@ func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
 
 	v := types.Validator{}
 
-	cdc, _ := gaia.MakeCodecs()
-
-	if err := cdc.UnmarshalBinaryBare(data.Value, &v); err != nil {
+	if err := p.cdc.UnmarshalBinaryBare(data.Value, &v); err != nil {
 		return err
 	}
 

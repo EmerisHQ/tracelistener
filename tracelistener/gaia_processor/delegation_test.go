@@ -11,9 +11,16 @@ import (
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
 func TestDelegationProcess(t *testing.T) {
+	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+
+	gp, ok := DataProcessor.(*Processor)
+	require.True(t, ok)
+	p.cdc = gp.cdc
+
 	tests := []struct {
 		name       string
 		delegation types.Delegation

@@ -6,15 +6,21 @@ import (
 	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk_types "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
 func TestValidatorProcess(t *testing.T) {
+	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+
+	gp, ok := DataProcessor.(*Processor)
+	require.True(t, ok)
+	p.cdc = gp.cdc
+
 	tests := []struct {
 		name       string
 		validator  types.Validator
@@ -83,9 +89,7 @@ func TestValidatorProcess(t *testing.T) {
 			v.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 			v.l = zap.NewNop().Sugar()
 
-			cdc, _ := gaia.MakeCodecs()
-
-			delValue, _ := cdc.MarshalBinaryBare(&tt.validator)
+			delValue, _ := p.cdc.MarshalBinaryBare(&tt.validator)
 			tt.newMessage.Value = delValue
 
 			err := v.Process(tt.newMessage)

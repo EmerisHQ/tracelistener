@@ -5,15 +5,21 @@ import (
 
 	sdk_types "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
 func TestUnbondingDelegationProcess(t *testing.T) {
+	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+
+	gp, ok := DataProcessor.(*Processor)
+	require.True(t, ok)
+	p.cdc = gp.cdc
+
 	tests := []struct {
 		name                string
 		unbondingDelegation types.UnbondingDelegation
@@ -78,9 +84,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			u.deleteHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 			u.l = zap.NewNop().Sugar()
 
-			cdc, _ := gaia.MakeCodecs()
-
-			delValue, _ := cdc.MarshalBinaryBare(&tt.unbondingDelegation)
+			delValue, _ := p.cdc.MarshalBinaryBare(&tt.unbondingDelegation)
 			tt.newMessage.Value = delValue
 
 			err := u.Process(tt.newMessage)

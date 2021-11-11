@@ -4,12 +4,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
 func TestBankProcess(t *testing.T) {
 	b := bankProcessor{}
+
+	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+
+	gp, ok := DataProcessor.(*Processor)
+	require.True(t, ok)
+	p.cdc = gp.cdc
 
 	require.True(t, b.OwnsKey([]byte("balances500stake")))
 	require.False(t, b.OwnsKey([]byte("bal")))
