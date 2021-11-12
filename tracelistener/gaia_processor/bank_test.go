@@ -15,8 +15,8 @@ func TestBankProcess(t *testing.T) {
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 
-	gp, ok := DataProcessor.(*Processor)
-	require.True(t, ok)
+	gp := DataProcessor.(*Processor)
+	require.NotNil(t, gp)
 	p.cdc = gp.cdc
 
 	require.True(t, b.OwnsKey([]byte("balances500stake")))

@@ -16,8 +16,8 @@ import (
 func TestUnbondingDelegationProcess(t *testing.T) {
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 
-	gp, ok := DataProcessor.(*Processor)
-	require.True(t, ok)
+	gp := DataProcessor.(*Processor)
+	require.NotNil(t, gp)
 	p.cdc = gp.cdc
 
 	tests := []struct {

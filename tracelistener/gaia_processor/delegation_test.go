@@ -15,10 +15,12 @@ import (
 )
 
 func TestDelegationProcess(t *testing.T) {
+	d := delegationsProcessor{}
+
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 
-	gp, ok := DataProcessor.(*Processor)
-	require.True(t, ok)
+	gp := DataProcessor.(*Processor)
+	require.NotNil(t, gp)
 	p.cdc = gp.cdc
 
 	tests := []struct {
@@ -72,7 +74,7 @@ func TestDelegationProcess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := delegationsProcessor{}
+
 			d.insertHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 			d.deleteHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 			d.l = zap.NewNop().Sugar()
