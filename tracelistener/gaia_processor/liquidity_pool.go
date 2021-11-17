@@ -6,7 +6,7 @@ import (
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/allinbits/tracelistener/tracelistener"
-	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
+	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"
 	"go.uber.org/zap"
 )
 
