@@ -79,8 +79,6 @@ func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
 		"new_balance", coins.String(),
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
-		"key", data.Key,
-		"value", data.Value,
 	)
 
 	b.heightCache[bankCacheEntry{
