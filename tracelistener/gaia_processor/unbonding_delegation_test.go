@@ -90,10 +90,11 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			u.deleteHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 			u.l = zap.NewNop().Sugar()
 
-			delValue, _ := p.cdc.MarshalBinaryBare(&tt.unbondingDelegation)
+			delValue, err := p.cdc.MarshalBinaryBare(&tt.unbondingDelegation)
+			require.NoError(t, err)
 			tt.newMessage.Value = delValue
 
-			err := u.Process(tt.newMessage)
+			err = u.Process(tt.newMessage)
 			if tt.expectedEr {
 				require.Error(t, err)
 			} else {
