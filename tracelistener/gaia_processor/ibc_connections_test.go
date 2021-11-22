@@ -14,7 +14,7 @@ import (
 )
 
 func TestIbcConnectionsProcess(t *testing.T) {
-	b := ibcConnectionsProcessor{}
+	i := ibcConnectionsProcessor{}
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 
@@ -23,10 +23,11 @@ func TestIbcConnectionsProcess(t *testing.T) {
 	p.cdc = gp.cdc
 
 	tests := []struct {
-		name       string
-		newMessage tracelistener.TraceOperation
-		ce         types.ConnectionEnd
-		wantErr    bool
+		name        string
+		newMessage  tracelistener.TraceOperation
+		ce          types.ConnectionEnd
+		expectedErr bool
+		expectedLen int
 	}{
 		{
 			"Ibc connection - no error",
@@ -52,6 +53,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				DelayPeriod: 12,
 			},
 			false,
+			1,
 		},
 		{
 			"Empty client id - error",
@@ -77,6 +79,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				DelayPeriod: 2,
 			},
 			true,
+			0,
 		},
 		{
 			"Invalid length of counterparty client and connection id - error",
@@ -102,6 +105,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				DelayPeriod: 2,
 			},
 			true,
+			0,
 		},
 		{
 			"Invalid counterparty prefix - error",
@@ -127,23 +131,37 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				DelayPeriod: 2,
 			},
 			true,
+			0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b.connectionsCache = map[connectionCacheEntry]models.IBCConnectionRow{}
-			b.l = zap.NewNop().Sugar()
+			i.connectionsCache = map[connectionCacheEntry]models.IBCConnectionRow{}
+			i.l = zap.NewNop().Sugar()
 
 			value, _ := p.cdc.MarshalBinaryBare(&tt.ce)
 			tt.newMessage.Value = value
-			err := b.Process(tt.newMessage)
-			if tt.wantErr {
+			err := i.Process(tt.newMessage)
+			if tt.expectedErr {
 				require.Error(t, err)
-				return
+			} else {
+				require.NoError(t, err)
 			}
 
-			require.NoError(t, err)
+			// check cache length
+			require.Len(t, i.connectionsCache, tt.expectedLen)
+
+			// if channelcache not empty then check the data
+			for k, _ := range i.connectionsCache {
+				row := i.connectionsCache[connectionCacheEntry{connectionID: k.connectionID, clientID: k.clientID}]
+				require.NotNil(t, row)
+
+				state := row.State
+				require.Equal(t, tt.ce.State.String(), state)
+
+				return
+			}
 		})
 	}
 }
