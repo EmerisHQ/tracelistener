@@ -16,7 +16,8 @@ import (
 func TestIbcConnectionsProcess(t *testing.T) {
 	i := ibcConnectionsProcessor{}
 
-	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
+	require.NoError(t, err)
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
@@ -152,7 +153,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 			// check cache length
 			require.Len(t, i.connectionsCache, tt.expectedLen)
 
-			// if channelcache not empty then check the data
+			// if connectioncache not empty then check the data
 			for k, _ := range i.connectionsCache {
 				row := i.connectionsCache[connectionCacheEntry{connectionID: k.connectionID, clientID: k.clientID}]
 				require.NotNil(t, row)

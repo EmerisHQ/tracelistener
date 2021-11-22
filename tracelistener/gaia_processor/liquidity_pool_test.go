@@ -13,19 +13,21 @@ import (
 )
 
 func TestLiquidityPoolProcess(t *testing.T) {
-	b := liquidityPoolProcessor{}
+	l := liquidityPoolProcessor{}
 
-	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
+	require.NoError(t, err)
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
 	p.cdc = gp.cdc
 
 	tests := []struct {
-		name       string
-		newMessage tracelistener.TraceOperation
-		lp         liquiditytypes.Pool
-		wantErr    bool
+		name        string
+		newMessage  tracelistener.TraceOperation
+		lp          liquiditytypes.Pool
+		expectedEr  bool
+		expectedLen int
 	}{
 		{
 			"Add liquidity pool details - no error",
@@ -39,23 +41,39 @@ func TestLiquidityPoolProcess(t *testing.T) {
 				ReserveAccountAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 			},
 			false,
+			1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b.poolsCache = map[uint64]models.PoolRow{}
-			b.l = zap.NewNop().Sugar()
+			l.poolsCache = map[uint64]models.PoolRow{}
+			l.l = zap.NewNop().Sugar()
 
-			delValue, _ := p.cdc.MarshalBinaryBare(&tt.lp)
+			delValue, err := p.cdc.MarshalBinaryBare(&tt.lp)
+			require.NoError(t, err)
 			tt.newMessage.Value = delValue
-			err := b.Process(tt.newMessage)
-			if tt.wantErr {
+
+			err = l.Process(tt.newMessage)
+			if tt.expectedEr {
 				require.Error(t, err)
-				return
+			} else {
+				require.NoError(t, err)
 			}
 
-			require.NoError(t, err)
+			// check cache length
+			require.Len(t, l.poolsCache, tt.expectedLen)
+
+			// if poolcache not empty then check the data
+			for k, _ := range l.poolsCache {
+				row := l.poolsCache[k]
+				require.NotNil(t, row)
+
+				address := row.ReserveAccountAddress
+				require.Equal(t, tt.lp.ReserveAccountAddress, address)
+
+				return
+			}
 		})
 	}
 }

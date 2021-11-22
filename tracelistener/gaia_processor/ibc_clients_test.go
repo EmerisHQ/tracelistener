@@ -208,7 +208,7 @@ func TestIbcClientProcess(t *testing.T) {
 			// check cache length
 			require.Len(t, i.clientsCache, tt.expectedLen)
 
-			// if channelcache not empty then check the data
+			// if clientcache not empty then check the data
 			for k, _ := range i.clientsCache {
 				row := i.clientsCache[clientCacheEntry{chainID: k.chainID, clientID: k.clientID}]
 				require.NotNil(t, row)
