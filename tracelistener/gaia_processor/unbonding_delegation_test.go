@@ -14,7 +14,10 @@ import (
 )
 
 func TestUnbondingDelegationProcess(t *testing.T) {
-	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+	u := unbondingDelegationsProcessor{}
+
+	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
+	require.NoError(t, err)
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
@@ -24,7 +27,8 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 		name                string
 		unbondingDelegation types.UnbondingDelegation
 		newMessage          tracelistener.TraceOperation
-		wantErr             bool
+		expectedEr          bool
+		expectedLen         int
 	}{
 		{
 			"Delete unbonding delegation operation - no error",
@@ -39,6 +43,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 				BlockHeight: 0,
 			},
 			false,
+			1,
 		},
 		{
 			"Write unbonding delegation - no error",
@@ -60,6 +65,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 				TxHash:      "066050E449C3450F943FC6227F155C19EF5C14653F268E9BAFEFE93DF9B3EDAD",
 			},
 			false,
+			1,
 		},
 		{
 			"Invalid addresses - error",
@@ -74,12 +80,12 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 				TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
 			},
 			true,
+			0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := unbondingDelegationsProcessor{}
 			u.insertHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 			u.deleteHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 			u.l = zap.NewNop().Sugar()
@@ -88,13 +94,37 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			tt.newMessage.Value = delValue
 
 			err := u.Process(tt.newMessage)
-			if tt.wantErr {
+			if tt.expectedEr {
 				require.Error(t, err)
-				return
+			} else {
+				require.NoError(t, err)
 			}
 
-			require.NoError(t, err)
+			if tt.newMessage.Operation == tracelistener.DeleteOp.String() {
+				require.Len(t, u.deleteHeightCache, tt.expectedLen)
 
+				for k, _ := range u.deleteHeightCache {
+					row := u.deleteHeightCache[unbondingDelegationCacheEntry{delegator: k.delegator, validator: k.validator}]
+					require.NotNil(t, row)
+
+					return
+				}
+			} else {
+				require.Len(t, u.insertHeightCache, tt.expectedLen)
+
+				for k, _ := range u.insertHeightCache {
+					row := u.insertHeightCache[unbondingDelegationCacheEntry{delegator: k.delegator, validator: k.validator}]
+					require.NotNil(t, row)
+
+					delegator := row.Delegator
+					delegatorAddr, err := b32Hex(tt.unbondingDelegation.DelegatorAddress)
+					require.NoError(t, err)
+
+					require.Equal(t, delegatorAddr, delegator)
+
+					return
+				}
+			}
 		})
 	}
 }
