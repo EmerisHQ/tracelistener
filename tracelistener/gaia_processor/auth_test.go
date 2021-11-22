@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	gaia "github.com/cosmos/gaia/v4/app"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -16,20 +15,22 @@ import (
 func TestAuthProcess(t *testing.T) {
 	a := authProcessor{}
 
-	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
+	require.NoError(t, err)
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
 	p.cdc = gp.cdc
 
 	tests := []struct {
-		name       string
-		account    authtypes.BaseAccount
-		newMessage tracelistener.TraceOperation
-		wantErr    bool
+		name        string
+		account     authtypes.BaseAccount
+		newMessage  tracelistener.TraceOperation
+		expectedErr bool
+		expectedLen int
 	}{
 		{
-			"auth - no error",
+			"auth processor- no error",
 			authtypes.BaseAccount{
 				Address:       "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 				AccountNumber: 12,
@@ -41,6 +42,7 @@ func TestAuthProcess(t *testing.T) {
 				BlockHeight: 1,
 			},
 			false,
+			1,
 		},
 		{
 			"invalid baseaccount address - error",
@@ -55,6 +57,7 @@ func TestAuthProcess(t *testing.T) {
 				BlockHeight: 1,
 			},
 			true,
+			0,
 		},
 	}
 
@@ -64,18 +67,28 @@ func TestAuthProcess(t *testing.T) {
 			a.heightCache = map[authCacheEntry]models.AuthRow{}
 			a.l = zap.NewNop().Sugar()
 
-			cdc, _ := gaia.MakeCodecs()
-
-			delValue, _ := cdc.MarshalInterface(&tt.account)
+			delValue, err := p.cdc.MarshalInterface(&tt.account)
+			require.NoError(t, err)
 			tt.newMessage.Value = delValue
 
-			err := a.Process(tt.newMessage)
-			if tt.wantErr {
+			err = a.Process(tt.newMessage)
+			if tt.expectedErr {
 				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Len(t, a.heightCache, tt.expectedLen)
+
+			for k, _ := range a.heightCache {
+				row := a.heightCache[authCacheEntry{address: k.address, accNumber: k.accNumber}]
+				require.NotNil(t, row)
+
+				accountNumber := row.AccountNumber
+				require.Equal(t, tt.account.AccountNumber, accountNumber)
 				return
 			}
 
-			require.NoError(t, err)
 		})
 	}
 }
