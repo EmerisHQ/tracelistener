@@ -15,17 +15,21 @@ import (
 )
 
 func TestValidatorProcess(t *testing.T) {
-	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
+	v := validatorsProcessor{}
+
+	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
+	require.NoError(t, err)
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
 	p.cdc = gp.cdc
 
 	tests := []struct {
-		name       string
-		validator  types.Validator
-		newMessage tracelistener.TraceOperation
-		wantErr    bool
+		name        string
+		validator   types.Validator
+		newMessage  tracelistener.TraceOperation
+		expectedErr bool
+		expectedLen int
 	}{
 		{
 			"Delete validator operation - no error",
@@ -53,6 +57,7 @@ func TestValidatorProcess(t *testing.T) {
 				Key:       []byte("cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s"),
 			},
 			false,
+			1,
 		},
 		{
 			"Write validator operation - no error",
@@ -79,27 +84,50 @@ func TestValidatorProcess(t *testing.T) {
 				Operation: string(tracelistener.WriteOp),
 			},
 			false,
+			1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := validatorsProcessor{}
 			v.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 			v.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 			v.l = zap.NewNop().Sugar()
 
-			delValue, _ := p.cdc.MarshalBinaryBare(&tt.validator)
+			delValue, err := p.cdc.MarshalBinaryBare(&tt.validator)
+			require.NoError(t, err)
 			tt.newMessage.Value = delValue
 
-			err := v.Process(tt.newMessage)
-			if tt.wantErr {
+			err = v.Process(tt.newMessage)
+			if tt.expectedErr {
 				require.Error(t, err)
 				return
+			} else {
+				require.NoError(t, err)
 			}
 
-			require.NoError(t, err)
+			if tt.newMessage.Operation == tracelistener.DeleteOp.String() {
+				require.Len(t, v.deleteValidatorsCache, tt.expectedLen)
 
+				for k, _ := range v.deleteValidatorsCache {
+					row := v.deleteValidatorsCache[validatorCacheEntry{operator: k.operator}]
+					require.NotNil(t, row)
+
+					return
+				}
+			} else {
+				require.Len(t, v.insertValidatorsCache, tt.expectedLen)
+
+				for k, _ := range v.insertValidatorsCache {
+					row := v.insertValidatorsCache[validatorCacheEntry{operator: k.operator}]
+					require.NotNil(t, row)
+
+					status := row.Status
+					require.Equal(t, int32(tt.validator.Status), status)
+
+					return
+				}
+			}
 		})
 	}
 }
