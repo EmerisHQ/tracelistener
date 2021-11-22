@@ -13,7 +13,7 @@ import (
 )
 
 func TestIbcChannelsProcess(t *testing.T) {
-	u := ibcChannelsProcessor{}
+	i := ibcChannelsProcessor{}
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 	gp := DataProcessor.(*Processor)
@@ -21,10 +21,11 @@ func TestIbcChannelsProcess(t *testing.T) {
 	p.cdc = gp.cdc
 
 	tests := []struct {
-		name       string
-		channel    types.Channel
-		newMessage tracelistener.TraceOperation
-		wantErr    bool
+		name        string
+		channel     types.Channel
+		newMessage  tracelistener.TraceOperation
+		expectedErr bool
+		expectedLen int
 	}{
 		{
 			"Ibc channel - no error",
@@ -42,6 +43,7 @@ func TestIbcChannelsProcess(t *testing.T) {
 				Key:       []byte("cosmos/ports/x/channels/ibc"),
 			},
 			false,
+			1,
 		},
 		{
 			"Cannot parse channel path - error",
@@ -59,6 +61,7 @@ func TestIbcChannelsProcess(t *testing.T) {
 				Key:       []byte("cosmos/x/channels/ibc"),
 			},
 			true,
+			0,
 		},
 		{
 			"Invalid counterparty port ID - error",
@@ -76,6 +79,7 @@ func TestIbcChannelsProcess(t *testing.T) {
 				Key:       []byte("cosmos/ports/x/channels/ibc"),
 			},
 			true,
+			0,
 		},
 		{
 			"Invalid connection hop ID - error",
@@ -93,6 +97,7 @@ func TestIbcChannelsProcess(t *testing.T) {
 				Key:       []byte("cosmos/ports/x/channels/ibc"),
 			},
 			true,
+			0,
 		},
 		{
 			"Invalid channel state - error",
@@ -110,6 +115,7 @@ func TestIbcChannelsProcess(t *testing.T) {
 				Key:       []byte("cosmos/ports/x/channels/ibc"),
 			},
 			true,
+			0,
 		},
 		{
 			"Invalid channel ordering - error",
@@ -127,24 +133,38 @@ func TestIbcChannelsProcess(t *testing.T) {
 				Key:       []byte("cosmos/ports/x/channels/ibc"),
 			},
 			true,
+			0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u.channelsCache = map[channelCacheEntry]models.IBCChannelRow{}
-			u.l = zap.NewNop().Sugar()
+			i.channelsCache = map[channelCacheEntry]models.IBCChannelRow{}
+			i.l = zap.NewNop().Sugar()
 
-			delValue, _ := p.cdc.MarshalBinaryBare(&tt.channel)
+			delValue, err := p.cdc.MarshalBinaryBare(&tt.channel)
+			require.NoError(t, err)
 			tt.newMessage.Value = delValue
 
-			err := u.Process(tt.newMessage)
-			if tt.wantErr {
+			err = i.Process(tt.newMessage)
+			if tt.expectedErr {
 				require.Error(t, err)
-				return
+			} else {
+				require.NoError(t, err)
 			}
 
-			require.NoError(t, err)
+			// check cache length
+			require.Len(t, i.channelsCache, tt.expectedLen)
+
+			// if channelcache not empty then check the data
+			for k, _ := range i.channelsCache {
+				row := i.channelsCache[channelCacheEntry{channelID: k.channelID, portID: k.portID}]
+				require.NotNil(t, row)
+
+				state := row.State
+				require.Equal(t, int32(tt.channel.State), state)
+				return
+			}
 		})
 	}
 }

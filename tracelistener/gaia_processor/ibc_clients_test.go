@@ -15,7 +15,7 @@ import (
 )
 
 func TestIbcClientProcess(t *testing.T) {
-	b := ibcClientsProcessor{}
+	i := ibcClientsProcessor{}
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 
@@ -24,10 +24,11 @@ func TestIbcClientProcess(t *testing.T) {
 	p.cdc = gp.cdc
 
 	tests := []struct {
-		name       string
-		newMessage tracelistener.TraceOperation
-		v          clientTypes.ClientState
-		wantErr    bool
+		name        string
+		newMessage  tracelistener.TraceOperation
+		client      clientTypes.ClientState
+		expectedErr bool
+		expectedLen int
 	}{
 		{
 			"Ibc connection - no error",
@@ -59,6 +60,7 @@ func TestIbcClientProcess(t *testing.T) {
 				LatestHeight: types.NewHeight(100, 102),
 			},
 			false,
+			1,
 		},
 		{
 			"Trusting period should be < unbonding period - error",
@@ -91,6 +93,7 @@ func TestIbcClientProcess(t *testing.T) {
 				LatestHeight: types.NewHeight(100, 102),
 			},
 			true,
+			0,
 		},
 		{
 			"Max clock drift cannot be zero - error",
@@ -123,6 +126,7 @@ func TestIbcClientProcess(t *testing.T) {
 				LatestHeight: types.NewHeight(100, 102),
 			},
 			true,
+			0,
 		},
 		{
 			"TrustLevel must be within [1/3, 1] - error",
@@ -155,6 +159,7 @@ func TestIbcClientProcess(t *testing.T) {
 				LatestHeight: types.NewHeight(100, 102),
 			},
 			true,
+			0,
 		},
 		{
 			"Proof specs cannot be nil for tm client - error",
@@ -180,23 +185,38 @@ func TestIbcClientProcess(t *testing.T) {
 				LatestHeight: types.NewHeight(100, 102),
 			},
 			true,
+			0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b.clientsCache = map[clientCacheEntry]models.IBCClientStateRow{}
-			b.l = zap.NewNop().Sugar()
+			i.clientsCache = map[clientCacheEntry]models.IBCClientStateRow{}
+			i.l = zap.NewNop().Sugar()
 
-			value, _ := p.cdc.MarshalInterface(&tt.v)
+			value, err := p.cdc.MarshalInterface(&tt.client)
+			require.NoError(t, err)
 			tt.newMessage.Value = value
-			err := b.Process(tt.newMessage)
-			if tt.wantErr {
+
+			err = i.Process(tt.newMessage)
+			if tt.expectedErr {
 				require.Error(t, err)
-				return
+			} else {
+				require.NoError(t, err)
 			}
 
-			require.NoError(t, err)
+			// check cache length
+			require.Len(t, i.clientsCache, tt.expectedLen)
+
+			// if channelcache not empty then check the data
+			for k, _ := range i.clientsCache {
+				row := i.clientsCache[clientCacheEntry{chainID: k.chainID, clientID: k.clientID}]
+				require.NotNil(t, row)
+
+				chainID := row.ChainID
+				require.Equal(t, tt.client.ChainId, chainID)
+				return
+			}
 		})
 	}
 }

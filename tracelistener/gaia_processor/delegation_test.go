@@ -27,7 +27,7 @@ func TestDelegationProcess(t *testing.T) {
 		name        string
 		delegation  types.Delegation
 		newMessage  tracelistener.TraceOperation
-		wantErr     bool
+		expectedErr bool
 		expectedLen int
 	}{
 		{
@@ -86,7 +86,7 @@ func TestDelegationProcess(t *testing.T) {
 			tt.newMessage.Value = delValue
 
 			err = d.Process(tt.newMessage)
-			if tt.wantErr {
+			if tt.expectedErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
