@@ -30,7 +30,7 @@ func TestDelegationOwnsKey(t *testing.T) {
 		},
 		{
 			"Incorrect prefix- error",
-			[]byte("0x0"),
+			[]byte{0x0},
 			"key",
 			true,
 		},

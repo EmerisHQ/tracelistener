@@ -30,7 +30,7 @@ func TestAuthOwnsKey(t *testing.T) {
 		},
 		{
 			"Incorrect prefix- error",
-			[]byte("0x0"),
+			[]byte{0x0},
 			"key",
 			true,
 		},
@@ -122,9 +122,9 @@ func TestAuthProcess(t *testing.T) {
 
 				accountNumber := row.AccountNumber
 				require.Equal(t, tt.account.AccountNumber, accountNumber)
+
 				return
 			}
-
 		})
 	}
 }

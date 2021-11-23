@@ -29,8 +29,8 @@ func TestIbcChannelsProcessOwnsKey(t *testing.T) {
 			false,
 		},
 		{
-			"Incorrect prefix- no error",
-			[]byte("0x0"),
+			"Incorrect prefix- error",
+			[]byte{0x0},
 			"key",
 			true,
 		},

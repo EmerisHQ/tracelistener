@@ -31,7 +31,7 @@ func TestIbcConnProcessOwnsKey(t *testing.T) {
 		},
 		{
 			"Incorrect prefix- error",
-			[]byte("0x0"),
+			[]byte{0x0},
 			"key",
 			true,
 		},
@@ -51,10 +51,6 @@ func TestIbcConnProcessOwnsKey(t *testing.T) {
 
 func TestIbcConnectionsProcess(t *testing.T) {
 	i := ibcConnectionsProcessor{}
-
-	// // test ownkey prefix
-	// require.True(t, i.OwnsKey(append([]byte(host.KeyConnectionPrefix), []byte("key")...)))
-	// require.False(t, i.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)

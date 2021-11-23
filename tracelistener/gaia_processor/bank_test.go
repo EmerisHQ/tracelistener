@@ -30,7 +30,7 @@ func TestBankProcessorOwnsKey(t *testing.T) {
 		},
 		{
 			"Incorrect prefix- error",
-			[]byte("0x0"),
+			[]byte{0x0},
 			"key",
 			true,
 		},
@@ -105,6 +105,7 @@ func TestBankProcess(t *testing.T) {
 
 				denom := row.Denom
 				require.Equal(t, tt.coin.Denom, denom)
+
 				return
 			}
 		})
