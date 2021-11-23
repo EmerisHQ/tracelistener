@@ -81,10 +81,7 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.WriteOp),
 			},
-			transferTypes.DenomTrace{
-				Path:      "1234/channelID",
-				BaseDenom: "",
-			},
+			transferTypes.DenomTrace{},
 			true,
 			0,
 		},
