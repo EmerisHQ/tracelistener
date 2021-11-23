@@ -14,12 +14,43 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
+func TestValidatorProcessOwnsKey(t *testing.T) {
+	u := validatorsProcessor{}
+
+	tests := []struct {
+		name        string
+		prefix      []byte
+		key         string
+		expectedErr bool
+	}{
+		{
+			"Correct prefix- no error",
+			types.ValidatorsKey,
+			"key",
+			false,
+		},
+		{
+			"Incorrect prefix- error",
+			[]byte("0x0"),
+			"key",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.expectedErr {
+				require.False(t, u.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			} else {
+				require.True(t, u.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			}
+		})
+	}
+}
+
 func TestValidatorProcess(t *testing.T) {
 	v := validatorsProcessor{}
-
-	// test ownkey prefix
-	require.True(t, v.OwnsKey(append(types.ValidatorsKey, []byte("key")...)))
-	require.False(t, v.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)

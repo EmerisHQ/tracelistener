@@ -12,12 +12,43 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
+func TestIbcDenomTracesOwnsKey(t *testing.T) {
+	i := ibcDenomTracesProcessor{}
+
+	tests := []struct {
+		name        string
+		prefix      []byte
+		key         string
+		expectedErr bool
+	}{
+		{
+			"Correct prefix- no error",
+			transferTypes.DenomTraceKey,
+			"key",
+			false,
+		},
+		{
+			"Incorrect prefix- error",
+			[]byte("0x0"),
+			"key",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.expectedErr {
+				require.False(t, i.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			} else {
+				require.True(t, i.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			}
+		})
+	}
+}
+
 func TestIBCDenomTracesProcess(t *testing.T) {
 	dtp := ibcDenomTracesProcessor{}
-
-	// test ownkey prefix
-	require.True(t, dtp.OwnsKey(append(transferTypes.DenomTraceKey, []byte("key")...)))
-	require.False(t, dtp.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)

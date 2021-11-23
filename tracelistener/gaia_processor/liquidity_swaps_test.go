@@ -12,12 +12,43 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
+func TestLiquiditySwapaProcessOwnsKey(t *testing.T) {
+	ls := liquiditySwapsProcessor{}
+
+	tests := []struct {
+		name        string
+		prefix      []byte
+		key         string
+		expectedErr bool
+	}{
+		{
+			"Correct prefix- no error",
+			liquiditytypes.PoolKeyPrefix,
+			"key",
+			false,
+		},
+		{
+			"Incorrect prefix- error",
+			[]byte("0x0"),
+			"key",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.expectedErr {
+				require.False(t, ls.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			} else {
+				require.True(t, ls.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			}
+		})
+	}
+}
+
 func TestLiquiditySwapProcess(t *testing.T) {
 	l := liquiditySwapsProcessor{}
-
-	// test ownkey prefix
-	require.True(t, l.OwnsKey(append(liquiditytypes.PoolKeyPrefix, []byte("key")...)))
-	require.False(t, l.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)

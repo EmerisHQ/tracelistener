@@ -13,12 +13,43 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
-func TestUnbondingDelegationProcess(t *testing.T) {
+func TestUnbondingDelegationOwnsKey(t *testing.T) {
 	u := unbondingDelegationsProcessor{}
 
-	// test ownkey prefix
-	require.True(t, u.OwnsKey(append(types.UnbondingDelegationKey, []byte("key")...)))
-	require.False(t, u.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+	tests := []struct {
+		name        string
+		prefix      []byte
+		key         string
+		expectedErr bool
+	}{
+		{
+			"Correct prefix- no error",
+			types.UnbondingDelegationKey,
+			"key",
+			false,
+		},
+		{
+			"Incorrect prefix- error",
+			[]byte("0x0"),
+			"key",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.expectedErr {
+				require.False(t, u.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			} else {
+				require.True(t, u.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			}
+		})
+	}
+}
+
+func TestUnbondingDelegationProcess(t *testing.T) {
+	u := unbondingDelegationsProcessor{}
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)

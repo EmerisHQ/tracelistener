@@ -15,12 +15,43 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener/config"
 )
 
-func TestIbcClientProcess(t *testing.T) {
+func TestIbcClientProcessOwnsKey(t *testing.T) {
 	i := ibcClientsProcessor{}
 
-	// test ownkey prefix
-	require.True(t, i.OwnsKey(append([]byte(host.KeyClientState), []byte("key")...)))
-	require.False(t, i.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+	tests := []struct {
+		name        string
+		prefix      []byte
+		key         string
+		expectedErr bool
+	}{
+		{
+			"Correct prefix- no error",
+			[]byte(host.KeyClientState),
+			"key",
+			false,
+		},
+		{
+			"Incorrect prefix- error",
+			[]byte("0x0"),
+			"key",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.expectedErr {
+				require.False(t, i.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			} else {
+				require.True(t, i.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
+			}
+		})
+	}
+}
+
+func TestIbcClientProcess(t *testing.T) {
+	i := ibcClientsProcessor{}
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 
