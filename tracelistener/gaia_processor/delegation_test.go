@@ -16,6 +16,10 @@ import (
 func TestDelegationProcess(t *testing.T) {
 	d := delegationsProcessor{}
 
+	// test ownkey prefix
+	require.True(t, d.OwnsKey(append(types.DelegationKey, []byte("key")...)))
+	require.False(t, d.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
 

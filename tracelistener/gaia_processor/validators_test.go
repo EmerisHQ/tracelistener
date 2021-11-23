@@ -17,6 +17,10 @@ import (
 func TestValidatorProcess(t *testing.T) {
 	v := validatorsProcessor{}
 
+	// test ownkey prefix
+	require.True(t, v.OwnsKey(append(types.ValidatorsKey, []byte("key")...)))
+	require.False(t, v.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
 
@@ -94,9 +98,9 @@ func TestValidatorProcess(t *testing.T) {
 			v.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 			v.l = zap.NewNop().Sugar()
 
-			delValue, err := p.cdc.MarshalBinaryBare(&tt.validator)
+			value, err := p.cdc.MarshalBinaryBare(&tt.validator)
 			require.NoError(t, err)
-			tt.newMessage.Value = delValue
+			tt.newMessage.Value = value
 
 			err = v.Process(tt.newMessage)
 			if tt.expectedErr {

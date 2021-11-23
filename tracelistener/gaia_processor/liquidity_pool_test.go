@@ -15,6 +15,10 @@ import (
 func TestLiquidityPoolProcess(t *testing.T) {
 	l := liquidityPoolProcessor{}
 
+	// test ownkey prefix
+	require.True(t, l.OwnsKey(append(liquiditytypes.PoolKeyPrefix, []byte("key")...)))
+	require.False(t, l.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
 
@@ -50,9 +54,9 @@ func TestLiquidityPoolProcess(t *testing.T) {
 			l.poolsCache = map[uint64]models.PoolRow{}
 			l.l = zap.NewNop().Sugar()
 
-			delValue, err := p.cdc.MarshalBinaryBare(&tt.lp)
+			value, err := p.cdc.MarshalBinaryBare(&tt.lp)
 			require.NoError(t, err)
-			tt.newMessage.Value = delValue
+			tt.newMessage.Value = value
 
 			err = l.Process(tt.newMessage)
 			if tt.expectedEr {

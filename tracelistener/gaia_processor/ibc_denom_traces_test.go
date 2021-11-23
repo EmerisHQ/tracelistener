@@ -15,6 +15,10 @@ import (
 func TestIBCDenomTracesProcess(t *testing.T) {
 	dtp := ibcDenomTracesProcessor{}
 
+	// test ownkey prefix
+	require.True(t, dtp.OwnsKey(append(transferTypes.DenomTraceKey, []byte("key")...)))
+	require.False(t, dtp.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
 

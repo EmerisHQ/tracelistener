@@ -15,6 +15,10 @@ import (
 func TestLiquiditySwapProcess(t *testing.T) {
 	l := liquiditySwapsProcessor{}
 
+	// test ownkey prefix
+	require.True(t, l.OwnsKey(append(liquiditytypes.PoolKeyPrefix, []byte("key")...)))
+	require.False(t, l.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
 
@@ -30,7 +34,7 @@ func TestLiquiditySwapProcess(t *testing.T) {
 		expectedLen int
 	}{
 		{
-			"Liquidity swaos - no error",
+			"Liquidity swaps - no error",
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.WriteOp),
 			},
@@ -49,13 +53,13 @@ func TestLiquiditySwapProcess(t *testing.T) {
 			l.swapsCache = map[uint64]models.SwapRow{}
 			l.l = zap.NewNop().Sugar()
 
-			delValue, _ := p.cdc.MarshalBinaryBare(&tt.ls)
-			tt.newMessage.Value = delValue
+			value, err := p.cdc.MarshalBinaryBare(&tt.ls)
+			require.NoError(t, err)
+			tt.newMessage.Value = value
 
-			err := l.Process(tt.newMessage)
+			err = l.Process(tt.newMessage)
 			if tt.expectedErr {
 				require.Error(t, err)
-				// return
 			} else {
 				require.NoError(t, err)
 			}

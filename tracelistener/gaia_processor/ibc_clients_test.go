@@ -5,6 +5,7 @@ import (
 
 	ics23 "github.com/confio/ics23/go"
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
+	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	clientTypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -16,6 +17,10 @@ import (
 
 func TestIbcClientProcess(t *testing.T) {
 	i := ibcClientsProcessor{}
+
+	// test ownkey prefix
+	require.True(t, i.OwnsKey(append([]byte(host.KeyClientState), []byte("key")...)))
+	require.False(t, i.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 

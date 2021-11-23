@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -14,6 +15,10 @@ import (
 
 func TestAuthProcess(t *testing.T) {
 	a := authProcessor{}
+
+	// test ownkey prefix
+	require.True(t, a.OwnsKey(append(types.AddressStoreKeyPrefix, []byte("key")...)))
+	require.False(t, a.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)

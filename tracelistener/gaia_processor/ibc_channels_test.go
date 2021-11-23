@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
+	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -14,6 +15,10 @@ import (
 
 func TestIbcChannelsProcess(t *testing.T) {
 	i := ibcChannelsProcessor{}
+
+	// test ownkey prefix
+	require.True(t, i.OwnsKey(append([]byte(host.KeyChannelEndPrefix), []byte("key")...)))
+	require.False(t, i.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, _ := New(zap.NewNop().Sugar(), &config.Config{})
 	gp := DataProcessor.(*Processor)
@@ -142,9 +147,9 @@ func TestIbcChannelsProcess(t *testing.T) {
 			i.channelsCache = map[channelCacheEntry]models.IBCChannelRow{}
 			i.l = zap.NewNop().Sugar()
 
-			delValue, err := p.cdc.MarshalBinaryBare(&tt.channel)
+			value, err := p.cdc.MarshalBinaryBare(&tt.channel)
 			require.NoError(t, err)
-			tt.newMessage.Value = delValue
+			tt.newMessage.Value = value
 
 			err = i.Process(tt.newMessage)
 			if tt.expectedErr {

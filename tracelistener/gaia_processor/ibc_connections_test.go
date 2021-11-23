@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
 	ibcTypes "github.com/cosmos/cosmos-sdk/x/ibc/core/23-commitment/types"
+	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -15,6 +16,10 @@ import (
 
 func TestIbcConnectionsProcess(t *testing.T) {
 	i := ibcConnectionsProcessor{}
+
+	// test ownkey prefix
+	require.True(t, i.OwnsKey(append([]byte(host.KeyConnectionPrefix), []byte("key")...)))
+	require.False(t, i.OwnsKey(append([]byte("0x0"), []byte("key")...)))
 
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
@@ -141,9 +146,11 @@ func TestIbcConnectionsProcess(t *testing.T) {
 			i.connectionsCache = map[connectionCacheEntry]models.IBCConnectionRow{}
 			i.l = zap.NewNop().Sugar()
 
-			value, _ := p.cdc.MarshalBinaryBare(&tt.ce)
+			value, err := p.cdc.MarshalBinaryBare(&tt.ce)
+			require.NoError(t, err)
 			tt.newMessage.Value = value
-			err := i.Process(tt.newMessage)
+
+			err = i.Process(tt.newMessage)
 			if tt.expectedErr {
 				require.Error(t, err)
 			} else {

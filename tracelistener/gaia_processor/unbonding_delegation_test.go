@@ -16,6 +16,10 @@ import (
 func TestUnbondingDelegationProcess(t *testing.T) {
 	u := unbondingDelegationsProcessor{}
 
+	// test ownkey prefix
+	require.True(t, u.OwnsKey(append(types.UnbondingDelegationKey, []byte("key")...)))
+	require.False(t, u.OwnsKey(append([]byte("0x0"), []byte("key")...)))
+
 	DataProcessor, err := New(zap.NewNop().Sugar(), &config.Config{})
 	require.NoError(t, err)
 
