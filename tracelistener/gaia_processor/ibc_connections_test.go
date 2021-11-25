@@ -204,3 +204,58 @@ func TestIbcConnectionsProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestIbcConnectionsFlushCache(t *testing.T) {
+	i := ibcConnectionsProcessor{}
+
+	tests := []struct {
+		name         string
+		connectionID string
+		clientID     string
+		LatestHeight uint64
+		isNil        bool
+		expectedNil  bool
+	}{
+		{
+			"Non empty data - No error",
+			"connectionID",
+			"clientID",
+			4211,
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			"",
+			0,
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i.connectionsCache = map[connectionCacheEntry]models.IBCConnectionRow{}
+
+			if !tt.isNil {
+				i.connectionsCache[connectionCacheEntry{
+					connectionID: tt.connectionID,
+					clientID:     tt.clientID,
+				}] = models.IBCConnectionRow{
+					ConnectionID: tt.connectionID,
+					ClientID:     tt.clientID,
+				}
+			}
+
+			wop := i.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

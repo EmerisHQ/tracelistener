@@ -119,3 +119,58 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestIbcDenomTracesFlushCache(t *testing.T) {
+	i := ibcDenomTracesProcessor{}
+
+	tests := []struct {
+		name        string
+		path        string
+		baseDenom   string
+		hash        string
+		isNil       bool
+		expectedNil bool
+	}{
+		{
+			"Non empty data - No error",
+			"path",
+			"stake",
+			"hash",
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			"",
+			"",
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i.denomTracesCache = map[string]models.IBCDenomTraceRow{}
+
+			if !tt.isNil {
+				row := models.IBCDenomTraceRow{
+					Path:      tt.path,
+					BaseDenom: tt.baseDenom,
+					Hash:      tt.hash,
+				}
+
+				i.denomTracesCache[tt.hash] = row
+			}
+
+			wop := i.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

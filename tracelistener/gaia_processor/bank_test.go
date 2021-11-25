@@ -111,3 +111,59 @@ func TestBankProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestBankFlushCache(t *testing.T) {
+	b := bankProcessor{}
+
+	tests := []struct {
+		name        string
+		address     string
+		Amount      string
+		denom       string
+		isNil       bool
+		expectedNil bool
+	}{
+		{
+			"Non empty data - No error",
+			"0A1E9FBE949F06AA6CABABF9262EF5C071DCA7E2",
+			"100stake",
+			"stake",
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			"",
+			"",
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b.heightCache = map[bankCacheEntry]models.BalanceRow{}
+
+			if !tt.isNil {
+				b.heightCache[bankCacheEntry{
+					address: tt.address,
+					denom:   tt.denom,
+				}] = models.BalanceRow{
+					Address: tt.address,
+					Amount:  tt.Amount,
+					Denom:   tt.denom,
+				}
+			}
+
+			wop := b.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

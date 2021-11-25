@@ -152,3 +152,60 @@ func TestDelegationProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestDelegationFlushCache(t *testing.T) {
+	d := delegationsProcessor{}
+
+	tests := []struct {
+		name        string
+		delegator   string
+		validator   string
+		Amount      string
+		isNil       bool
+		expectedNil bool
+	}{
+		{
+			"Non empty data - No error",
+			"cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+			"cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+			"100stake",
+			false,
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d.insertHeightCache = map[delegationCacheEntry]models.DelegationRow{}
+			d.deleteHeightCache = map[delegationCacheEntry]models.DelegationRow{}
+
+			if !tt.isNil {
+				d.insertHeightCache[delegationCacheEntry{
+					delegator: tt.delegator,
+					validator: tt.validator,
+				}] = models.DelegationRow{
+					Delegator: tt.delegator,
+					Validator: tt.validator,
+					Amount:    tt.Amount,
+				}
+
+				d.deleteHeightCache[delegationCacheEntry{
+					delegator: tt.delegator,
+					validator: tt.validator,
+				}] = models.DelegationRow{
+					Delegator: tt.delegator,
+					Validator: tt.validator,
+				}
+			}
+
+			wop := d.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

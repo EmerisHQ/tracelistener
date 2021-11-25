@@ -251,8 +251,65 @@ func TestIbcClientProcess(t *testing.T) {
 
 				chainID := row.ChainID
 				require.Equal(t, tt.client.ChainId, chainID)
+
 				return
 			}
+		})
+	}
+}
+
+func TestIbcClientsFlushCache(t *testing.T) {
+	i := ibcClientsProcessor{}
+
+	tests := []struct {
+		name         string
+		chainID      string
+		clientID     string
+		LatestHeight uint64
+		isNil        bool
+		expectedNil  bool
+	}{
+		{
+			"Non empty data - No error",
+			"cosmos",
+			"clientID",
+			4211,
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			"",
+			0,
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i.clientsCache = map[clientCacheEntry]models.IBCClientStateRow{}
+
+			if !tt.isNil {
+				i.clientsCache[clientCacheEntry{
+					chainID:  tt.chainID,
+					clientID: tt.clientID,
+				}] = models.IBCClientStateRow{
+					ChainID:      tt.chainID,
+					ClientID:     tt.clientID,
+					LatestHeight: tt.LatestHeight,
+				}
+			}
+
+			wop := i.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
 		})
 	}
 }

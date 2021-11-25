@@ -166,3 +166,61 @@ func TestValidatorProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatorFlushCache(t *testing.T) {
+	v := validatorsProcessor{}
+
+	tests := []struct {
+		name            string
+		operatorAddress string
+		jailed          bool
+		isNil           bool
+		expectedNil     bool
+	}{
+		{
+			"Non empty data - No error",
+			"cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+			false,
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			false,
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+			v.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+
+			if !tt.isNil {
+				v.insertValidatorsCache[validatorCacheEntry{
+					operator: tt.operatorAddress,
+				}] = models.ValidatorRow{
+					OperatorAddress: tt.operatorAddress,
+				}
+
+				v.deleteValidatorsCache[validatorCacheEntry{
+					operator: tt.operatorAddress,
+				}] = models.ValidatorRow{
+					OperatorAddress: tt.operatorAddress,
+					Jailed:          tt.jailed,
+				}
+			}
+
+			wop := v.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

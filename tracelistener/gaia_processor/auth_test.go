@@ -128,3 +128,59 @@ func TestAuthProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthFlushCache(t *testing.T) {
+	a := authProcessor{}
+
+	tests := []struct {
+		name        string
+		address     string
+		accNumber   uint64
+		seqNumber   uint64
+		isNil       bool
+		expectedNil bool
+	}{
+		{
+			"Non empty data- No error",
+			"0A1E9FBE949F06AA6CABABF9262EF5C071DCA7E2",
+			1234,
+			12,
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			0,
+			0,
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a.heightCache = map[authCacheEntry]models.AuthRow{}
+
+			if !tt.isNil {
+				a.heightCache[authCacheEntry{
+					address:   tt.address,
+					accNumber: tt.accNumber,
+				}] = models.AuthRow{
+					Address:        tt.address,
+					SequenceNumber: tt.seqNumber,
+					AccountNumber:  tt.accNumber,
+				}
+			}
+
+			wop := a.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

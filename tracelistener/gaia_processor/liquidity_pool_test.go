@@ -112,3 +112,62 @@ func TestLiquidityPoolProcess(t *testing.T) {
 		})
 	}
 }
+
+func TestLiquidityPoolFlushCache(t *testing.T) {
+	l := liquidityPoolProcessor{}
+
+	tests := []struct {
+		name                  string
+		poolID                uint64
+		typeID                uint32
+		poolCoinDenom         string
+		reserveAccountAddress string
+		isNil                 bool
+		expectedNil           bool
+	}{
+		{
+			"Non empty data - No error",
+			2,
+			1,
+			"stake",
+			"cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			0,
+			0,
+			"",
+			"",
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l.poolsCache = map[uint64]models.PoolRow{}
+
+			if !tt.isNil {
+				row := models.PoolRow{
+					PoolID:                tt.poolID,
+					TypeID:                tt.typeID,
+					PoolCoinDenom:         tt.poolCoinDenom,
+					ReserveAccountAddress: tt.reserveAccountAddress,
+				}
+
+				l.poolsCache[tt.poolID] = row
+			}
+
+			wop := l.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
+		})
+	}
+}

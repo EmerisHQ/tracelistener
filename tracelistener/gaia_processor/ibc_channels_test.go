@@ -199,8 +199,65 @@ func TestIbcChannelsProcess(t *testing.T) {
 
 				state := row.State
 				require.Equal(t, int32(tt.channel.State), state)
+
 				return
 			}
+		})
+	}
+}
+
+func TestIbcChannelFlushCache(t *testing.T) {
+	i := ibcChannelsProcessor{}
+
+	tests := []struct {
+		name             string
+		channelID        string
+		portID           string
+		counterChannelID string
+		isNil            bool
+		expectedNil      bool
+	}{
+		{
+			"Non empty data - No error",
+			"channelId",
+			"portId",
+			"counterChannelId",
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			"",
+			"",
+			"",
+			true,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i.channelsCache = map[channelCacheEntry]models.IBCChannelRow{}
+
+			if !tt.isNil {
+				i.channelsCache[channelCacheEntry{
+					channelID: tt.channelID,
+					portID:    tt.portID,
+				}] = models.IBCChannelRow{
+					ChannelID:        tt.channelID,
+					CounterChannelID: tt.counterChannelID,
+					Port:             tt.portID,
+				}
+			}
+
+			wop := i.FlushCache()
+			if tt.expectedNil {
+				require.Nil(t, wop)
+			} else {
+				require.NotNil(t, wop)
+			}
+
+			return
 		})
 	}
 }
