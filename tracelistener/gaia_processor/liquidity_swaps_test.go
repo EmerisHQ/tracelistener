@@ -73,6 +73,11 @@ func TestLiquiditySwapProcess(t *testing.T) {
 				MsgHeight: 120,
 				MsgIndex:  1,
 				Executed:  false,
+				Msg: &liquiditytypes.MsgSwapWithinBatch{
+					PoolId:          2,
+					SwapTypeId:      1,
+					DemandCoinDenom: "stake",
+				},
 			},
 			false,
 			1,
