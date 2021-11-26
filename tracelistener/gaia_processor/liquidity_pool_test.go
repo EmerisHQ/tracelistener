@@ -3,8 +3,8 @@ package gaia_processor
 import (
 	"testing"
 
+	liquiditytypes "github.com/gravity-devs/liquidity/x/liquidity/types"
 	"github.com/stretchr/testify/require"
-	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
