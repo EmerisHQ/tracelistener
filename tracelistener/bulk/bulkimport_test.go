@@ -3,6 +3,7 @@ package bulk
 import (
 	"testing"
 
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -19,10 +20,13 @@ func TestImporterDo(t *testing.T) {
 	processorFunc = gaia_processor.New
 
 	tests := []struct {
-		name    string
-		cfg     config.Config
-		im      Importer
-		wantErr bool
+		name          string
+		cfg           config.Config
+		im            Importer
+		connString    string
+		expectedDBErr bool
+		wantErr       bool
+		startDB       bool
 	}{
 		{
 			"Importer - no error",
@@ -48,7 +52,10 @@ func TestImporterDo(t *testing.T) {
 				Logger: zap.NewNop().Sugar(),
 				// Database: di,
 			},
+			"",
 			false,
+			false,
+			true,
 		},
 		{
 			"cannot open chain database - error",
@@ -74,7 +81,10 @@ func TestImporterDo(t *testing.T) {
 				Logger: zap.NewNop().Sugar(),
 				// Database: di,
 			},
+			"invalid connection",
 			true,
+			true,
+			false,
 		},
 	}
 
@@ -87,8 +97,27 @@ func TestImporterDo(t *testing.T) {
 			tt.im.TraceWatcher.DataChan = dpi.OpsChan()
 			tt.im.Processor = dpi
 
-			di, err := database.New(tt.cfg.DatabaseConnectionURL)
-			require.NoError(t, err)
+			if tt.startDB {
+				ts, err := testserver.NewTestServer()
+				require.NoError(t, err)
+				require.NoError(t, ts.WaitForInit())
+				defer func() {
+					ts.Stop()
+				}()
+
+				if tt.connString == "" {
+					tt.connString = ts.PGURL().String()
+				}
+			}
+
+			// di, err := database.New(tt.cfg.DatabaseConnectionURL)
+			di, err := database.New(tt.connString)
+			if tt.expectedDBErr {
+				require.Error(t, err)
+				require.Nil(t, di)
+				return
+			}
+			// require.NoError(t, err)
 
 			tt.im.Database = di
 
