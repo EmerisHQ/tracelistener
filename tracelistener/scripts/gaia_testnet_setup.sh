@@ -34,7 +34,7 @@ echo "----------Genesis creation---------"
 $DAEMON add-genesis-account $($DAEMON keys show validator -a --keyring-backend test) 1000000000000$DENOM
 $DAEMON add-genesis-account $($DAEMON keys show delegator -a --keyring-backend test) 1000000000000$DENOM
 
-echo "--------Gentx--------"
+echo "--------gentx--------"
 
 $DAEMON gentx validator 90000000000$DENOM --chain-id $CHAINID  --keyring-backend test
 
@@ -42,31 +42,92 @@ echo "----------collect-gentxs------------"
 
 $DAEMON collect-gentxs
 
-#create system services
+#start chain
 
-echo "---------Creating $DAEMON_HOME system file---------"
+$DAEMON start
 
-echo "[Unit]
-Description=${DAEMON} daemon
-After=network.target
-[Service]
-Type=simple
-User=$USER
-ExecStart=$(which $DAEMON) start
-Restart=on-failure
-RestartSec=3
-LimitNOFILE=4096
-[Install]
-WantedBy=multi-user.target" | sudo tee "/lib/systemd/system/$DAEMON.service"
-
-echo "-------Start $DAEMON-${a} service-------"
-
-sudo -S systemctl daemon-reload
-sudo -S systemctl start $DAEMON.service
-
-sleep 1s
+sleep 2s
 
 echo
+
+# get validator address
+validator=$("${DAEMON}" keys show "validator" --bech val --keyring-backend test --output json)
+valAddress=$(echo "${validator}" | jq -r '.address')
+
+export valAddress=${valAddress}
+
+echo "-----------run delegation txs-----------"
+
+dTx=$("${DAEMON}" tx staking delegate "${valAddress}" 10000"${DENOM}" --from delegator --fees 1000"${DENOM}" --chain-id "${CHAINID}" --keyring-backend test --output json -y)
+
+sleep 6s
+
+dtxHash=$(echo "${dTx}" | jq -r '.txhash')
+echo "** TX HASH :: $dtxHash **"
+
+# query the txhash and check the code
+txResult=$("${DAEMON}" q tx "${dtxHash}" --output json)
+dTxCode=$(echo "${txResult}"| jq -r '.code')
+
+echo "Code is : $dTxCode"
+echo
+if [ "$dTxCode" -eq 0 ];
+then
+    echo "****** Delegation tx is successfull! *******"
+else
+    echo "****** Delegation tx is failed!! ******"
+fi
+
+echo "--------- Unbond txs -----------"
+
+ubTx=$("${DAEMON}" tx staking unbond "${valAddress}" 10000"${DENOM}" --from "validator" --fees 1000"${DENOM}" --chain-id "${CHAINID}" --keyring-backend test --output json -y)
+
+sleep 6s
+    
+ubtxHash=$(echo "${ubTx}" | jq -r '.txhash')
+echo "** TX HASH :: $ubtxHash **"
+
+# query the txhash and check the code
+txResult=$("${DAEMON}" q tx "${ubtxHash}" --output json)
+ubTxCode=$(echo "${txResult}"| jq -r '.code')
+
+echo "Code is : $ubTxCode"
+echo
+if [ "$ubTxCode" -eq 0 ];
+then
+    echo "****** Unbond tx is successfull! ******"
+else
+    echo "****** Ubond tx is failed !!! ******"
+fi
+
+echo "------ run send tx -------"
+
+# get delegator address
+delegator=$("${DAEMON}" keys show "delegator" --bech val --keyring-backend test --output json)
+delAddress=$(echo "${delegator}" | jq -r '.address')
+
+export delAddress=${delAddress}
+
+sendTx=$("${DAEMON}" tx bank send "validator" "${delAddress}" 10000"${DENOM}" --fees 1000"${DENOM}" --chain-id "${CHAINID}" --keyring-backend test --output json -y)
+
+sleep 6s
+    
+sendtxHash=$(echo "${sendTx}" | jq -r '.txhash')
+echo "** TX HASH :: $sendtxHash **"
+
+# query the txhash and check the code
+txResult=$("${DAEMON}" q tx "${sendtxHash}" --output json)
+sendTxCode=$(echo "${txResult}"| jq -r '.code')
+
+echo "Code is : $sendTxCode"
+echo
+if [ "$sendTxCode" -eq 0 ];
+then
+    echo "****** Send tx is successfull! ******"
+else
+    echo "****** Send tx is failed !!! ******"
+fi
+
 done
 
 echo
