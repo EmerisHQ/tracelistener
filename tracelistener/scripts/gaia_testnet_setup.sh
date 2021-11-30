@@ -1,4 +1,4 @@
-# read no.of nodes to be setup
+#!/bin/sh
 
 cd $HOME
 
@@ -44,7 +44,7 @@ $DAEMON collect-gentxs
 
 #start chain
 
-$DAEMON start
+$DAEMON start </dev/null &>/dev/null &
 
 sleep 2s
 
@@ -54,7 +54,7 @@ echo
 validator=$("${DAEMON}" keys show "validator" --bech val --keyring-backend test --output json)
 valAddress=$(echo "${validator}" | jq -r '.address')
 
-export valAddress=${valAddress}
+export valAddress="${valAddress}"
 
 echo "-----------run delegation txs-----------"
 
@@ -127,6 +127,10 @@ then
 else
     echo "****** Send tx is failed !!! ******"
 fi
+
+echo "-------stop gaiad---------"
+
+killall $DAEMON
 
 done
 
