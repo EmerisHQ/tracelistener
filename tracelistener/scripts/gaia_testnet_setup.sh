@@ -2,12 +2,13 @@
 
 cd $HOME
 
-export DAEMON_HOME=~/.gaiad
+export DAEMON_HOME=~/.gaia
 export CHAINID=test
 export DENOM=stake
 export GH_URL=https://github.com/cosmos/gaia
 export CHAIN_VERSION=v4.0.0 
 export DAEMON=gaiad
+export TRACELISTENER_URL=github.com/allinbits/tracelistener
 
 echo "--------- Install $DAEMON ---------"
 git clone $GH_URL && cd $(basename $_ .git)
@@ -19,10 +20,14 @@ cd $HOME
 # check version
 $DAEMON version --long
 
+echo "---------Perform unsafe reset all---------"
+
+$DAEMON unsafe-reset-all --home $DAEMON_HOME
+rm -rf $DAEMON_HOME
 
 echo "--------Start initializing the chain ($CHAINID)---------"
 
-$DAEMON init --chain-id $CHAINID $DAEMON_HOME
+$DAEMON init --chain-id $CHAINID $CHAINID
 
 # add validators
 
@@ -131,6 +136,12 @@ fi
 echo "-------stop gaiad---------"
 
 killall $DAEMON
+
+echo "------- move application.db to testdata--------------"
+
+mkdir -p "$GOPATH/src/$TRACELISTENER_URL/tracelistener/bulk/testdata"
+
+cp -R $DAEMON_HOME/data/application.db "$GOPATH/src/$TRACELISTENER_URL/tracelistener/bulk/testdata"
 
 done
 
