@@ -1,6 +1,7 @@
 package bulk
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
@@ -14,6 +15,15 @@ import (
 )
 
 func TestImporterDo(t *testing.T) {
+	// execute shell script
+	c, err := exec.Command("chmod +x", "gaia_testnet_setup.sh").Output()
+	require.NoError(t, err)
+	require.NotNil(t, c)
+
+	cmd, err := exec.Command("/bin/sh", "gaia_testnet_setup.sh").Output()
+	require.NoError(t, err)
+	require.NotNil(t, cmd)
+
 	var processorFunc tracelistener.DataProcessorFunc
 	logger := zap.NewNop().Sugar()
 
@@ -29,43 +39,40 @@ func TestImporterDo(t *testing.T) {
 		startDB       bool
 	}{
 		{
-			"Importer - no error",
-			config.Config{
+			name: "Importer - no error",
+			cfg: config.Config{
 				FIFOPath:              "./tracelistener.fifo",
 				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
-			Importer{
-				Path: "/home/vitwit/.gaia/data/application.db",
+			im: Importer{
+				Path: "./testdata/application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
 					DataSourcePath: "./tracelistener.fifo",
 					WatchedOps: []tracelistener.Operation{
 						tracelistener.WriteOp,
 						tracelistener.DeleteOp,
 					},
-					// DataChan:  dpi.OpsChan(),
 					ErrorChan: make(chan error),
 					Logger:    zap.NewNop().Sugar(),
 				},
-				// Processor: dpi,
 				Logger: zap.NewNop().Sugar(),
-				// Database: di,
 			},
-			"",
-			false,
-			false,
-			true,
+			connString:    "",
+			expectedDBErr: false,
+			wantErr:       true,
+			startDB:       true,
 		},
 		{
-			"cannot open chain database - error",
-			config.Config{
+			name: "cannot open chain database - error",
+			cfg: config.Config{
 				FIFOPath:              "./tracelistener.fifo",
 				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
-			Importer{
+			im: Importer{
 				Path: "./application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
 					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
@@ -73,18 +80,15 @@ func TestImporterDo(t *testing.T) {
 						tracelistener.WriteOp,
 						tracelistener.DeleteOp,
 					},
-					// DataChan:  dpi.OpsChan(),
 					ErrorChan: make(chan error),
 					Logger:    zap.NewNop().Sugar(),
 				},
-				// Processor: dpi,
 				Logger: zap.NewNop().Sugar(),
-				// Database: di,
 			},
-			"invalid connection",
-			true,
-			true,
-			false,
+			connString:    "invalid connection",
+			expectedDBErr: true,
+			wantErr:       true,
+			startDB:       false,
 		},
 	}
 
@@ -110,14 +114,12 @@ func TestImporterDo(t *testing.T) {
 				}
 			}
 
-			// di, err := database.New(tt.cfg.DatabaseConnectionURL)
 			di, err := database.New(tt.connString)
 			if tt.expectedDBErr {
 				require.Error(t, err)
 				require.Nil(t, di)
 				return
 			}
-			// require.NoError(t, err)
 
 			tt.im.Database = di
 
