@@ -2,13 +2,21 @@
 
 cd $HOME
 
-export DAEMON_HOME=~/.gaia
 export CHAINID=test
 export DENOM=stake
 export GH_URL=https://github.com/cosmos/gaia
 export CHAIN_VERSION=v4.0.0 
 export DAEMON=gaiad
 export TRACELISTENER_URL=github.com/allinbits/tracelistener
+export DAEMON_HOME=~/.gaia
+
+echo "---------Perform unsafe reset all---------"
+
+$DAEMON unsafe-reset-all
+
+sleep 2s
+
+rm -rf $HOME/.gaia
 
 echo "--------- Install $DAEMON ---------"
 git clone $GH_URL && cd $(basename $_ .git)
@@ -19,11 +27,6 @@ cd $HOME
 
 # check version
 $DAEMON version --long
-
-echo "---------Perform unsafe reset all---------"
-
-$DAEMON unsafe-reset-all --home $DAEMON_HOME
-rm -rf $DAEMON_HOME
 
 echo "--------Start initializing the chain ($CHAINID)---------"
 
@@ -51,7 +54,7 @@ $DAEMON collect-gentxs
 
 $DAEMON start </dev/null &>/dev/null &
 
-sleep 2s
+sleep 6s
 
 echo
 
@@ -108,8 +111,7 @@ fi
 echo "------ run send tx -------"
 
 # get delegator address
-delegator=$("${DAEMON}" keys show "delegator" --bech val --keyring-backend test --output json)
-delAddress=$(echo "${delegator}" | jq -r '.address')
+delAddress=$("${DAEMON}" keys show "delegator" -a --keyring-backend test)
 
 export delAddress=${delAddress}
 
@@ -141,7 +143,7 @@ echo "------- move application.db to testdata--------------"
 
 mkdir -p "$GOPATH/src/$TRACELISTENER_URL/tracelistener/bulk/testdata"
 
-cp -R $DAEMON_HOME/data/application.db "$GOPATH/src/$TRACELISTENER_URL/tracelistener/bulk/testdata"
+cp -R "$HOME/.gaia/data/application.db" "$GOPATH/src/$TRACELISTENER_URL/tracelistener/bulk/testdata"
 
 done
 
