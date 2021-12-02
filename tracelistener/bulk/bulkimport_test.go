@@ -15,13 +15,7 @@ import (
 )
 
 func TestImporterDo(t *testing.T) {
-	// execute shell script
-	c, err := exec.Command("chmod +x", "gaia_testnet_setup.sh").Output()
-	require.NoError(t, err)
-	require.NotNil(t, c)
-
-	cmd, err := exec.Command("/bin/sh", "gaia_testnet_setup.sh").Output()
-	require.NoError(t, err)
+	cmd, _ := exec.Command("/bin/sh", "gaia_testnet_setup.sh").Output()
 	require.NotNil(t, cmd)
 
 	var processorFunc tracelistener.DataProcessorFunc
@@ -39,14 +33,14 @@ func TestImporterDo(t *testing.T) {
 		startDB       bool
 	}{
 		{
-			name: "Importer - no error",
-			cfg: config.Config{
+			"Importer - no error",
+			config.Config{
 				FIFOPath:              "./tracelistener.fifo",
 				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
-			im: Importer{
+			Importer{
 				Path: "./testdata/application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
 					DataSourcePath: "./tracelistener.fifo",
@@ -59,20 +53,20 @@ func TestImporterDo(t *testing.T) {
 				},
 				Logger: zap.NewNop().Sugar(),
 			},
-			connString:    "",
-			expectedDBErr: false,
-			wantErr:       true,
-			startDB:       true,
+			"",
+			false,
+			false,
+			true,
 		},
 		{
-			name: "cannot open chain database - error",
-			cfg: config.Config{
+			"cannot open chain database - error",
+			config.Config{
 				FIFOPath:              "./tracelistener.fifo",
 				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
-			im: Importer{
+			Importer{
 				Path: "./application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
 					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
@@ -85,10 +79,10 @@ func TestImporterDo(t *testing.T) {
 				},
 				Logger: zap.NewNop().Sugar(),
 			},
-			connString:    "invalid connection",
-			expectedDBErr: true,
-			wantErr:       true,
-			startDB:       false,
+			"invalid connection",
+			true,
+			true,
+			false,
 		},
 	}
 
