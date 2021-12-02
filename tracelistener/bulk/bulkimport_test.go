@@ -1,7 +1,6 @@
 package bulk
 
 import (
-	"os/exec"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
@@ -15,9 +14,6 @@ import (
 )
 
 func TestImporterDo(t *testing.T) {
-	cmd, _ := exec.Command("/bin/sh", "gaia_testnet_setup.sh").Output()
-	require.NotNil(t, cmd)
-
 	var processorFunc tracelistener.DataProcessorFunc
 	logger := zap.NewNop().Sugar()
 
