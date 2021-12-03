@@ -176,5 +176,30 @@ do
         echo "**** Send tx from $FROMKEY to $TOKEY has FAILED!!!!   txHash is : $sendTxHash and REASON : $(echo "${sendTxHash}" | jq '.raw_log')***"
     fi
     echo
-    
+
 done
+
+echo "----------create validator-----------"
+
+FROMKEY="validator1"
+RPC="http://${IP}:16657"
+
+createValidator=$("$DAEMON" tx staking create-validator --amount 4000000000000"${DENOM}" --commission-max-change-rate 0.1 --commission-max-rate 0.2 --commission-rate 0.1 --from "${FROMKEY}" --min-self-delegation 1 --moniker "moniker" --pubkey $("${DAEMON}" tendermint show-validator) --chain-id "${CHAINID}" --home $DAEMON_HOME-1 --node $RPC --output json -y)
+sleep 6s
+
+valTxHash=$(echo "${createValidator}" | jq -r '.txhash')
+echo "** TX HASH :: $valTxHash **"
+
+# query the txhash and check the code
+txResult=$("${DAEMON}" q tx "${valTxHash}" --node $RPC --output json)
+valTxCode=$(echo "${txResult}"| jq -r '.code')
+
+echo "Code is : $valTxCode"
+echo
+if [ "$valTxCode" -eq 0 ];
+then
+echo "**** Create validator tx is SUCCESSFULL!!  txHash is : $valTxHash ****"
+else 
+    echo "**** Create validator of validator1 has FAILED!!!!   txHash is : $valTxHash and REASON : $(echo "${valTxHash}" | jq '.raw_log')***"
+fi
+echo
