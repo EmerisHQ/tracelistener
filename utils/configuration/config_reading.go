@@ -40,7 +40,7 @@ func ReadConfig(v Validator, configName string, defaultValues map[string]string)
 	}
 
 	if err := vip.Unmarshal(v); err != nil {
-		return fmt.Errorf("config error: %s \n", err)
+		return fmt.Errorf("config error: %w", err)
 	}
 
 	return v.Validate()

@@ -99,14 +99,12 @@ func (tr *TraceWatcher) Watch() {
 			tr.DataSourcePath, tail.Config{Follow: true, ReOpen: true, Pipe: true, Logger: tail.DiscardingLogger})
 		if err != nil {
 			tr.ErrorChan <- fmt.Errorf("tail creation error, %w", err)
-			errorHappened = true
 			break
 		}
 
 		for line := range t.Lines {
 			if line.Err != nil {
 				tr.ErrorChan <- fmt.Errorf("line reading error, line %v, error %w", line, err)
-				errorHappened = true
 				break // restart the reading loop
 			}
 

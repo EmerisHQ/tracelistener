@@ -23,34 +23,34 @@ func (*validatorsProcessor) TableSchema() string {
 	return createValidatorsTable
 }
 
-func (p *validatorsProcessor) ModuleName() string {
+func (b *validatorsProcessor) ModuleName() string {
 	return "validators"
 }
 
-func (p *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
+func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 
-	if len(p.insertValidatorsCache) == 0 && len(p.deleteValidatorsCache) == 0 {
+	if len(b.insertValidatorsCache) == 0 && len(b.deleteValidatorsCache) == 0 {
 		return nil
 	}
 
-	insertValidators := make([]models.DatabaseEntrier, 0, len(p.insertValidatorsCache))
-	deleteValidators := make([]models.DatabaseEntrier, 0, len(p.deleteValidatorsCache))
+	insertValidators := make([]models.DatabaseEntrier, 0, len(b.insertValidatorsCache))
+	deleteValidators := make([]models.DatabaseEntrier, 0, len(b.deleteValidatorsCache))
 
-	if len(p.insertValidatorsCache) != 0 {
-		for _, v := range p.insertValidatorsCache {
+	if len(b.insertValidatorsCache) != 0 {
+		for _, v := range b.insertValidatorsCache {
 			insertValidators = append(insertValidators, v)
 		}
 	}
 
-	p.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+	b.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 
-	if len(p.deleteValidatorsCache) != 0 {
-		for _, v := range p.deleteValidatorsCache {
+	if len(b.deleteValidatorsCache) != 0 {
+		for _, v := range b.deleteValidatorsCache {
 			deleteValidators = append(deleteValidators, v)
 		}
 	}
 
-	p.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+	b.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 
 	return []tracelistener.WritebackOp{
 		{

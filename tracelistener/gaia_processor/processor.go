@@ -70,8 +70,8 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		c.ProcessorsEnabled = defaultProcessors
 	}
 
-	var mp []Module
-	var tableSchemas []string
+	mp := make([]Module, 0)
+	tableSchemas := make([]string, 0)
 
 	for _, ep := range c.ProcessorsEnabled {
 		p, err := processorByName(ep, logger)
@@ -119,7 +119,7 @@ func (p *Processor) AddModule(m Module) error {
 func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 	switch name {
 	default:
-		return nil, fmt.Errorf("unkonwn Processor %s", name)
+		return nil, fmt.Errorf("unknown Processor %s", name)
 	case (&bankProcessor{}).ModuleName():
 		return &bankProcessor{heightCache: map[bankCacheEntry]models.BalanceRow{}, l: logger}, nil
 	case (&ibcConnectionsProcessor{}).ModuleName():
