@@ -88,6 +88,7 @@ DO UPDATE SET
 `
 
 	// Liquidity swaps-related queries
+	//nolint ignore spelling
 	createSwapsTable = `
 CREATE TABLE IF NOT EXISTS tracelistener.liquidity_swaps (
 	id serial unique primary key,
@@ -95,7 +96,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.liquidity_swaps (
 	msg_height bigint not null,
 	msg_index bigint not null,
 	executed bool not null,
-	succeded bool not null,
+	succeded bool not null, 
 	expiry_height bigint not null,
 	exchange_offer_coin text not null,
 	remaining_offer_coin_fee text not null,
@@ -108,6 +109,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.liquidity_swaps (
 	unique(chain_name, msg_index)
 )`
 
+	//nolint ignore spelling
 	insertSwap = `
 INSERT INTO tracelistener.liquidity_swaps
 	(
@@ -133,7 +135,7 @@ VALUES
 		:msg_height,
 		:msg_index,
 		:executed,
-		:succeded,
+		:succeded, 
 		:expiry_height,
 		:exchange_offer_coin,
 		:remaining_offer_coin_fee,

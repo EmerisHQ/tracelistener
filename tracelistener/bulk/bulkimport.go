@@ -1,14 +1,11 @@
 package bulk
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
-
-	types3 "github.com/gogo/protobuf/types"
 
 	"github.com/allinbits/tracelistener/tracelistener/database"
 
@@ -23,10 +20,6 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-)
-
-var (
-	commitInfoKeyFmt = "s/%d" // s/<version>
 )
 
 type Importer struct {
@@ -74,9 +67,7 @@ func (i *Importer) Do() error {
 		}
 	}()
 
-	if strings.HasSuffix(i.Path, ".db") {
-		i.Path = strings.TrimSuffix(i.Path, ".db")
-	}
+	i.Path = strings.TrimSuffix(i.Path, ".db")
 
 	dbName := filepath.Base(i.Path)
 	path := filepath.Dir(i.Path)
@@ -91,7 +82,7 @@ func (i *Importer) Do() error {
 	}
 	rm := rootmulti.NewStore(db)
 
-	var keys []types2.StoreKey
+	keys := make([]types2.StoreKey, 6)
 	for _, ci := range []string{"bank", "ibc", "staking", "distribution", "transfer", "acc"} { // todo: add liquidity
 		key := types.NewKVStoreKey(ci)
 		keys = append(keys, key)
@@ -162,39 +153,4 @@ func (i *Importer) Do() error {
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
 
 	return nil
-}
-
-func getCommitInfo(db db2.DB, ver int64) (*types2.CommitInfo, error) {
-	cInfoKey := fmt.Sprintf(commitInfoKeyFmt, ver)
-
-	bz, err := db.Get([]byte(cInfoKey))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit info, %w", err)
-	} else if bz == nil {
-		return nil, errors.New("no commit info found")
-	}
-
-	cInfo := &types2.CommitInfo{}
-	if err = cInfo.Unmarshal(bz); err != nil {
-		return nil, fmt.Errorf("failed unmarshal commit info, %w", err)
-	}
-
-	return cInfo, nil
-}
-
-func getLatestVersion(db db2.DB) int64 {
-	bz, err := db.Get([]byte("s/latest"))
-	if err != nil {
-		panic(err)
-	} else if bz == nil {
-		return 0
-	}
-
-	var latestVersion int64
-
-	if err := types3.StdInt64Unmarshal(&latestVersion, bz); err != nil {
-		panic(err)
-	}
-
-	return latestVersion
 }

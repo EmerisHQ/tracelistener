@@ -99,7 +99,7 @@ func (tr *TraceWatcher) Watch() {
 			tr.DataSourcePath, tail.Config{Follow: true, ReOpen: true, Pipe: true, Logger: tail.DiscardingLogger})
 		if err != nil {
 			tr.ErrorChan <- fmt.Errorf("tail creation error, %w", err)
-			errorHappened = true
+			errorHappened = true //nolint assignment is valid
 			break
 		}
 

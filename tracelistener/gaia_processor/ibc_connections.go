@@ -76,8 +76,7 @@ func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) err
 	b.l.Debugw("ibc store key", "fields", keyFields, "raw key", string(data.Key))
 
 	// IBC keys are mostly strings
-	switch len(keyFields) {
-	case 2:
+	if len(keyFields) == 2 {
 		if keyFields[0] == host.KeyConnectionPrefix { // this is a ConnectionEnd
 			ce := types.ConnectionEnd{}
 			if err := p.cdc.UnmarshalBinaryBare(data.Value, &ce); err != nil {

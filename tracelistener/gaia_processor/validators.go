@@ -23,34 +23,34 @@ func (*validatorsProcessor) TableSchema() string {
 	return createValidatorsTable
 }
 
-func (p *validatorsProcessor) ModuleName() string {
+func (vp *validatorsProcessor) ModuleName() string {
 	return "validators"
 }
 
-func (p *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
+func (vp *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 
-	if len(p.insertValidatorsCache) == 0 && len(p.deleteValidatorsCache) == 0 {
+	if len(vp.insertValidatorsCache) == 0 && len(vp.deleteValidatorsCache) == 0 {
 		return nil
 	}
 
-	insertValidators := make([]models.DatabaseEntrier, 0, len(p.insertValidatorsCache))
-	deleteValidators := make([]models.DatabaseEntrier, 0, len(p.deleteValidatorsCache))
+	insertValidators := make([]models.DatabaseEntrier, 0, len(vp.insertValidatorsCache))
+	deleteValidators := make([]models.DatabaseEntrier, 0, len(vp.deleteValidatorsCache))
 
-	if len(p.insertValidatorsCache) != 0 {
-		for _, v := range p.insertValidatorsCache {
+	if len(vp.insertValidatorsCache) != 0 {
+		for _, v := range vp.insertValidatorsCache {
 			insertValidators = append(insertValidators, v)
 		}
 	}
 
-	p.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+	vp.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 
-	if len(p.deleteValidatorsCache) != 0 {
-		for _, v := range p.deleteValidatorsCache {
+	if len(vp.deleteValidatorsCache) != 0 {
+		for _, v := range vp.deleteValidatorsCache {
 			deleteValidators = append(deleteValidators, v)
 		}
 	}
 
-	p.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+	vp.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 
 	return []tracelistener.WritebackOp{
 		{
@@ -63,11 +63,11 @@ func (p *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 		},
 	}
 }
-func (b *validatorsProcessor) OwnsKey(key []byte) bool {
+func (vp *validatorsProcessor) OwnsKey(key []byte) bool {
 	return bytes.HasPrefix(key, types.ValidatorsKey)
 }
 
-func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
+func (vp *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
 
 	if data.Operation == tracelistener.DeleteOp.String() {
 		if len(data.Key) < 21 {
@@ -75,9 +75,9 @@ func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
 		}
 
 		operatorAddress := hex.EncodeToString(data.Key[1:21])
-		b.l.Debugw("new validator delete", "operator address", operatorAddress)
+		vp.l.Debugw("new validator delete", "operator address", operatorAddress)
 
-		b.deleteValidatorsCache[validatorCacheEntry{
+		vp.deleteValidatorsCache[validatorCacheEntry{
 			operator: operatorAddress,
 		}] = models.ValidatorRow{
 			OperatorAddress: operatorAddress,
@@ -96,7 +96,7 @@ func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
 
 	k := hex.EncodeToString(data.Key)
 
-	b.l.Debugw("new validator write",
+	vp.l.Debugw("new validator write",
 		"operator_address", v.OperatorAddress,
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
@@ -105,7 +105,7 @@ func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
 		"key", k,
 	)
 
-	b.insertValidatorsCache[validatorCacheEntry{
+	vp.insertValidatorsCache[validatorCacheEntry{
 		operator: v.OperatorAddress,
 	}] = models.ValidatorRow{
 		OperatorAddress:      v.OperatorAddress,

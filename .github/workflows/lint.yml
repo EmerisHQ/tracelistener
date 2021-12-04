@@ -1,0 +1,33 @@
+name: golangci-lint
+on:
+  pull_request:
+  push:
+    paths:
+      - cmd/**
+      - tracelistener/**
+      - utils/**
+      - go.mod
+      - go.sum
+permissions:
+  contents: read
+env:
+  GOPRIVATE: "github.com/allinbits/*"
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure git for private modules
+        env:
+          GIT_TOKEN: ${{ secrets.TENDERBOT_GIT_TOKEN }}
+        run: git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.43
+          args: --timeout 10m
+          github-token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
