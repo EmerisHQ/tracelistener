@@ -144,7 +144,7 @@ func TestValidatorProcess(t *testing.T) {
 			if tt.newMessage.Operation == tracelistener.DeleteOp.String() {
 				require.Len(t, v.deleteValidatorsCache, tt.expectedLen)
 
-				for k, _ := range v.deleteValidatorsCache {
+				for k := range v.deleteValidatorsCache {
 					row := v.deleteValidatorsCache[validatorCacheEntry{operator: k.operator}]
 					require.NotNil(t, row)
 
@@ -153,7 +153,7 @@ func TestValidatorProcess(t *testing.T) {
 			} else {
 				require.Len(t, v.insertValidatorsCache, tt.expectedLen)
 
-				for k, _ := range v.insertValidatorsCache {
+				for k := range v.insertValidatorsCache {
 					row := v.insertValidatorsCache[validatorCacheEntry{operator: k.operator}]
 					require.NotNil(t, row)
 
@@ -219,8 +219,6 @@ func TestValidatorFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

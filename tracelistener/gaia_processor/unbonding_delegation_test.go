@@ -139,7 +139,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			if tt.newMessage.Operation == tracelistener.DeleteOp.String() {
 				require.Len(t, u.deleteHeightCache, tt.expectedLen)
 
-				for k, _ := range u.deleteHeightCache {
+				for k := range u.deleteHeightCache {
 					row := u.deleteHeightCache[unbondingDelegationCacheEntry{delegator: k.delegator, validator: k.validator}]
 					require.NotNil(t, row)
 
@@ -148,7 +148,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			} else {
 				require.Len(t, u.insertHeightCache, tt.expectedLen)
 
-				for k, _ := range u.insertHeightCache {
+				for k := range u.insertHeightCache {
 					row := u.insertHeightCache[unbondingDelegationCacheEntry{delegator: k.delegator, validator: k.validator}]
 					require.NotNil(t, row)
 
@@ -215,8 +215,6 @@ func TestUnbondingDelegationFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

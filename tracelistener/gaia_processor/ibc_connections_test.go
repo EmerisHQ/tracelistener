@@ -192,7 +192,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 			require.Len(t, i.connectionsCache, tt.expectedLen)
 
 			// if connectioncache not empty then check the data
-			for k, _ := range i.connectionsCache {
+			for k := range i.connectionsCache {
 				row := i.connectionsCache[connectionCacheEntry{connectionID: k.connectionID, clientID: k.clientID}]
 				require.NotNil(t, row)
 
@@ -254,8 +254,6 @@ func TestIbcConnectionsFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

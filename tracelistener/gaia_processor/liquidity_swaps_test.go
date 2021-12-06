@@ -104,7 +104,7 @@ func TestLiquiditySwapProcess(t *testing.T) {
 			require.Len(t, l.swapsCache, tt.expectedLen)
 
 			// if swapascache not empty then check the data
-			for k, _ := range l.swapsCache {
+			for k := range l.swapsCache {
 				row := l.swapsCache[k]
 				require.NotNil(t, row)
 
@@ -170,8 +170,6 @@ func TestLiquidityPoolSwapsFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

@@ -193,7 +193,7 @@ func TestIbcChannelsProcess(t *testing.T) {
 			require.Len(t, i.channelsCache, tt.expectedLen)
 
 			// if channelcache not empty then check the data
-			for k, _ := range i.channelsCache {
+			for k := range i.channelsCache {
 				row := i.channelsCache[channelCacheEntry{channelID: k.channelID, portID: k.portID}]
 				require.NotNil(t, row)
 
@@ -256,8 +256,6 @@ func TestIbcChannelFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

@@ -107,7 +107,7 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 			require.Len(t, dtp.denomTracesCache, tt.expectedLen)
 
 			// if denomtrace cache not empty then check the data
-			for k, _ := range dtp.denomTracesCache {
+			for k := range dtp.denomTracesCache {
 				row := dtp.denomTracesCache[k]
 				require.NotNil(t, row)
 
@@ -169,8 +169,6 @@ func TestIbcDenomTracesFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

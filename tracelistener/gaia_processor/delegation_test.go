@@ -130,7 +130,7 @@ func TestDelegationProcess(t *testing.T) {
 			if tt.newMessage.Operation == tracelistener.DeleteOp.String() {
 				require.Len(t, d.deleteHeightCache, tt.expectedLen)
 
-				for k, _ := range d.deleteHeightCache {
+				for k := range d.deleteHeightCache {
 					row := d.deleteHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
 					require.NotNil(t, row)
 
@@ -139,7 +139,7 @@ func TestDelegationProcess(t *testing.T) {
 			} else {
 				require.Len(t, d.insertHeightCache, tt.expectedLen)
 
-				for k, _ := range d.insertHeightCache {
+				for k := range d.insertHeightCache {
 					row := d.insertHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
 					require.NotNil(t, row)
 
@@ -172,6 +172,14 @@ func TestDelegationFlushCache(t *testing.T) {
 			false,
 			false,
 		},
+		{
+			"Empty data - error",
+			"",
+			"",
+			"",
+			true,
+			true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -200,12 +208,12 @@ func TestDelegationFlushCache(t *testing.T) {
 
 			wop := d.FlushCache()
 			if tt.expectedNil {
-				require.Nil(t, wop)
+				if len(wop) != 0 {
+					require.Empty(t, wop[0].Data)
+				}
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

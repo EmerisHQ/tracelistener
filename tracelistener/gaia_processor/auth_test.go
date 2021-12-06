@@ -116,7 +116,7 @@ func TestAuthProcess(t *testing.T) {
 
 			require.Len(t, a.heightCache, tt.expectedLen)
 
-			for k, _ := range a.heightCache {
+			for k := range a.heightCache {
 				row := a.heightCache[authCacheEntry{address: k.address, accNumber: k.accNumber}]
 				require.NotNil(t, row)
 
@@ -179,8 +179,6 @@ func TestAuthFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

@@ -99,7 +99,7 @@ func TestBankProcess(t *testing.T) {
 
 			require.Len(t, b.heightCache, tt.expectedLen)
 
-			for k, _ := range b.heightCache {
+			for k := range b.heightCache {
 				row := b.heightCache[bankCacheEntry{address: k.address, denom: k.denom}]
 				require.NotNil(t, row)
 
@@ -162,8 +162,6 @@ func TestBankFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }

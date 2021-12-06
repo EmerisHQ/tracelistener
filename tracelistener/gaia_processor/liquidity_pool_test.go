@@ -100,7 +100,7 @@ func TestLiquidityPoolProcess(t *testing.T) {
 			require.Len(t, l.poolsCache, tt.expectedLen)
 
 			// if poolcache not empty then check the data
-			for k, _ := range l.poolsCache {
+			for k := range l.poolsCache {
 				row := l.poolsCache[k]
 				require.NotNil(t, row)
 
@@ -166,8 +166,6 @@ func TestLiquidityPoolFlushCache(t *testing.T) {
 			} else {
 				require.NotNil(t, wop)
 			}
-
-			return
 		})
 	}
 }
