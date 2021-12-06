@@ -1,5 +1,7 @@
 #/bin/sh
 
+cd $HOME
+
 display_usage() {
     printf "** Please check the exported values:: **\n Deamon : $DEAMON\n Denom : $DENOM\n ChainID : $CHAINID\n Daemon home : $DAEMON_HOME\n"
     exit 1
@@ -144,8 +146,7 @@ do
     TONODE=`expr 1 + $a`
     echo "To node number : $TONODE"
 
-    validator=$("${DAEMON}" keys show "validator${TONODE}" --bech val --keyring-backend test --home $DAEMON_HOME-${TONODE} --output json)
-    VALADDRESS=$(echo "${validator}" | jq -r '.address')
+    VALADDRESS=$("${DAEMON}" keys show "validator${TONODE}" -a --keyring-backend test --home $DAEMON_HOME-${TONODE})
 
     FROMKEY="validator${a}"
     TO=$VALADDRESS
@@ -154,7 +155,7 @@ do
     echo "** to validator address :: $TO and from key :: $FROMKEY **"
     # Print the value
     echo "Iteration no $a and values of from : $FROMKEY to : $TO"
-    echo "--------- Delegation from $FROMKEY to $TO-----------"
+    echo "--------- Send tx from $FROMKEY to $TO-----------"
 
     sendTx=$("${DAEMON}" tx bank send $FROMKEY "${TO}" 10000"${DENOM}" --fees 1000"${DENOM}" --chain-id "${CHAINID}" --keyring-backend test --home $DAEMON_HOME-${a} --node $RPC --output json -y)
     
@@ -184,7 +185,7 @@ echo "----------create validator-----------"
 FROMKEY="validator1"
 RPC="http://${IP}:16657"
 
-createValidator=$("$DAEMON" tx staking create-validator --amount 4000000000000"${DENOM}" --commission-max-change-rate 0.1 --commission-max-rate 0.2 --commission-rate 0.1 --from "${FROMKEY}" --min-self-delegation 1 --moniker "moniker" --pubkey $("${DAEMON}" tendermint show-validator) --chain-id "${CHAINID}" --home $DAEMON_HOME-1 --node $RPC --output json -y)
+createValidator=$("$DAEMON" tx staking create-validator --amount 4000000000000"${DENOM}" --commission-max-change-rate 0.1 --commission-max-rate 0.2 --commission-rate 0.1 --from "${FROMKEY}" --min-self-delegation 1 --moniker testmoniker --pubkey $("${DAEMON}" tendermint show-validator --home $DAEMON_HOME-1) --chain-id "${CHAINID}" --home $DAEMON_HOME-1 --node $RPC --keyring-backend test --output json -y)
 sleep 6s
 
 valTxHash=$(echo "${createValidator}" | jq -r '.txhash')

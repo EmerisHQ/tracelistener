@@ -1,10 +1,12 @@
 #/bin/sh
 
+cd $HOME
+
 export DAEMON_HOME=~/.gaia
 export CHAINID=test
 export DENOM=stake
 export GH_URL=https://github.com/cosmos/gaia
-export CHAIN_VERSION=v4.0.0 
+export CHAIN_VERSION=v5.0.4 
 export DAEMON=gaiad
 export TRACELISTENER_URL=github.com/allinbits/tracelistener
 
@@ -249,7 +251,7 @@ do
 
     RPC=`expr 16657 + $INC` #increment rpc ports
 
-    $DAEMON) start --home $DAEMON_HOME-$a </dev/null &>/dev/null &
+    $DAEMON start --home $DAEMON_HOME-$a </dev/null &>/dev/null &
 
     sleep 4s
 
