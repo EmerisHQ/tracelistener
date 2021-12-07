@@ -19,8 +19,7 @@ fi
 
 echo
 
-IP=127.0.0.1
-
+DOMAIN=localhost
 CHAINS=2
 
 echo "--------- Delegation tx -----------"
@@ -30,7 +29,7 @@ do
     DIFF=`expr $a - 1`
     INC=`expr $DIFF \* 2`
     PORT=`expr 16657 + $INC` #get ports
-    RPC="http://${IP}:${PORT}"
+    RPC="http://${DOMAIN}:${PORT}"
     echo "NODE :: $RPC"
 
     TONODE=$a
@@ -148,7 +147,7 @@ do
     echo "----------create validator-----------"
 
     FROMKEY=validator${a}
-    RPC="http://${IP}:16657"
+    RPC="http://${DOMAIN}:16657"
 
     createValidator=$("$DAEMON" tx staking create-validator --amount 4000000000000"${DENOM}" --commission-max-change-rate 0.1 --commission-max-rate 0.2 --commission-rate 0.1 --from $FROMKEY --min-self-delegation 1 --moniker moniker-$a --pubkey $("${DAEMON}" tendermint show-validator --home $DAEMON_HOME-$a) --chain-id $CHAINID-$a --home $DAEMON_HOME-$a --node $RPC --keyring-backend test --output json -y)
     sleep 6s

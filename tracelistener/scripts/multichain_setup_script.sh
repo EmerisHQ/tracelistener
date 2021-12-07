@@ -61,7 +61,9 @@ $DAEMON version --long
 SEED1="grief wash cry suggest royal coyote cover payment salute version matter truth science bracket project gasp royal paper menu order wreck polar false tornado"
 SEED2="welcome strike afford royal issue wife damage trip aware critic spy caution phone world parent sock flush captain weapon dream bag fame vicious private"
 
-for (( c=1; c<=2; c++ ))
+CHAINS=2
+
+for (( c=1; c<=$CHAINS; c++ ))
 do
     export DAEMON_HOME_$c=$DAEMON_HOME-$c
     echo "Deamon path :: $DAEMON_HOME-$c"
