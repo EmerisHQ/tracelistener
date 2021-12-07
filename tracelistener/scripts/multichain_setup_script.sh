@@ -58,6 +58,9 @@ cd $HOME
 # check version
 $DAEMON version --long
 
+SEED1="grief wash cry suggest royal coyote cover payment salute version matter truth science bracket project gasp royal paper menu order wreck polar false tornado"
+SEED2="welcome strike afford royal issue wife damage trip aware critic spy caution phone world parent sock flush captain weapon dream bag fame vicious private"
+
 for (( c=1; c<=2; c++ ))
 do
     export DAEMON_HOME_$c=$DAEMON_HOME-$c
@@ -87,8 +90,14 @@ do
     # add validators
     echo "---------Creating keys-------------"
 
-    $DAEMON keys add "validator${c}" --keyring-backend test --home $DAEMON_HOME-${c}
+    if [ $c == 1 ]
+    then
+        echo $SEED1 | $DAEMON keys add "validator${c}" --keyring-backend test --home $DAEMON_HOME-${c} --recover
+    else
+        echo $SEED2 | $DAEMON keys add "validator${c}" --keyring-backend test --home $DAEMON_HOME-${c} --recover
+    fi
 
+    
     echo "----------Genesis creation---------"
        
     $DAEMON --home $DAEMON_HOME-$c add-genesis-account $($DAEMON keys show validator$c -a --home $DAEMON_HOME-$c --keyring-backend test) 1000000000000$DENOM
