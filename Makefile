@@ -15,6 +15,9 @@ generate-swagger:
 	go generate ${BASEPKG}/docs
 	@rm docs/docs.go
 
+lint:
+	golangci-lint run ./...
+
 test:
 	go test -v -race ./...
 
