@@ -20,7 +20,9 @@ type Module interface {
 	TableSchema() string
 }
 
-// TODO: this singleton MUST go away.
+// FIXME: this singleton MUST go away (Issue tracelistener#20).
+// 	It is already causing race errors in unit tests
+//  Once refactored, remove all the // +build !race directives from the unit tests
 var p Processor
 
 var defaultProcessors = []string{

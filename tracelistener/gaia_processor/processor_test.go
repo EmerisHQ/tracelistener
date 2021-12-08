@@ -1,3 +1,6 @@
+//go:build !race
+// +build !race
+
 package gaia_processor_test
 
 import (
