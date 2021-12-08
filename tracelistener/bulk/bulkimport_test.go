@@ -1,4 +1,4 @@
-package bulk
+package bulk_test
 
 import (
 	"testing"
@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	bulk "github.com/allinbits/tracelistener/tracelistener/bulk"
 	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/allinbits/tracelistener/tracelistener/database"
 	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
@@ -22,7 +23,7 @@ func TestImporterDo(t *testing.T) {
 	tests := []struct {
 		name          string
 		cfg           config.Config
-		im            Importer
+		im            bulk.Importer
 		connString    string
 		expectedDBErr bool
 		wantErr       bool
@@ -36,7 +37,7 @@ func TestImporterDo(t *testing.T) {
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
-			Importer{
+			bulk.Importer{
 				Path: "./testdata/application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
 					DataSourcePath: "./tracelistener.fifo",
@@ -62,7 +63,7 @@ func TestImporterDo(t *testing.T) {
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
-			Importer{
+			bulk.Importer{
 				Path: "./application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
 					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
