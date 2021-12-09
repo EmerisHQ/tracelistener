@@ -10,15 +10,15 @@ replace (
 )
 
 require (
-	github.com/allinbits/demeris-backend-models v0.0.0-20211018093214-0546d958f4d9
+	github.com/allinbits/demeris-backend-models v0.0.0-20211203174011-b5241fc065df
 	github.com/cockroachdb/cockroach-go/v2 v2.2.0
 	github.com/containerd/fifo v1.0.0
 	github.com/cosmos/cosmos-sdk v0.42.8
 	github.com/cosmos/gaia/v4 v4.2.1
-	github.com/ethereum/go-ethereum v1.10.9
+	github.com/ethereum/go-ethereum v1.10.12
 	github.com/gin-gonic/gin v1.7.4
-	github.com/go-playground/universal-translator v0.17.0
-	github.com/go-playground/validator/v10 v10.4.1
+	github.com/go-playground/universal-translator v0.18.0
+	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/iamolegga/enviper v1.3.0
@@ -65,7 +65,7 @@ require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
-	github.com/go-playground/locales v0.13.0 // indirect
+	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/gateway v1.1.0 // indirect
@@ -96,8 +96,7 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
-	github.com/kr/text v0.2.0 // indirect
-	github.com/leodido/go-urn v1.2.0 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect

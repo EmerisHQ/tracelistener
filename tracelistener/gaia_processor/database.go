@@ -435,4 +435,38 @@ DO UPDATE SET
 		AND
 		operator_address = :operator_address
 `
+
+	// Account unbonding delegations-related queries
+	createRedelegationsTable = `
+CREATE TABLE IF NOT EXISTS tracelistener.redelegations (
+	id serial unique primary key,
+	chain_name text not null,
+	delegator_address text not null,
+	validator_src_address text not null,
+	validator_dst_address text not null,
+	entries jsonb not null,
+	unique(chain_name, delegator_address, validator_src_address, validator_dst_address)
+)
+`
+
+	insertRedelegation = `
+INSERT INTO tracelistener.redelegations
+	(delegator_address, validator_src_address, validator_dst_address, entries, chain_name) 
+VALUES 
+	(:delegator_address, :validator_src_address, :validator_dst_address, :entries, :chain_name)  
+ON CONFLICT
+	(chain_name, delegator_address, validator_src_address, validator_dst_address)
+DO UPDATE SET
+	entries=EXCLUDED.entries
+`
+
+	deleteRedelegation = `
+DELETE FROM tracelistener.redelegations
+WHERE
+	delegator_address=:delegator_address
+AND
+	validator_src_address=:validator_src_address
+AND
+	validator_dst_address=:validator_dst_address
+`
 )
