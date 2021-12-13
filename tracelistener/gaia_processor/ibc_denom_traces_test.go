@@ -125,25 +125,27 @@ func TestIbcDenomTracesFlushCache(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		path        string
-		baseDenom   string
-		hash        string
+		row         models.IBCDenomTraceRow
 		isNil       bool
 		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"path",
-			"stake",
-			"hash",
+			models.IBCDenomTraceRow{
+				Path:      "path",
+				Hash:      "hash",
+				BaseDenom: "stake",
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			"",
-			"",
+			models.IBCDenomTraceRow{
+				Path:      "",
+				Hash:      "",
+				BaseDenom: "",
+			},
 			true,
 			true,
 		},
@@ -155,12 +157,12 @@ func TestIbcDenomTracesFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				row := models.IBCDenomTraceRow{
-					Path:      tt.path,
-					BaseDenom: tt.baseDenom,
-					Hash:      tt.hash,
+					Path:      tt.row.Path,
+					BaseDenom: tt.row.BaseDenom,
+					Hash:      tt.row.Hash,
 				}
 
-				i.denomTracesCache[tt.hash] = row
+				i.denomTracesCache[tt.row.Hash] = row
 			}
 
 			wop := i.FlushCache()

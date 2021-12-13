@@ -210,26 +210,28 @@ func TestIbcChannelFlushCache(t *testing.T) {
 	i := ibcChannelsProcessor{}
 
 	tests := []struct {
-		name             string
-		channelID        string
-		portID           string
-		counterChannelID string
-		isNil            bool
-		expectedNil      bool
+		name        string
+		row         models.IBCChannelRow
+		isNil       bool
+		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"channelId",
-			"portId",
-			"counterChannelId",
+			models.IBCChannelRow{
+				ChannelID:        "channelId",
+				Port:             "portId",
+				CounterChannelID: "CounterChannelID",
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			"",
-			"",
+			models.IBCChannelRow{
+				ChannelID:        "",
+				Port:             "",
+				CounterChannelID: "",
+			},
 			true,
 			true,
 		},
@@ -241,12 +243,12 @@ func TestIbcChannelFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				i.channelsCache[channelCacheEntry{
-					channelID: tt.channelID,
-					portID:    tt.portID,
+					channelID: tt.row.ChannelID,
+					portID:    tt.row.Port,
 				}] = models.IBCChannelRow{
-					ChannelID:        tt.channelID,
-					CounterChannelID: tt.counterChannelID,
-					Port:             tt.portID,
+					ChannelID:        tt.row.ChannelID,
+					CounterChannelID: tt.row.CounterChannelID,
+					Port:             tt.row.Port,
 				}
 			}
 

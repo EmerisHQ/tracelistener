@@ -170,17 +170,25 @@ func TestUnbondingDelegationFlushCache(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		delegator   string
-		validator   string
-		Amount      string
+		row         models.UnbondingDelegationRow
 		isNil       bool
 		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
-			"cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-			"100stake",
+			models.UnbondingDelegationRow{
+				Delegator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+			},
+			false,
+			false,
+		},
+		{
+			"Empty data - error",
+			models.UnbondingDelegationRow{
+				Delegator: "",
+				Validator: "",
+			},
 			false,
 			false,
 		},
@@ -193,25 +201,27 @@ func TestUnbondingDelegationFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				ud.insertHeightCache[unbondingDelegationCacheEntry{
-					delegator: tt.delegator,
-					validator: tt.validator,
+					delegator: tt.row.Delegator,
+					validator: tt.row.Validator,
 				}] = models.UnbondingDelegationRow{
-					Delegator: tt.delegator,
-					Validator: tt.validator,
+					Delegator: tt.row.Delegator,
+					Validator: tt.row.Validator,
 				}
 
 				ud.deleteHeightCache[unbondingDelegationCacheEntry{
-					delegator: tt.delegator,
-					validator: tt.validator,
+					delegator: tt.row.Delegator,
+					validator: tt.row.Validator,
 				}] = models.UnbondingDelegationRow{
-					Delegator: tt.delegator,
-					Validator: tt.validator,
+					Delegator: tt.row.Delegator,
+					Validator: tt.row.Validator,
 				}
 			}
 
 			wop := ud.FlushCache()
 			if tt.expectedNil {
-				require.Nil(t, wop)
+				if len(wop) != 0 {
+					require.Empty(t, wop[0].Data)
+				}
 			} else {
 				require.NotNil(t, wop)
 			}

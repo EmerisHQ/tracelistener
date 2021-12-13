@@ -117,25 +117,27 @@ func TestBankFlushCache(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		address     string
-		Amount      string
-		denom       string
+		row         models.BalanceRow
 		isNil       bool
 		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"0A1E9FBE949F06AA6CABABF9262EF5C071DCA7E2",
-			"100stake",
-			"stake",
+			models.BalanceRow{
+				Address: "0A1E9FBE949F06AA6CABABF9262EF5C071DCA7E2",
+				Denom:   "stake",
+				Amount:  "100stake",
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			"",
-			"",
+			models.BalanceRow{
+				Address: "",
+				Denom:   "",
+				Amount:  "",
+			},
 			true,
 			true,
 		},
@@ -147,12 +149,12 @@ func TestBankFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				b.heightCache[bankCacheEntry{
-					address: tt.address,
-					denom:   tt.denom,
+					address: tt.row.Address,
+					denom:   tt.row.Denom,
 				}] = models.BalanceRow{
-					Address: tt.address,
-					Amount:  tt.Amount,
-					Denom:   tt.denom,
+					Address: tt.row.Address,
+					Amount:  tt.row.Amount,
+					Denom:   tt.row.Denom,
 				}
 			}
 

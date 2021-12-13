@@ -262,26 +262,28 @@ func TestIbcClientsFlushCache(t *testing.T) {
 	i := ibcClientsProcessor{}
 
 	tests := []struct {
-		name         string
-		chainID      string
-		clientID     string
-		LatestHeight uint64
-		isNil        bool
-		expectedNil  bool
+		name        string
+		row         models.IBCClientStateRow
+		isNil       bool
+		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"cosmos",
-			"clientID",
-			4211,
+			models.IBCClientStateRow{
+				ChainID:      "cosmos",
+				ClientID:     "clientID",
+				LatestHeight: 4211,
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			"",
-			0,
+			models.IBCClientStateRow{
+				ChainID:      "",
+				ClientID:     "",
+				LatestHeight: 0,
+			},
 			true,
 			true,
 		},
@@ -293,12 +295,12 @@ func TestIbcClientsFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				i.clientsCache[clientCacheEntry{
-					chainID:  tt.chainID,
-					clientID: tt.clientID,
+					chainID:  tt.row.ChainID,
+					clientID: tt.row.ClientID,
 				}] = models.IBCClientStateRow{
-					ChainID:      tt.chainID,
-					ClientID:     tt.clientID,
-					LatestHeight: tt.LatestHeight,
+					ChainID:      tt.row.ChainID,
+					ClientID:     tt.row.ClientID,
+					LatestHeight: tt.row.LatestHeight,
 				}
 			}
 

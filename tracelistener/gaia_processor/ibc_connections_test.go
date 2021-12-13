@@ -209,26 +209,26 @@ func TestIbcConnectionsFlushCache(t *testing.T) {
 	i := ibcConnectionsProcessor{}
 
 	tests := []struct {
-		name         string
-		connectionID string
-		clientID     string
-		LatestHeight uint64
-		isNil        bool
-		expectedNil  bool
+		name        string
+		row         models.IBCConnectionRow
+		isNil       bool
+		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"connectionID",
-			"clientID",
-			4211,
+			models.IBCConnectionRow{
+				ConnectionID: "connectionID",
+				ClientID:     "clientID",
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			"",
-			0,
+			models.IBCConnectionRow{
+				ConnectionID: "",
+				ClientID:     "",
+			},
 			true,
 			true,
 		},
@@ -240,11 +240,11 @@ func TestIbcConnectionsFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				i.connectionsCache[connectionCacheEntry{
-					connectionID: tt.connectionID,
-					clientID:     tt.clientID,
+					connectionID: tt.row.ConnectionID,
+					clientID:     tt.row.ClientID,
 				}] = models.IBCConnectionRow{
-					ConnectionID: tt.connectionID,
-					ClientID:     tt.clientID,
+					ConnectionID: tt.row.ConnectionID,
+					ClientID:     tt.row.ClientID,
 				}
 			}
 

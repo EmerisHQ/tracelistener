@@ -158,25 +158,27 @@ func TestDelegationFlushCache(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		delegator   string
-		validator   string
-		Amount      string
+		row         models.DelegationRow
 		isNil       bool
 		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
-			"cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-			"100stake",
+			models.DelegationRow{
+				Validator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+				Delegator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+				Amount:    "100stake",
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			"",
-			"",
+			models.DelegationRow{
+				Validator: "",
+				Delegator: "",
+				Amount:    "",
+			},
 			true,
 			true,
 		},
@@ -189,20 +191,20 @@ func TestDelegationFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				d.insertHeightCache[delegationCacheEntry{
-					delegator: tt.delegator,
-					validator: tt.validator,
+					delegator: tt.row.Delegator,
+					validator: tt.row.Validator,
 				}] = models.DelegationRow{
-					Delegator: tt.delegator,
-					Validator: tt.validator,
-					Amount:    tt.Amount,
+					Delegator: tt.row.Delegator,
+					Validator: tt.row.Validator,
+					Amount:    tt.row.Amount,
 				}
 
 				d.deleteHeightCache[delegationCacheEntry{
-					delegator: tt.delegator,
-					validator: tt.validator,
+					delegator: tt.row.Delegator,
+					validator: tt.row.Validator,
 				}] = models.DelegationRow{
-					Delegator: tt.delegator,
-					Validator: tt.validator,
+					Delegator: tt.row.Delegator,
+					Validator: tt.row.Validator,
 				}
 			}
 

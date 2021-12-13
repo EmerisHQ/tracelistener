@@ -171,23 +171,26 @@ func TestValidatorFlushCache(t *testing.T) {
 	v := validatorsProcessor{}
 
 	tests := []struct {
-		name            string
-		operatorAddress string
-		jailed          bool
-		isNil           bool
-		expectedNil     bool
+		name        string
+		row         models.ValidatorRow
+		isNil       bool
+		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
-			"cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-			false,
+			models.ValidatorRow{
+				OperatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+				Jailed:          false,
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
-			"",
-			false,
+			models.ValidatorRow{
+				OperatorAddress: "",
+				Jailed:          false,
+			},
 			true,
 			true,
 		},
@@ -200,16 +203,16 @@ func TestValidatorFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				v.insertValidatorsCache[validatorCacheEntry{
-					operator: tt.operatorAddress,
+					operator: tt.row.OperatorAddress,
 				}] = models.ValidatorRow{
-					OperatorAddress: tt.operatorAddress,
+					OperatorAddress: tt.row.OperatorAddress,
 				}
 
 				v.deleteValidatorsCache[validatorCacheEntry{
-					operator: tt.operatorAddress,
+					operator: tt.row.OperatorAddress,
 				}] = models.ValidatorRow{
-					OperatorAddress: tt.operatorAddress,
-					Jailed:          tt.jailed,
+					OperatorAddress: tt.row.OperatorAddress,
+					Jailed:          tt.row.Jailed,
 				}
 			}
 

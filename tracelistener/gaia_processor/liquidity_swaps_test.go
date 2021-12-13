@@ -121,29 +121,31 @@ func TestLiquidityPoolSwapsFlushCache(t *testing.T) {
 	l := liquiditySwapsProcessor{}
 
 	tests := []struct {
-		name             string
-		msgHeight        int64
-		poolID           uint64
-		poolCoinDenom    string
-		requesterAddress string
-		isNil            bool
-		expectedNil      bool
+		name        string
+		msgHeight   int64
+		row         models.SwapRow
+		isNil       bool
+		expectedNil bool
 	}{
 		{
 			"Non empty data - No error",
 			2,
-			1,
-			"stake",
-			"cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+			models.SwapRow{
+				PoolID:           1,
+				PoolCoinDenom:    "stake",
+				RequesterAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+			},
 			false,
 			false,
 		},
 		{
 			"Empty data - error",
 			0,
-			0,
-			"",
-			"",
+			models.SwapRow{
+				PoolID:           0,
+				PoolCoinDenom:    "",
+				RequesterAddress: "",
+			},
 			true,
 			true,
 		},
@@ -155,13 +157,13 @@ func TestLiquidityPoolSwapsFlushCache(t *testing.T) {
 
 			if !tt.isNil {
 				row := models.SwapRow{
-					PoolID:           tt.poolID,
+					PoolID:           tt.row.PoolID,
 					MsgHeight:        tt.msgHeight,
-					PoolCoinDenom:    tt.poolCoinDenom,
-					RequesterAddress: tt.requesterAddress,
+					PoolCoinDenom:    tt.row.PoolCoinDenom,
+					RequesterAddress: tt.row.RequesterAddress,
 				}
 
-				l.swapsCache[tt.poolID] = row
+				l.swapsCache[tt.row.PoolID] = row
 			}
 
 			wop := l.FlushCache()
