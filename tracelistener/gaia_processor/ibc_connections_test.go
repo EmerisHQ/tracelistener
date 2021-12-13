@@ -99,7 +99,6 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				Key:       []byte("connections/2"),
 			},
 			types.ConnectionEnd{
-				ClientId: "",
 				Versions: []*types.Version{
 					{
 						Identifier: "ibc",
@@ -225,10 +224,7 @@ func TestIbcConnectionsFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.IBCConnectionRow{
-				ConnectionID: "",
-				ClientID:     "",
-			},
+			models.IBCConnectionRow{},
 			true,
 			true,
 		},
@@ -242,10 +238,7 @@ func TestIbcConnectionsFlushCache(t *testing.T) {
 				i.connectionsCache[connectionCacheEntry{
 					connectionID: tt.row.ConnectionID,
 					clientID:     tt.row.ClientID,
-				}] = models.IBCConnectionRow{
-					ConnectionID: tt.row.ConnectionID,
-					ClientID:     tt.row.ClientID,
-				}
+				}] = tt.row
 			}
 
 			wop := i.FlushCache()

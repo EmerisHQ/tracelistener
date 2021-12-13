@@ -135,12 +135,7 @@ func TestLiquidityPoolFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.PoolRow{
-				PoolID:                0,
-				TypeID:                0,
-				PoolCoinDenom:         "",
-				ReserveAccountAddress: "",
-			},
+			models.PoolRow{},
 			true,
 			true,
 		},
@@ -151,14 +146,7 @@ func TestLiquidityPoolFlushCache(t *testing.T) {
 			l.poolsCache = map[uint64]models.PoolRow{}
 
 			if !tt.isNil {
-				row := models.PoolRow{
-					PoolID:                tt.row.PoolID,
-					TypeID:                tt.row.TypeID,
-					PoolCoinDenom:         tt.row.PoolCoinDenom,
-					ReserveAccountAddress: tt.row.ReserveAccountAddress,
-				}
-
-				l.poolsCache[tt.row.PoolID] = row
+				l.poolsCache[tt.row.PoolID] = tt.row
 			}
 
 			wop := l.FlushCache()

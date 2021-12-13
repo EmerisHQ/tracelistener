@@ -141,11 +141,7 @@ func TestLiquidityPoolSwapsFlushCache(t *testing.T) {
 		{
 			"Empty data - error",
 			0,
-			models.SwapRow{
-				PoolID:           0,
-				PoolCoinDenom:    "",
-				RequesterAddress: "",
-			},
+			models.SwapRow{},
 			true,
 			true,
 		},
@@ -156,14 +152,7 @@ func TestLiquidityPoolSwapsFlushCache(t *testing.T) {
 			l.swapsCache = map[uint64]models.SwapRow{}
 
 			if !tt.isNil {
-				row := models.SwapRow{
-					PoolID:           tt.row.PoolID,
-					MsgHeight:        tt.msgHeight,
-					PoolCoinDenom:    tt.row.PoolCoinDenom,
-					RequesterAddress: tt.row.RequesterAddress,
-				}
-
-				l.swapsCache[tt.row.PoolID] = row
+				l.swapsCache[tt.row.PoolID] = tt.row
 			}
 
 			wop := l.FlushCache()

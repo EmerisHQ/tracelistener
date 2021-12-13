@@ -94,9 +94,7 @@ func TestDelegationProcess(t *testing.T) {
 		{
 			"Invalid addresses - error",
 			types.Delegation{
-				DelegatorAddress: "",
-				ValidatorAddress: "",
-				Shares:           sdk_types.NewDec(100),
+				Shares: sdk_types.NewDec(100),
 			},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.WriteOp),
@@ -174,11 +172,7 @@ func TestDelegationFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.DelegationRow{
-				Validator: "",
-				Delegator: "",
-				Amount:    "",
-			},
+			models.DelegationRow{},
 			true,
 			true,
 		},
@@ -193,19 +187,12 @@ func TestDelegationFlushCache(t *testing.T) {
 				d.insertHeightCache[delegationCacheEntry{
 					delegator: tt.row.Delegator,
 					validator: tt.row.Validator,
-				}] = models.DelegationRow{
-					Delegator: tt.row.Delegator,
-					Validator: tt.row.Validator,
-					Amount:    tt.row.Amount,
-				}
+				}] = tt.row
 
 				d.deleteHeightCache[delegationCacheEntry{
 					delegator: tt.row.Delegator,
 					validator: tt.row.Validator,
-				}] = models.DelegationRow{
-					Delegator: tt.row.Delegator,
-					Validator: tt.row.Validator,
-				}
+				}] = tt.row
 			}
 
 			wop := d.FlushCache()

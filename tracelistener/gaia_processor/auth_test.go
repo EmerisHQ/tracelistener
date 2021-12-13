@@ -150,11 +150,7 @@ func TestAuthFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.AuthRow{
-				Address:        "",
-				SequenceNumber: 0,
-				AccountNumber:  0,
-			},
+			models.AuthRow{},
 			true,
 			true,
 		},
@@ -168,11 +164,7 @@ func TestAuthFlushCache(t *testing.T) {
 				a.heightCache[authCacheEntry{
 					address:   tt.row.Address,
 					accNumber: tt.row.AccountNumber,
-				}] = models.AuthRow{
-					Address:        tt.row.Address,
-					SequenceNumber: tt.row.SequenceNumber,
-					AccountNumber:  tt.row.AccountNumber,
-				}
+				}] = tt.row
 			}
 
 			wop := a.FlushCache()

@@ -279,11 +279,7 @@ func TestIbcClientsFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.IBCClientStateRow{
-				ChainID:      "",
-				ClientID:     "",
-				LatestHeight: 0,
-			},
+			models.IBCClientStateRow{},
 			true,
 			true,
 		},
@@ -297,11 +293,7 @@ func TestIbcClientsFlushCache(t *testing.T) {
 				i.clientsCache[clientCacheEntry{
 					chainID:  tt.row.ChainID,
 					clientID: tt.row.ClientID,
-				}] = models.IBCClientStateRow{
-					ChainID:      tt.row.ChainID,
-					ClientID:     tt.row.ClientID,
-					LatestHeight: tt.row.LatestHeight,
-				}
+				}] = tt.row
 			}
 
 			wop := i.FlushCache()

@@ -104,10 +104,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 		},
 		{
 			"Invalid addresses - error",
-			types.UnbondingDelegation{
-				DelegatorAddress: "",
-				ValidatorAddress: "",
-			},
+			types.UnbondingDelegation{},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.WriteOp),
 				Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
@@ -185,10 +182,7 @@ func TestUnbondingDelegationFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.UnbondingDelegationRow{
-				Delegator: "",
-				Validator: "",
-			},
+			models.UnbondingDelegationRow{},
 			false,
 			false,
 		},
@@ -203,18 +197,12 @@ func TestUnbondingDelegationFlushCache(t *testing.T) {
 				ud.insertHeightCache[unbondingDelegationCacheEntry{
 					delegator: tt.row.Delegator,
 					validator: tt.row.Validator,
-				}] = models.UnbondingDelegationRow{
-					Delegator: tt.row.Delegator,
-					Validator: tt.row.Validator,
-				}
+				}] = tt.row
 
 				ud.deleteHeightCache[unbondingDelegationCacheEntry{
 					delegator: tt.row.Delegator,
 					validator: tt.row.Validator,
-				}] = models.UnbondingDelegationRow{
-					Delegator: tt.row.Delegator,
-					Validator: tt.row.Validator,
-				}
+				}] = tt.row
 			}
 
 			wop := ud.FlushCache()

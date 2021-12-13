@@ -133,11 +133,7 @@ func TestBankFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.BalanceRow{
-				Address: "",
-				Denom:   "",
-				Amount:  "",
-			},
+			models.BalanceRow{},
 			true,
 			true,
 		},
@@ -151,11 +147,7 @@ func TestBankFlushCache(t *testing.T) {
 				b.heightCache[bankCacheEntry{
 					address: tt.row.Address,
 					denom:   tt.row.Denom,
-				}] = models.BalanceRow{
-					Address: tt.row.Address,
-					Amount:  tt.row.Amount,
-					Denom:   tt.row.Denom,
-				}
+				}] = tt.row
 			}
 
 			wop := b.FlushCache()

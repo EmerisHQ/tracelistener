@@ -227,11 +227,7 @@ func TestIbcChannelFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.IBCChannelRow{
-				ChannelID:        "",
-				Port:             "",
-				CounterChannelID: "",
-			},
+			models.IBCChannelRow{},
 			true,
 			true,
 		},
@@ -245,11 +241,7 @@ func TestIbcChannelFlushCache(t *testing.T) {
 				i.channelsCache[channelCacheEntry{
 					channelID: tt.row.ChannelID,
 					portID:    tt.row.Port,
-				}] = models.IBCChannelRow{
-					ChannelID:        tt.row.ChannelID,
-					CounterChannelID: tt.row.CounterChannelID,
-					Port:             tt.row.Port,
-				}
+				}] = tt.row
 			}
 
 			wop := i.FlushCache()

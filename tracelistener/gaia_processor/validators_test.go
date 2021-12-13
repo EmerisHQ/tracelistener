@@ -187,10 +187,7 @@ func TestValidatorFlushCache(t *testing.T) {
 		},
 		{
 			"Empty data - error",
-			models.ValidatorRow{
-				OperatorAddress: "",
-				Jailed:          false,
-			},
+			models.ValidatorRow{},
 			true,
 			true,
 		},
@@ -204,16 +201,10 @@ func TestValidatorFlushCache(t *testing.T) {
 			if !tt.isNil {
 				v.insertValidatorsCache[validatorCacheEntry{
 					operator: tt.row.OperatorAddress,
-				}] = models.ValidatorRow{
-					OperatorAddress: tt.row.OperatorAddress,
-				}
-
+				}] = tt.row
 				v.deleteValidatorsCache[validatorCacheEntry{
 					operator: tt.row.OperatorAddress,
-				}] = models.ValidatorRow{
-					OperatorAddress: tt.row.OperatorAddress,
-					Jailed:          tt.row.Jailed,
-				}
+				}] = tt.row
 			}
 
 			wop := v.FlushCache()
