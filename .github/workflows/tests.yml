@@ -6,7 +6,7 @@ on:
   push:
 
 env:
-  CODECOV_TOKEN: ff2cfeec-40e2-4740-a91c-16c63efd432c
+  CODECOV_TOKEN: 6d0ad267-bfd5-4814-92f7-97d7e1db1d61
 
 jobs:
   code_cov:
