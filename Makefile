@@ -19,7 +19,7 @@ lint:
 	golangci-lint run ./...
 
 test:
-	go test -v -race ./...
+	go test -v -race ./... -cover
 
 $(OBJS):
 	go build -o build/$@ -ldflags='-X main.Version=${BRANCH}-${COMMIT}' ${EXTRAFLAGS} ${BASEPKG}/cmd/$@
