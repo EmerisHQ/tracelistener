@@ -6,7 +6,7 @@ on:
   push:
 
 env:
-  CODECOV_TOKEN: 6d0ad267-bfd5-4814-92f7-97d7e1db1d61
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 jobs:
   code_cov:
     runs-on: ubuntu-latest
