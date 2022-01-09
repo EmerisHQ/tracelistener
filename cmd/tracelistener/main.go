@@ -10,7 +10,7 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
-	"github.com/allinbits/tracelistener/utils/logging"
+	"github.com/allinbits/emeris-utils/logging"
 
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"

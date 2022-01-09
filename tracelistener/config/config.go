@@ -1,11 +1,10 @@
 package config
 
 import (
-	"github.com/allinbits/tracelistener/utils/validation"
-
-	"github.com/allinbits/tracelistener/utils/configuration"
-
 	"github.com/go-playground/validator/v10"
+
+	"github.com/allinbits/emeris-utils/configuration"
+	"github.com/allinbits/emeris-utils/validation"
 )
 
 type Config struct {
