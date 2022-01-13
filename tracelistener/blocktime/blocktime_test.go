@@ -20,7 +20,7 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
-	"github.com/allinbits/tracelistener/utils/database"
+	"github.com/allinbits/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 

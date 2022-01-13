@@ -1,7 +1,7 @@
 package database
 
 import (
-	dbutils "github.com/allinbits/tracelistener/utils/database"
+	dbutils "github.com/allinbits/emeris-utils/database"
 )
 
 type Instance struct {

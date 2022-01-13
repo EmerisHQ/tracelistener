@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
-	"github.com/tendermint/tendermint/types"
-
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-
 	"github.com/tendermint/tendermint/rpc/client/http"
-
-	"github.com/allinbits/tracelistener/utils/database"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/types"
 	"go.uber.org/zap"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	"github.com/allinbits/emeris-utils/database"
 )
 
 const (
