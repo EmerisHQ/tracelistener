@@ -84,7 +84,7 @@ func (w *Watcher) ParseBlockData(data coretypes.ResultEvent) error {
 
 	// Log line used to trigger Grafana alerts.
 	// Do not modify or remove without changing the corresponding dashboards
-	w.l.Infow("TL:Block")
+	w.l.Infow("Probe", "c", "block")
 
 	if block.Block == nil {
 		return nil

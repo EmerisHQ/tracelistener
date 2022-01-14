@@ -214,7 +214,7 @@ func (p *Processor) lifecycle() {
 
 			// Log line used to trigger Grafana alerts.
 			// Do not modify or remove without changing the corresponding dashboards
-			p.l.Infow("TL:Proc", "n", mp.ModuleName())
+			p.l.Infow("Probe", "c", "gaia", "n", mp.ModuleName())
 
 			if err := mp.Process(data); err != nil {
 				p.errorsChan <- tracelistener.TracingError{
