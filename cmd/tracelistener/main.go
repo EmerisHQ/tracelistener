@@ -138,6 +138,7 @@ func buildLogger(c *config.Config) *zap.SugaredLogger {
 	return logging.New(logging.LoggingConfig{
 		LogPath: c.LogPath,
 		Debug:   c.Debug,
+		JSON:    c.JSONLogs,
 	})
 }
 
