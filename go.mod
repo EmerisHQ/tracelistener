@@ -22,7 +22,7 @@ require (
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tendermint/tendermint v0.34.13
-	github.com/tendermint/tm-db v0.6.4
+	github.com/tendermint/tm-db v0.6.6
 	go.uber.org/zap v1.19.0
 )
 
@@ -144,7 +144,7 @@ require (
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
-	google.golang.org/grpc v1.40.0 // indirect
+	google.golang.org/grpc v1.42.0 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
