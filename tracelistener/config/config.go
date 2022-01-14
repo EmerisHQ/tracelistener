@@ -14,6 +14,7 @@ type Config struct {
 	LogPath               string
 	Type                  string `validate:"required"`
 	Debug                 bool
+	JSONLogs              bool
 
 	// Processors configs
 	Gaia GaiaConfig

@@ -112,6 +112,10 @@ func (tr *TraceWatcher) Watch() {
 
 			lineBytes := []byte(line.Text)
 
+			// Log line used to trigger Grafana alerts.
+			// Do not modify or remove without changing the corresponding dashboards
+			tr.Logger.Infow("Probe", "c", "trace", "s", len(lineBytes))
+
 			if !tr.mustConsiderData(lineBytes) {
 				continue
 			}
