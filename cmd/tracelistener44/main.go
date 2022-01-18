@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,12 +25,17 @@ import (
 var Version = "not specified"
 
 func main() {
+	ca := readCLI()
+
+	if ca.bulkImportSupportedModules {
+		fmt.Println("Import-able modules list:", strings.Join(bulk.ImportableModulesList(), ", "))
+		return
+	}
+
 	cfg, err := config.Read()
 	if err != nil {
 		panic(err)
 	}
-
-	ca := readCLI()
 
 	logger := buildLogger(cfg)
 
@@ -75,6 +82,7 @@ func main() {
 			Processor:    dpi,
 			Logger:       logger,
 			Database:     di,
+			Modules:      ca.bulkImportModulesSlice(),
 		}
 
 		if err := importer.Do(); err != nil {
@@ -156,13 +164,26 @@ func connectTendermint(b *blocktime.Watcher, l *zap.SugaredLogger) {
 }
 
 type cliArgs struct {
-	existingDatabasePath string
+	existingDatabasePath       string
+	bulkImportModules          string
+	bulkImportSupportedModules bool
+}
+
+func (c cliArgs) bulkImportModulesSlice() []string {
+	s := strings.Split(c.bulkImportModules, ",")
+	for i := 0; i < len(s); i++ {
+		s[i] = strings.TrimSpace(s[i])
+	}
+
+	return s
 }
 
 func readCLI() cliArgs {
 	ca := cliArgs{}
 
-	flag.StringVar(&ca.existingDatabasePath, "import", "", "import LevelDB database data from the path given, usually you want to process `application.db'")
+	flag.StringVar(&ca.existingDatabasePath, "import", "", "import LevelDB database data from the path given, usually you want to process `application.db'; will import all modules listed by `-import-modules-list` if `-import-modules` is not specified")
+	flag.StringVar(&ca.bulkImportModules, "import-modules", "", "comma-separated list of modules to be imported")
+	flag.BoolVar(&ca.bulkImportSupportedModules, "import-modules-list", false, "list supported modules in bulk import mode")
 	flag.Parse()
 
 	return ca

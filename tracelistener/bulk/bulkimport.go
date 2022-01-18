@@ -35,9 +35,46 @@ type Importer struct {
 	Processor    tracelistener.DataProcessor
 	Logger       *zap.SugaredLogger
 	Database     *database.Instance
+	Modules      []string
+}
+
+var moduleList = map[string]struct{}{
+	"bank":         {},
+	"ibc":          {},
+	"staking":      {},
+	"distribution": {},
+	"transfer":     {},
+	"acc":          {},
+}
+
+func ImportableModulesList() []string {
+	ml := make([]string, 0, len(moduleList))
+	for k := range moduleList {
+		ml = append(ml, k)
+	}
+
+	return ml
+}
+
+func (i Importer) validateModulesList() error {
+	for _, m := range i.Modules {
+		if _, ok := moduleList[m]; !ok {
+			return fmt.Errorf("unknown bulk import module %s", m)
+		}
+	}
+
+	return nil
 }
 
 func (i *Importer) Do() error {
+	if err := i.validateModulesList(); err != nil {
+		return err
+	}
+
+	if i.Modules == nil {
+		i.Modules = ImportableModulesList()
+	}
+
 	importingWg := sync.WaitGroup{}
 	t0 := time.Now()
 	// spawn a goroutine that logs errors from processor's error chan
@@ -90,9 +127,9 @@ func (i *Importer) Do() error {
 		return fmt.Errorf("cannot open chain database, %w", err)
 	}
 	rm := rootmulti.NewStore(db)
+	keys := make([]types2.StoreKey, 0, len(i.Modules))
 
-	var keys []types2.StoreKey
-	for _, ci := range []string{"bank", "ibc", "staking", "distribution", "transfer", "acc"} { // todo: add liquidity
+	for _, ci := range i.Modules {
 		key := types.NewKVStoreKey(ci)
 		keys = append(keys, key)
 		rm.MountStoreWithDB(key, types.StoreTypeIAVL, nil)
