@@ -171,6 +171,10 @@ type cliArgs struct {
 }
 
 func (c cliArgs) bulkImportModulesSlice() []string {
+	if c.bulkImportModules == "" {
+		return nil
+	}
+
 	s := strings.Split(c.bulkImportModules, ",")
 	for i := 0; i < len(s); i++ {
 		s[i] = strings.TrimSpace(s[i])
