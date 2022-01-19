@@ -16,3 +16,9 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "DBot Go"
+    ignore:
+      - dependency-name: "k8s.io/*"
+      - dependency-name: "sigs.k8s.io/*"
+      - dependency-name: "github.com/cosmos/*"
+      - dependency-name: "github.com/tendermint/*"
+      - dependency-name: "github.com/gravity-devs/*"
