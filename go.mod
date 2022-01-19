@@ -23,7 +23,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tendermint/tendermint v0.34.13
 	github.com/tendermint/tm-db v0.6.4
-	go.uber.org/zap v1.19.0
+	go.uber.org/zap v1.20.0
 )
 
 require (
