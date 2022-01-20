@@ -26,7 +26,6 @@ func TestConfig_Validate(t *testing.T) {
 				FIFOPath:              "fifo",
 				DatabaseConnectionURL: "db",
 				ChainName:             "cn",
-				Type:                  "type",
 				Debug:                 false,
 				JSONLogs:              true,
 			},

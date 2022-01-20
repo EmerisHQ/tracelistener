@@ -12,7 +12,6 @@ type Config struct {
 	ChainName             string `validate:"required"`
 	DatabaseConnectionURL string `validate:"required"`
 	LogPath               string
-	Type                  string `validate:"required"`
 	Debug                 bool
 	JSONLogs              bool
 

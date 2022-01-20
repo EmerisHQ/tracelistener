@@ -48,16 +48,7 @@ func main() {
 
 	logger.Infow("tracelistener", "version", Version, "supported_sdk_version", SupportedSDKVersion)
 
-	var processorFunc tracelistener.DataProcessorFunc
-
-	switch cfg.Type {
-	case "gaia":
-		processorFunc = processor.New
-	default:
-		logger.Panicw("no processor associated with type", "type", cfg.Type)
-	}
-
-	dpi, err := processorFunc(logger, cfg)
+	dpi, err := processor.New(logger, cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
