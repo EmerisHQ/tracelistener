@@ -7,8 +7,6 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
-	"github.com/cosmos/cosmos-sdk/codec"
-	gaia "github.com/cosmos/gaia/v5/app"
 	"go.uber.org/zap"
 )
 
@@ -19,11 +17,6 @@ type Module interface {
 	ModuleName() string
 	TableSchema() string
 }
-
-// FIXME: this singleton MUST go away (Issue tracelistener#20).
-// 	It is already causing race errors in unit tests
-//  Once refactored, remove all the // +build !race directives from the unit tests
-var p Processor
 
 var defaultProcessors = []string{
 	"auth",
@@ -42,7 +35,6 @@ type Processor struct {
 	writeChan        chan tracelistener.TraceOperation
 	writebackChan    chan []tracelistener.WritebackOp
 	errorsChan       chan error
-	cdc              codec.Marshaler
 	migrations       []string
 	lastHeight       uint64
 	chainName        string
@@ -66,7 +58,7 @@ func (p *Processor) ErrorsChan() chan error {
 }
 
 func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProcessor, error) {
-	c := cfg.Gaia
+	c := cfg.Processor
 
 	if c.ProcessorsEnabled == nil {
 		c.ProcessorsEnabled = defaultProcessors
@@ -85,9 +77,9 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		tableSchemas = append(tableSchemas, p.TableSchema())
 	}
 
-	logger.Infow("gaia Processor initialized", "processors", c.ProcessorsEnabled)
+	logger.Infow("processor initialized", "processors", c.ProcessorsEnabled)
 
-	p = Processor{
+	p := Processor{
 		chainName:        cfg.ChainName,
 		l:                logger,
 		writeChan:        make(chan tracelistener.TraceOperation),
@@ -96,9 +88,6 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		moduleProcessors: mp,
 		migrations:       tableSchemas,
 	}
-
-	cdc, _ := gaia.MakeCodecs()
-	p.cdc = cdc
 
 	go p.lifecycle()
 
@@ -123,13 +112,15 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 	default:
 		return nil, fmt.Errorf("unknown Processor %s", name)
 	case (&bankProcessor{}).ModuleName():
-		return &bankProcessor{heightCache: map[bankCacheEntry]models.BalanceRow{}, l: logger}, nil
+		return &bankProcessor{
+			heightCache: map[bankCacheEntry]models.BalanceRow{},
+			l:           logger,
+		}, nil
 	case (&ibcConnectionsProcessor{}).ModuleName():
-		return &ibcConnectionsProcessor{connectionsCache: map[connectionCacheEntry]models.IBCConnectionRow{}, l: logger}, nil
-	case (&liquidityPoolProcessor{}).ModuleName():
-		return &liquidityPoolProcessor{poolsCache: map[uint64]models.PoolRow{}, l: logger}, nil
-	case (&liquiditySwapsProcessor{}).ModuleName():
-		return &liquiditySwapsProcessor{swapsCache: map[uint64]models.SwapRow{}, l: logger}, nil
+		return &ibcConnectionsProcessor{
+			connectionsCache: map[connectionCacheEntry]models.IBCConnectionRow{},
+			l:                logger,
+		}, nil
 	case (&delegationsProcessor{}).ModuleName():
 		return &delegationsProcessor{
 			insertHeightCache: map[delegationCacheEntry]models.DelegationRow{},
@@ -148,7 +139,10 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 			denomTracesCache: map[string]models.IBCDenomTraceRow{},
 		}, nil
 	case (&ibcChannelsProcessor{}).ModuleName():
-		return &ibcChannelsProcessor{channelsCache: map[channelCacheEntry]models.IBCChannelRow{}, l: logger}, nil
+		return &ibcChannelsProcessor{
+			channelsCache: map[channelCacheEntry]models.IBCChannelRow{},
+			l:             logger,
+		}, nil
 	case (&ibcClientsProcessor{}).ModuleName():
 		return &ibcClientsProcessor{
 			l:            logger,
