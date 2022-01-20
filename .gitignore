@@ -8,6 +8,7 @@
 *.dylib
 tracelistener
 .tracelistener.fifo
+!tracelistener/
 # Test binary, built with `go test -c`
 *.test
 
