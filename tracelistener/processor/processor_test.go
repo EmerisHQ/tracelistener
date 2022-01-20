@@ -1,7 +1,7 @@
 //go:build !race
 // +build !race
 
-package gaia_processor_test
+package processor_test
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
+	"github.com/allinbits/tracelistener/tracelistener/processor"
 
 	"github.com/allinbits/tracelistener/tracelistener/config"
 )
@@ -89,7 +89,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gaia_processor.New(zap.NewNop().Sugar(), tt.cfg)
+			got, err := processor.New(zap.NewNop().Sugar(), tt.cfg)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -168,7 +168,7 @@ func TestLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := gaia_processor.New(
+			p, err := processor.New(
 				zap.NewNop().Sugar(),
 				&config.Config{},
 			)
@@ -176,8 +176,8 @@ func TestLifecycle(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, p)
 
-			// we know p is of type gaia_processor.Processor
-			gp := p.(*gaia_processor.Processor)
+			// we know p is of type processor.Processor
+			gp := p.(*processor.Processor)
 			require.NotNil(t, gp)
 
 			// let's add something we can actually control
@@ -233,8 +233,8 @@ func TestLifecycle(t *testing.T) {
 func TestProcessor_AddModule(t *testing.T) {
 	tests := []struct {
 		name            string
-		existingModules []gaia_processor.Module
-		newModule       gaia_processor.Module
+		existingModules []processor.Module
+		newModule       processor.Module
 		wantErr         bool
 	}{
 		{
@@ -245,7 +245,7 @@ func TestProcessor_AddModule(t *testing.T) {
 		},
 		{
 			"existing modules, new module does not conflict",
-			[]gaia_processor.Module{
+			[]processor.Module{
 				dumbModule{
 					moduleName: "dumbModuleTwo",
 				},
@@ -255,7 +255,7 @@ func TestProcessor_AddModule(t *testing.T) {
 		},
 		{
 			"existing modules, new module does conflict",
-			[]gaia_processor.Module{
+			[]processor.Module{
 				dumbModule{},
 			},
 			dumbModule{},
@@ -265,7 +265,7 @@ func TestProcessor_AddModule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &gaia_processor.Processor{}
+			p := &processor.Processor{}
 
 			for _, em := range tt.existingModules {
 				require.NoError(t, p.AddModule(em))

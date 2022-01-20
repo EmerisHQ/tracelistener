@@ -1,4 +1,4 @@
-package gaia_processor
+package processor
 
 import (
 	"fmt"

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/allinbits/tracelistener/tracelistener/bulk"
+	"github.com/allinbits/tracelistener/tracelistener/processor"
 
 	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/allinbits/tracelistener/tracelistener/database"
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
 	"github.com/containerd/fifo"
 	"go.uber.org/zap"
 )
@@ -52,7 +52,7 @@ func main() {
 
 	switch cfg.Type {
 	case "gaia":
-		processorFunc = gaia_processor.New
+		processorFunc = processor.New
 	default:
 		logger.Panicw("no processor associated with type", "type", cfg.Type)
 	}
