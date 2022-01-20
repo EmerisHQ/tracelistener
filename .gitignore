@@ -21,3 +21,8 @@ ibc
 *.log
 build/
 .vscode
+
+# we are ignoring go mod stuff because of multi-sdk support,
+# mods live under the `mods` directory
+go.mod
+go.sum
