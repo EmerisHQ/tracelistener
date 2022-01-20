@@ -2,12 +2,6 @@ package processor
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
-
-	"github.com/cosmos/cosmos-sdk/x/ibc/core/exported"
-
-	tmIBCTypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
@@ -15,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 type clientCacheEntry struct {
@@ -61,36 +56,15 @@ func (b *ibcClientsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcClientsProcessor) Process(data tracelistener.TraceOperation) error {
-	b.l.Debugw("ibc client key", "key", string(data.Key), "raw value", string(data.Value))
-	var result exported.ClientState
-	var dest *tmIBCTypes.ClientState
-	if err := p.cdc.UnmarshalInterface(data.Value, &result); err != nil {
+	res, err := datamarshaler.NewDataMarshaler(b.l).IBCClients(data)
+	if err != nil {
 		return err
 	}
 
-	if res, ok := result.(*tmIBCTypes.ClientState); !ok {
-		return nil
-	} else {
-		dest = res
-	}
-
-	if err := result.Validate(); err != nil {
-		b.l.Debugw("found non-compliant ibc connection", "connection", dest, "error", err)
-		return fmt.Errorf("cannot validate ibc connection, %w", err)
-	}
-
-	keySplit := strings.Split(string(data.Key), "/")
-	clientID := keySplit[1]
-
 	b.clientsCache[clientCacheEntry{
-		chainID:  dest.ChainId,
-		clientID: clientID,
-	}] = models.IBCClientStateRow{
-		ChainID:        dest.ChainId,
-		ClientID:       clientID,
-		LatestHeight:   dest.LatestHeight.RevisionHeight,
-		TrustingPeriod: int64(dest.TrustingPeriod),
-	}
+		chainID:  res.ChainID,
+		clientID: res.ClientID,
+	}] = res
 
 	return nil
 }

@@ -2,15 +2,13 @@ package processor
 
 import (
 	"bytes"
-	"encoding/hex"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
@@ -59,40 +57,15 @@ func (b *bankProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
-	addrBytes := data.Key
-	pLen := len(types.BalancesPrefix)
-	addr := addrBytes[pLen : pLen+20]
-
-	coins := sdk.Coin{
-		Amount: sdk.NewInt(0),
-	}
-
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &coins); err != nil {
+	res, err := datamarshaler.NewDataMarshaler(b.l).Bank(data)
+	if err != nil {
 		return err
 	}
 
-	if !coins.IsValid() {
-		return nil
-	}
-
-	hAddr := hex.EncodeToString(addr)
-	b.l.Debugw("new bank store write",
-		"operation", data.Operation,
-		"address", hAddr,
-		"new_balance", coins.String(),
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
-	)
-
 	b.heightCache[bankCacheEntry{
-		address: hAddr,
-		denom:   coins.Denom,
-	}] = models.BalanceRow{
-		Address:     hAddr,
-		Amount:      coins.String(),
-		Denom:       coins.Denom,
-		BlockHeight: data.BlockHeight,
-	}
+		address: res.Address,
+		denom:   res.Denom,
+	}] = res
 
 	return nil
 }

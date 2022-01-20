@@ -2,17 +2,14 @@ package processor
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
-	"github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
 
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 type connectionCacheEntry struct {
@@ -69,38 +66,15 @@ func (b *ibcConnectionsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) error {
-	keyFields := strings.FieldsFunc(string(data.Key), func(r rune) bool {
-		return r == '/'
-	})
-
-	b.l.Debugw("ibc store key", "fields", keyFields, "raw key", string(data.Key))
-
-	// IBC keys are mostly strings
-	if len(keyFields) == 2 {
-		if keyFields[0] == host.KeyConnectionPrefix { // this is a ConnectionEnd
-			ce := types.ConnectionEnd{}
-			if err := p.cdc.UnmarshalBinaryBare(data.Value, &ce); err != nil {
-				return fmt.Errorf("cannot unmarshal connection end, %w", err)
-			}
-
-			if err := ce.ValidateBasic(); err != nil {
-				b.l.Debugw("found non-compliant connection end", "connection end", ce, "error", err)
-				return fmt.Errorf("connection end validation failed, %w", err)
-			}
-
-			b.l.Debugw("connection end", "data", ce)
-
-			b.connectionsCache[connectionCacheEntry{
-				connectionID: keyFields[1],
-				clientID:     ce.ClientId,
-			}] = models.IBCConnectionRow{
-				ConnectionID:        keyFields[1],
-				ClientID:            ce.ClientId,
-				State:               ce.State.String(),
-				CounterConnectionID: ce.Counterparty.ConnectionId,
-				CounterClientID:     ce.Counterparty.ClientId,
-			}
-		}
+	res, err := datamarshaler.NewDataMarshaler(b.l).IBCConnections(data)
+	if err != nil {
+		return err
 	}
+
+	b.connectionsCache[connectionCacheEntry{
+		connectionID: res.ConnectionID,
+		clientID:     res.ClientID,
+	}] = res
+
 	return nil
 }

@@ -2,12 +2,11 @@ package processor
 
 import (
 	"bytes"
-	"encoding/hex"
-	"fmt"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
 	"go.uber.org/zap"
 )
@@ -51,33 +50,12 @@ func (b *ibcDenomTracesProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) error {
-	b.l.Debugw("beginning denom trace processor", "key", string(data.Key), "value", string(data.Value))
-
-	dt := transferTypes.DenomTrace{}
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &dt); err != nil {
+	res, err := datamarshaler.NewDataMarshaler(b.l).IBCDenomTraces(data)
+	if err != nil {
 		return err
 	}
 
-	if err := dt.Validate(); err != nil {
-		b.l.Debugw("found a denom trace that isn't ICS20 compliant", "denom trace", dt, "error", err)
-		return fmt.Errorf("denom trace validation failed, %w", err)
-	}
+	b.denomTracesCache[res.Hash] = res
 
-	if dt.BaseDenom == "" {
-		b.l.Debugw("ignoring since it's not a denom trace")
-		return nil
-	}
-
-	hash := hex.EncodeToString(dt.Hash())
-
-	newObj := models.IBCDenomTraceRow{
-		Path:      dt.Path,
-		BaseDenom: dt.BaseDenom,
-		Hash:      hash,
-	}
-
-	b.l.Debugw("denom trace unmarshaled", "object", newObj)
-
-	b.denomTracesCache[hash] = newObj
 	return nil
 }

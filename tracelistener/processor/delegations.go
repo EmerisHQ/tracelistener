@@ -2,12 +2,11 @@ package processor
 
 import (
 	"bytes"
-	"encoding/hex"
-	"fmt"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
 )
@@ -70,58 +69,30 @@ func (b *delegationsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error {
+	res, err := datamarshaler.NewDataMarshaler(b.l).Delegations(data)
+	if err != nil {
+		return err
+	}
+
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 41 { // 20 bytes by address, 1 prefix = 2*20 + 1
-			return nil // found probably liquidity stuff being deleted
-		}
-
-		delegatorAddr := hex.EncodeToString(data.Key[1:21])
-		validatorAddr := hex.EncodeToString(data.Key[21:41])
-		b.l.Debugw("new delegation delete", "delegatorAddr", delegatorAddr, "validatorAddr", validatorAddr)
-
 		b.deleteHeightCache[delegationCacheEntry{
-			validator: validatorAddr,
-			delegator: delegatorAddr,
+			validator: res.Validator,
+			delegator: res.Delegator,
 		}] = models.DelegationRow{
-			Delegator: delegatorAddr,
-			Validator: validatorAddr,
+			Delegator: res.Delegator,
+			Validator: res.Validator,
 		}
 
 		return nil
 	}
 
-	delegation := types.Delegation{}
-
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &delegation); err != nil {
-		return err
-	}
-
-	delegator, err := b32Hex(delegation.DelegatorAddress)
-	if err != nil {
-		return fmt.Errorf("cannot convert delegator address from bech32 to hex, %w", err)
-	}
-
-	validator, err := b32Hex(delegation.ValidatorAddress)
-	if err != nil {
-		return fmt.Errorf("cannot convert validator address from bech32 to hex, %w", err)
-	}
-
-	b.l.Debugw("new delegation write",
-		"operation", data.Operation,
-		"delegator", delegator,
-		"validator", "validator",
-		"amount", delegation.Shares.String(),
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
-	)
-
 	b.insertHeightCache[delegationCacheEntry{
-		validator: validator,
-		delegator: delegator,
+		validator: res.Validator,
+		delegator: res.Delegator,
 	}] = models.DelegationRow{
-		Delegator:   delegator,
-		Validator:   validator,
-		Amount:      delegation.Shares.String(),
+		Delegator:   res.Delegator,
+		Validator:   res.Validator,
+		Amount:      res.Amount,
 		BlockHeight: data.BlockHeight,
 	}
 

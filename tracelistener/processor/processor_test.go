@@ -65,21 +65,21 @@ func TestNew(t *testing.T) {
 		{
 			"nonexistant Processor type",
 			&config.Config{
-				Gaia: config.GaiaConfig{
+				Processor: config.ProcessorConfig{
 					ProcessorsEnabled: []string{"doesn't exists"},
 				},
 			},
 			true,
 		},
 		{
-			"no gaia config specified, default list of processors enabled",
+			"no processor config specified, default list of processors enabled",
 			&config.Config{},
 			false,
 		},
 		{
-			"gaia config specified with a list of processors enabled",
+			"processor config specified with a list of processors enabled",
 			&config.Config{
-				Gaia: config.GaiaConfig{
+				Processor: config.ProcessorConfig{
 					ProcessorsEnabled: []string{"bank"},
 				},
 			},

@@ -2,16 +2,14 @@ package processor
 
 import (
 	"bytes"
-	"fmt"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
-	"github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
 
 	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 type channelCacheEntry struct {
@@ -58,38 +56,15 @@ func (b *ibcChannelsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error {
-	b.l.Debugw("ibc channel key", "key", string(data.Key), "raw value", string(data.Value))
-	var result types.Channel
-	if err := p.cdc.UnmarshalBinaryBare(data.Value, &result); err != nil {
-		return err
-	}
-
-	if err := result.ValidateBasic(); err != nil {
-		b.l.Debugw("found non-compliant channel", "channel", result, "error", err)
-		return fmt.Errorf("cannot validate ibc channel, %w", err)
-	}
-
-	if result.Ordering != types.UNORDERED {
-		return nil
-	}
-
-	b.l.Debugw("ibc channel data", "result", result)
-
-	portID, channelID, err := host.ParseChannelPath(string(data.Key))
+	res, err := datamarshaler.NewDataMarshaler(b.l).IBCChannels(data)
 	if err != nil {
 		return err
 	}
 
 	b.channelsCache[channelCacheEntry{
-		channelID: channelID,
-		portID:    portID,
-	}] = models.IBCChannelRow{
-		ChannelID:        channelID,
-		CounterChannelID: result.Counterparty.ChannelId,
-		Hops:             result.GetConnectionHops(),
-		Port:             portID,
-		State:            int32(result.State),
-	}
+		channelID: res.ChannelID,
+		portID:    res.Port,
+	}] = res
 
 	return nil
 }
