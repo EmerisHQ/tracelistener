@@ -22,9 +22,16 @@ import (
 	"go.uber.org/zap"
 )
 
-var Version = "not specified"
+var (
+	Version             = "not specified"
+	SupportedSDKVersion = ""
+)
 
 func main() {
+	if SupportedSDKVersion == "" {
+		panic("missing sdk version at compile time, panic!")
+	}
+
 	ca := readCLI()
 
 	if ca.bulkImportSupportedModules {
@@ -39,7 +46,7 @@ func main() {
 
 	logger := buildLogger(cfg)
 
-	logger.Infow("tracelistener", "version", Version)
+	logger.Infow("tracelistener", "version", Version, "supported_sdk_version", SupportedSDKVersion)
 
 	var processorFunc tracelistener.DataProcessorFunc
 
