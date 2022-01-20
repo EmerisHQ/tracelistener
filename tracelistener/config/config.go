@@ -16,10 +16,10 @@ type Config struct {
 	JSONLogs              bool
 
 	// Processors configs
-	Gaia GaiaConfig
+	Processor ProcessorConfig
 }
 
-type GaiaConfig struct {
+type ProcessorConfig struct {
 	ProcessorsEnabled []string
 }
 
