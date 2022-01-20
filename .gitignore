@@ -20,3 +20,4 @@ tracelistener
 ibc
 *.log
 build/
+.vscode
