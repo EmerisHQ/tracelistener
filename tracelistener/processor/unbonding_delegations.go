@@ -3,11 +3,12 @@ package processor
 import (
 	"bytes"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type unbondingDelegationCacheEntry struct {
