@@ -3,15 +3,13 @@ package processor
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
-	ibcTypes "github.com/cosmos/cosmos-sdk/x/ibc/core/23-commitment/types"
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestIbcConnProcessOwnsKey(t *testing.T) {
@@ -25,7 +23,7 @@ func TestIbcConnProcessOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			[]byte(host.KeyConnectionPrefix),
+			[]byte(datamarshaler.IBCConnectionsKey),
 			"key",
 			false,
 		},
@@ -57,12 +55,11 @@ func TestIbcConnectionsProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
 		newMessage  tracelistener.TraceOperation
-		ce          types.ConnectionEnd
+		ce          datamarshaler.TestConnection
 		expectedErr bool
 		expectedLen int
 	}{
@@ -72,22 +69,14 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				Operation: string(tracelistener.WriteOp),
 				Key:       []byte("connections/2"),
 			},
-			types.ConnectionEnd{
-				ClientId: "clientidtest",
-				Versions: []*types.Version{
-					{
-						Identifier: "ibc",
-					},
-				},
-				State: types.State(1),
-				Counterparty: types.Counterparty{
-					ClientId:     "counterpartyclientid",
-					ConnectionId: "counterpartyconnid",
-					Prefix: ibcTypes.MerklePrefix{
-						KeyPrefix: []byte("prefix"),
-					},
-				},
-				DelayPeriod: 12,
+			datamarshaler.TestConnection{
+				ClientId:          "clientidtest",
+				VersionIdentifier: "ibc",
+				State:             1,
+				CountClientID:     "counterpartyclientid",
+				CountConnectionID: "counterpartyconnid",
+				CountPrefix:       "prefix",
+				DelayPeriod:       12,
 			},
 			false,
 			1,
@@ -98,21 +87,13 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				Operation: string(tracelistener.WriteOp),
 				Key:       []byte("connections/2"),
 			},
-			types.ConnectionEnd{
-				Versions: []*types.Version{
-					{
-						Identifier: "ibc",
-					},
-				},
-				State: types.State(1),
-				Counterparty: types.Counterparty{
-					ClientId:     "counterpartyclientid",
-					ConnectionId: "counterpartyconnid",
-					Prefix: ibcTypes.MerklePrefix{
-						KeyPrefix: []byte("prefix"),
-					},
-				},
-				DelayPeriod: 2,
+			datamarshaler.TestConnection{
+				VersionIdentifier: "ibc",
+				State:             1,
+				CountClientID:     "counterpartyclientid",
+				CountConnectionID: "counterpartyconnid",
+				CountPrefix:       "prefix",
+				DelayPeriod:       12,
 			},
 			true,
 			0,
@@ -123,22 +104,14 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				Operation: string(tracelistener.WriteOp),
 				Key:       []byte("connections/2"),
 			},
-			types.ConnectionEnd{
-				ClientId: "clientidtest",
-				Versions: []*types.Version{
-					{
-						Identifier: "ibc",
-					},
-				},
-				State: types.State(1),
-				Counterparty: types.Counterparty{
-					ClientId:     "id",
-					ConnectionId: "conn",
-					Prefix: ibcTypes.MerklePrefix{
-						KeyPrefix: []byte("prefix"),
-					},
-				},
-				DelayPeriod: 2,
+			datamarshaler.TestConnection{
+				ClientId:          "clientidtest",
+				VersionIdentifier: "ibc",
+				State:             1,
+				CountClientID:     "id",
+				CountConnectionID: "conn",
+				CountPrefix:       "prefix",
+				DelayPeriod:       2,
 			},
 			true,
 			0,
@@ -149,22 +122,14 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				Operation: string(tracelistener.WriteOp),
 				Key:       []byte("connections/2"),
 			},
-			types.ConnectionEnd{
-				ClientId: "clientidtest",
-				Versions: []*types.Version{
-					{
-						Identifier: "ibc",
-					},
-				},
-				State: types.State(1),
-				Counterparty: types.Counterparty{
-					ClientId:     "counterpartyclientid",
-					ConnectionId: "counterpartyconnid",
-					Prefix: ibcTypes.MerklePrefix{
-						KeyPrefix: []byte(""),
-					},
-				},
-				DelayPeriod: 2,
+			datamarshaler.TestConnection{
+				ClientId:          "clientidtest",
+				VersionIdentifier: "ibc",
+				State:             1,
+				CountClientID:     "counterpartyclientid",
+				CountConnectionID: "counterpartyconnid",
+				CountPrefix:       "",
+				DelayPeriod:       12,
 			},
 			true,
 			0,
@@ -176,9 +141,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 			i.connectionsCache = map[connectionCacheEntry]models.IBCConnectionRow{}
 			i.l = zap.NewNop().Sugar()
 
-			value, err := p.cdc.MarshalBinaryBare(&tt.ce)
-			require.NoError(t, err)
-			tt.newMessage.Value = value
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().IBCConnection(tt.ce)
 
 			err = i.Process(tt.newMessage)
 			if tt.expectedErr {
@@ -196,7 +159,7 @@ func TestIbcConnectionsProcess(t *testing.T) {
 				require.NotNil(t, row)
 
 				state := row.State
-				require.Equal(t, tt.ce.State.String(), state)
+				require.Equal(t, datamarshaler.NewTestDataMarshaler().MapConnectionState(tt.ce.State), state)
 
 				return
 			}

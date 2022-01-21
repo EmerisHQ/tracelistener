@@ -3,16 +3,13 @@ package processor
 import (
 	"testing"
 
-	ics23 "github.com/confio/ics23/go"
-	"github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
-	clientTypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestIbcClientProcessOwnsKey(t *testing.T) {
@@ -26,7 +23,7 @@ func TestIbcClientProcessOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			[]byte(host.KeyClientState),
+			[]byte(datamarshaler.IBCClientsKey),
 			"key",
 			false,
 		},
@@ -57,12 +54,11 @@ func TestIbcClientProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
 		newMessage  tracelistener.TraceOperation
-		client      clientTypes.ClientState
+		client      datamarshaler.TestClientState
 		expectedErr bool
 		expectedLen int
 	}{
@@ -72,28 +68,29 @@ func TestIbcClientProcess(t *testing.T) {
 				Operation: string(tracelistener.WriteOp),
 				Key:       []byte("some/text"),
 			},
-			clientTypes.ClientState{
+			datamarshaler.TestClientState{
 				ChainId: "cosmos",
-				TrustLevel: clientTypes.Fraction{
+				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
 				},
 				TrustingPeriod:  1,
 				UnbondingPeriod: 2,
 				MaxClockDrift:   2,
-				ProofSpecs: []*ics23.ProofSpec{
+				ProofSpecs: []datamarshaler.TestProofSpec{
 					{
-						LeafSpec: &ics23.LeafOp{
-							Hash:   1,
-							Length: 1,
-						},
+						Hash:   1,
+						Length: 1,
 					},
 				},
-				FrozenHeight: types.Height{
-					RevisionNumber: 100,
-					RevisionHeight: 120,
+				FrozenHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 120,
 				},
-				LatestHeight: types.NewHeight(100, 102),
+				LatestHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 102,
+				},
 			},
 			false,
 			1,
@@ -105,28 +102,29 @@ func TestIbcClientProcess(t *testing.T) {
 				Key:       []byte("connections/info"),
 				Value:     []byte("some"),
 			},
-			clientTypes.ClientState{
+			datamarshaler.TestClientState{
 				ChainId: "cosmos",
-				TrustLevel: clientTypes.Fraction{
+				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
 				},
 				TrustingPeriod:  3,
 				UnbondingPeriod: 2,
 				MaxClockDrift:   2,
-				ProofSpecs: []*ics23.ProofSpec{
+				ProofSpecs: []datamarshaler.TestProofSpec{
 					{
-						LeafSpec: &ics23.LeafOp{
-							Hash:   1,
-							Length: 1,
-						},
+						Hash:   1,
+						Length: 1,
 					},
 				},
-				FrozenHeight: types.Height{
-					RevisionNumber: 100,
-					RevisionHeight: 120,
+				FrozenHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 120,
 				},
-				LatestHeight: types.NewHeight(100, 102),
+				LatestHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 102,
+				},
 			},
 			true,
 			0,
@@ -138,28 +136,29 @@ func TestIbcClientProcess(t *testing.T) {
 				Key:       []byte("some/text"),
 				Value:     []byte("some"),
 			},
-			clientTypes.ClientState{
+			datamarshaler.TestClientState{
 				ChainId: "cosmos",
-				TrustLevel: clientTypes.Fraction{
+				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
 				},
 				TrustingPeriod:  1,
 				UnbondingPeriod: 2,
 				MaxClockDrift:   0,
-				ProofSpecs: []*ics23.ProofSpec{
+				ProofSpecs: []datamarshaler.TestProofSpec{
 					{
-						LeafSpec: &ics23.LeafOp{
-							Hash:   1,
-							Length: 1,
-						},
+						Hash:   1,
+						Length: 1,
 					},
 				},
-				FrozenHeight: types.Height{
-					RevisionNumber: 100,
-					RevisionHeight: 120,
+				FrozenHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 120,
 				},
-				LatestHeight: types.NewHeight(100, 102),
+				LatestHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 102,
+				},
 			},
 			true,
 			0,
@@ -171,28 +170,29 @@ func TestIbcClientProcess(t *testing.T) {
 				Key:       []byte("some/text"),
 				Value:     []byte("some"),
 			},
-			clientTypes.ClientState{
+			datamarshaler.TestClientState{
 				ChainId: "cosmos",
-				TrustLevel: clientTypes.Fraction{
+				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
 				},
 				TrustingPeriod:  3,
 				UnbondingPeriod: 1,
 				MaxClockDrift:   2,
-				ProofSpecs: []*ics23.ProofSpec{
+				ProofSpecs: []datamarshaler.TestProofSpec{
 					{
-						LeafSpec: &ics23.LeafOp{
-							Hash:   1,
-							Length: 1,
-						},
+						Hash:   1,
+						Length: 1,
 					},
 				},
-				FrozenHeight: types.Height{
-					RevisionNumber: 100,
-					RevisionHeight: 120,
+				FrozenHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 120,
 				},
-				LatestHeight: types.NewHeight(100, 102),
+				LatestHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 102,
+				},
 			},
 			true,
 			0,
@@ -204,21 +204,24 @@ func TestIbcClientProcess(t *testing.T) {
 				Key:       []byte("some/text"),
 				Value:     []byte("some"),
 			},
-			clientTypes.ClientState{
+			datamarshaler.TestClientState{
 				ChainId: "cosmos",
-				TrustLevel: clientTypes.Fraction{
+				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
 				},
 				TrustingPeriod:  1,
 				UnbondingPeriod: 2,
 				MaxClockDrift:   2,
-				ProofSpecs:      []*ics23.ProofSpec{},
-				FrozenHeight: types.Height{
-					RevisionNumber: 100,
-					RevisionHeight: 120,
+				ProofSpecs:      nil,
+				FrozenHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 120,
 				},
-				LatestHeight: types.NewHeight(100, 102),
+				LatestHeight: datamarshaler.TestHeight{
+					Number: 100,
+					Height: 102,
+				},
 			},
 			true,
 			0,
@@ -230,11 +233,9 @@ func TestIbcClientProcess(t *testing.T) {
 			i.clientsCache = map[clientCacheEntry]models.IBCClientStateRow{}
 			i.l = zap.NewNop().Sugar()
 
-			value, err := p.cdc.MarshalInterface(&tt.client)
-			require.NoError(t, err)
-			tt.newMessage.Value = value
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().IBCClient(tt.client)
 
-			err = i.Process(tt.newMessage)
+			err := i.Process(tt.newMessage)
 			if tt.expectedErr {
 				require.Error(t, err)
 			} else {

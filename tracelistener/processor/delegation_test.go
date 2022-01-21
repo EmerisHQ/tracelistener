@@ -1,16 +1,16 @@
 package processor
 
 import (
+	"strconv"
 	"testing"
 
-	sdk_types "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestDelegationOwnsKey(t *testing.T) {
@@ -24,7 +24,7 @@ func TestDelegationOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			types.DelegationKey,
+			datamarshaler.DelegationKey,
 			"key",
 			false,
 		},
@@ -48,6 +48,12 @@ func TestDelegationOwnsKey(t *testing.T) {
 	}
 }
 
+type testDelegation struct {
+	Delegator string
+	Validator string
+	Shares    int64
+}
+
 func TestDelegationProcess(t *testing.T) {
 	d := delegationsProcessor{}
 
@@ -56,18 +62,17 @@ func TestDelegationProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
-		delegation  types.Delegation
+		delegation  testDelegation
 		newMessage  tracelistener.TraceOperation
 		expectedErr bool
 		expectedLen int
 	}{
 		{
 			"Delete operation of delegation - no error",
-			types.Delegation{},
+			testDelegation{},
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.DeleteOp),
 				Key:       []byte("QXRkbFY4cUQ2bzZKMnNoc2o5YWNwSSs5T3BkL2U1dVRxWklpN05LNWkzeTk="),
@@ -77,10 +82,10 @@ func TestDelegationProcess(t *testing.T) {
 		},
 		{
 			"Write new delegation - no error",
-			types.Delegation{
-				DelegatorAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
-				ValidatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-				Shares:           sdk_types.NewDec(100),
+			testDelegation{
+				Delegator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+				Shares:    100,
 			},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.WriteOp),
@@ -93,8 +98,8 @@ func TestDelegationProcess(t *testing.T) {
 		},
 		{
 			"Invalid addresses - error",
-			types.Delegation{
-				Shares: sdk_types.NewDec(100),
+			testDelegation{
+				Shares: 100,
 			},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.WriteOp),
@@ -113,10 +118,11 @@ func TestDelegationProcess(t *testing.T) {
 			d.deleteHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 			d.l = zap.NewNop().Sugar()
 
-			delValue, err := p.cdc.MarshalBinaryBare(&tt.delegation)
-			require.NoError(t, err)
-
-			tt.newMessage.Value = delValue
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().Delegation(
+				tt.delegation.Validator,
+				tt.delegation.Delegator,
+				tt.delegation.Shares,
+			)
 
 			err = d.Process(tt.newMessage)
 			if tt.expectedErr {
@@ -142,7 +148,9 @@ func TestDelegationProcess(t *testing.T) {
 					require.NotNil(t, row)
 
 					amount := row.Amount
-					require.Equal(t, tt.delegation.Shares.String(), amount)
+					amtfloat, err := strconv.ParseFloat(amount, 64)
+					require.NoError(t, err)
+					require.EqualValues(t, tt.delegation.Shares, amtfloat)
 
 					return
 				}

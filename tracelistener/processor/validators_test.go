@@ -3,15 +3,13 @@ package processor
 import (
 	"testing"
 
-	types1 "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk_types "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestValidatorProcessOwnsKey(t *testing.T) {
@@ -25,7 +23,7 @@ func TestValidatorProcessOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			types.ValidatorsKey,
+			datamarshaler.ValidatorsKey,
 			"key",
 			false,
 		},
@@ -57,35 +55,30 @@ func TestValidatorProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
-		validator   types.Validator
+		validator   datamarshaler.TestValidator
 		newMessage  tracelistener.TraceOperation
 		expectedErr bool
 		expectedLen int
 	}{
 		{
 			"Delete validator operation - no error",
-			types.Validator{
+			datamarshaler.TestValidator{
 				OperatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-				ConsensusPubkey: &types1.Any{
-					Value: []byte("dlxLxyNmux++E2mjN4GR6u/whv8uMsMTIS1Tw1WylJw="),
-				},
+				ConsensusPubkey: "dlxLxyNmux++E2mjN4GR6u/whv8uMsMTIS1Tw1WylJw=",
 				Jailed:          false,
-				Status:          types.Bonded,
-				Tokens:          sdk_types.NewInt(90000030000),
-				DelegatorShares: sdk_types.NewDec(90000030000),
+				Status:          3, // bonded
+				Tokens:          90000030000,
+				DelegatorShares: 90000030000,
 				UnbondingHeight: 0,
-				Commission: types.Commission{
-					CommissionRates: types.CommissionRates{
-						Rate:          sdk_types.NewDec(100),
-						MaxRate:       sdk_types.NewDec(200),
-						MaxChangeRate: sdk_types.NewDec(1000),
-					},
+				Commission: datamarshaler.TestValCommission{
+					Rate:          100,
+					MaxRate:       200,
+					MaxChangeRate: 1000,
 				},
-				MinSelfDelegation: sdk_types.NewInt(1),
+				MinSelfDelegation: 1,
 			},
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.DeleteOp),
@@ -96,24 +89,20 @@ func TestValidatorProcess(t *testing.T) {
 		},
 		{
 			"Write validator operation - no error",
-			types.Validator{
+			datamarshaler.TestValidator{
 				OperatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-				ConsensusPubkey: &types1.Any{
-					Value: []byte("dlxLxyNmux++E2mjN4GR6u/whv8uMsMTIS1Tw1WylJw="),
-				},
+				ConsensusPubkey: "dlxLxyNmux++E2mjN4GR6u/whv8uMsMTIS1Tw1WylJw=",
 				Jailed:          false,
-				Status:          types.Bonded,
-				Tokens:          sdk_types.NewInt(90000030000),
-				DelegatorShares: sdk_types.NewDec(90000030000),
+				Status:          3, // bonded
+				Tokens:          90000030000,
+				DelegatorShares: 90000030000,
 				UnbondingHeight: 0,
-				Commission: types.Commission{
-					CommissionRates: types.CommissionRates{
-						Rate:          sdk_types.NewDec(100),
-						MaxRate:       sdk_types.NewDec(200),
-						MaxChangeRate: sdk_types.NewDec(1000),
-					},
+				Commission: datamarshaler.TestValCommission{
+					Rate:          100,
+					MaxRate:       200,
+					MaxChangeRate: 1000,
 				},
-				MinSelfDelegation: sdk_types.NewInt(1),
+				MinSelfDelegation: 1,
 			},
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.WriteOp),
@@ -129,9 +118,7 @@ func TestValidatorProcess(t *testing.T) {
 			v.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 			v.l = zap.NewNop().Sugar()
 
-			value, err := p.cdc.MarshalBinaryBare(&tt.validator)
-			require.NoError(t, err)
-			tt.newMessage.Value = value
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().Validator(tt.validator)
 
 			err = v.Process(tt.newMessage)
 			if tt.expectedErr {

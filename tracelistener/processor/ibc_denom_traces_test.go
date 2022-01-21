@@ -3,13 +3,13 @@ package processor
 import (
 	"testing"
 
-	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestIbcDenomTracesOwnsKey(t *testing.T) {
@@ -23,7 +23,7 @@ func TestIbcDenomTracesOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			transferTypes.DenomTraceKey,
+			datamarshaler.IBCDenomTracesKey,
 			"key",
 			false,
 		},
@@ -47,6 +47,11 @@ func TestIbcDenomTracesOwnsKey(t *testing.T) {
 	}
 }
 
+type testDenomTrace struct {
+	Path      string
+	BaseDenom string
+}
+
 func TestIBCDenomTracesProcess(t *testing.T) {
 	dtp := ibcDenomTracesProcessor{}
 
@@ -55,12 +60,11 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
 		newMessage  tracelistener.TraceOperation
-		dt          transferTypes.DenomTrace
+		dt          testDenomTrace
 		expectedEr  bool
 		expectedLen int
 	}{
@@ -69,7 +73,7 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.WriteOp),
 			},
-			transferTypes.DenomTrace{
+			testDenomTrace{
 				Path:      "1234/channelId",
 				BaseDenom: "stake",
 			},
@@ -81,7 +85,7 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.WriteOp),
 			},
-			transferTypes.DenomTrace{},
+			testDenomTrace{},
 			true,
 			0,
 		},
@@ -92,9 +96,10 @@ func TestIBCDenomTracesProcess(t *testing.T) {
 			dtp.denomTracesCache = map[string]models.IBCDenomTraceRow{}
 			dtp.l = zap.NewNop().Sugar()
 
-			value, err := p.cdc.MarshalBinaryBare(&tt.dt)
-			require.NoError(t, err)
-			tt.newMessage.Value = value
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().IBCDenomTraces(
+				tt.dt.Path,
+				tt.dt.BaseDenom,
+			)
 
 			err = dtp.Process(tt.newMessage)
 			if tt.expectedEr {

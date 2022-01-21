@@ -3,14 +3,13 @@ package processor
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestAuthOwnsKey(t *testing.T) {
@@ -24,7 +23,7 @@ func TestAuthOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			types.AddressStoreKeyPrefix,
+			datamarshaler.AuthKey,
 			"key",
 			false,
 		},
@@ -48,6 +47,12 @@ func TestAuthOwnsKey(t *testing.T) {
 	}
 }
 
+type authAccount struct {
+	Address       string
+	AccountNumber uint64
+	Sequence      uint64
+}
+
 func TestAuthProcess(t *testing.T) {
 	a := authProcessor{}
 
@@ -56,18 +61,17 @@ func TestAuthProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
-		account     authtypes.BaseAccount
+		account     authAccount
 		newMessage  tracelistener.TraceOperation
 		expectedErr bool
 		expectedLen int
 	}{
 		{
 			"auth processor- no error",
-			authtypes.BaseAccount{
+			authAccount{
 				Address:       "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 				AccountNumber: 12,
 				Sequence:      11,
@@ -82,7 +86,7 @@ func TestAuthProcess(t *testing.T) {
 		},
 		{
 			"invalid baseaccount address - error",
-			authtypes.BaseAccount{
+			authAccount{
 				Address:       "",
 				AccountNumber: 12,
 				Sequence:      11,
@@ -103,9 +107,9 @@ func TestAuthProcess(t *testing.T) {
 			a.heightCache = map[authCacheEntry]models.AuthRow{}
 			a.l = zap.NewNop().Sugar()
 
-			delValue, err := p.cdc.MarshalInterface(&tt.account)
-			require.NoError(t, err)
-			tt.newMessage.Value = delValue
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().Account(
+				tt.account.AccountNumber, tt.account.Sequence, tt.account.Address,
+			)
 
 			err = a.Process(tt.newMessage)
 			if tt.expectedErr {

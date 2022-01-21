@@ -3,14 +3,13 @@ package processor
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestBankProcessorOwnsKey(t *testing.T) {
@@ -24,7 +23,7 @@ func TestBankProcessorOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			types.BalancesPrefix,
+			datamarshaler.BankKey,
 			"key",
 			false,
 		},
@@ -48,6 +47,11 @@ func TestBankProcessorOwnsKey(t *testing.T) {
 	}
 }
 
+type testCoin struct {
+	Denom  string
+	Amount int64
+}
+
 func TestBankProcess(t *testing.T) {
 	b := bankProcessor{}
 
@@ -56,20 +60,19 @@ func TestBankProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name        string
-		coin        sdk.Coin
+		coin        testCoin
 		newMessage  tracelistener.TraceOperation
 		expectedErr bool
 		expectedLen int
 	}{
 		{
 			"No error of bank process",
-			sdk.Coin{
+			testCoin{
 				Denom:  "stake",
-				Amount: sdk.NewInt(500),
+				Amount: 500,
 			},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.WriteOp),
@@ -86,9 +89,10 @@ func TestBankProcess(t *testing.T) {
 			b.heightCache = map[bankCacheEntry]models.BalanceRow{}
 			b.l = zap.NewNop().Sugar()
 
-			value, err := p.cdc.MarshalBinaryBare(&tt.coin)
-			require.NoError(t, err)
-			tt.newMessage.Value = value
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().Coin(
+				tt.coin.Denom,
+				tt.coin.Amount,
+			)
 
 			err = b.Process(tt.newMessage)
 			if tt.expectedErr {

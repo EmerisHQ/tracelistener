@@ -3,14 +3,13 @@ package processor
 import (
 	"testing"
 
-	sdk_types "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 func TestUnbondingDelegationOwnsKey(t *testing.T) {
@@ -24,7 +23,7 @@ func TestUnbondingDelegationOwnsKey(t *testing.T) {
 	}{
 		{
 			"Correct prefix- no error",
-			types.UnbondingDelegationKey,
+			datamarshaler.UnbondingDelegationKey,
 			"key",
 			false,
 		},
@@ -56,20 +55,19 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
-	p.cdc = gp.cdc
 
 	tests := []struct {
 		name                string
-		unbondingDelegation types.UnbondingDelegation
+		unbondingDelegation datamarshaler.TestUnbondingDelegation
 		newMessage          tracelistener.TraceOperation
 		expectedEr          bool
 		expectedLen         int
 	}{
 		{
 			"Delete unbonding delegation operation - no error",
-			types.UnbondingDelegation{
-				DelegatorAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
-				ValidatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+			datamarshaler.TestUnbondingDelegation{
+				Delegator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
 			},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.DeleteOp),
@@ -82,14 +80,14 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 		},
 		{
 			"Write unbonding delegation - no error",
-			types.UnbondingDelegation{
-				DelegatorAddress: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
-				ValidatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-				Entries: []types.UnbondingDelegationEntry{
+			datamarshaler.TestUnbondingDelegation{
+				Delegator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
+				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+				Entries: []datamarshaler.TestUnbondingDelegationEntry{
 					{
-						CreationHeight: 4120,
-						InitialBalance: sdk_types.NewInt(1000),
-						Balance:        sdk_types.NewInt(1100),
+						Height:         4120,
+						InitialBalance: 1000,
+						Balance:        1100,
 					},
 				},
 			},
@@ -104,7 +102,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 		},
 		{
 			"Invalid addresses - error",
-			types.UnbondingDelegation{},
+			datamarshaler.TestUnbondingDelegation{},
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.WriteOp),
 				Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
@@ -122,9 +120,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			u.deleteHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 			u.l = zap.NewNop().Sugar()
 
-			delValue, err := p.cdc.MarshalBinaryBare(&tt.unbondingDelegation)
-			require.NoError(t, err)
-			tt.newMessage.Value = delValue
+			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().UnbondingDelegation(tt.unbondingDelegation)
 
 			err = u.Process(tt.newMessage)
 			if tt.expectedEr {
@@ -150,7 +146,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 					require.NotNil(t, row)
 
 					delegator := row.Delegator
-					delegatorAddr, err := b32Hex(tt.unbondingDelegation.DelegatorAddress)
+					delegatorAddr, err := b32Hex(tt.unbondingDelegation.Delegator)
 					require.NoError(t, err)
 
 					require.Equal(t, delegatorAddr, delegator)
