@@ -20,9 +20,14 @@ type Handler interface {
 	Validators(data tracelistener.TraceOperation) (models.ValidatorRow, error)
 }
 
+type TestHandler interface {
+	AccountBytes(accountNumber, sequenceNumber uint64, address string) []byte
+}
+
 // Compile-time check! DataMarshaler must always implement Handler.
 // This won't compile if that assumption isn't true.
 var _ Handler = DataMarshaler{}
+var _ TestHandler = TestDataMarshaler{}
 
 // DataMarshaler is a concrete implementation of Handler.
 type DataMarshaler struct {
@@ -32,5 +37,15 @@ type DataMarshaler struct {
 func NewDataMarshaler(l *zap.SugaredLogger) DataMarshaler {
 	return DataMarshaler{
 		l: l,
+	}
+}
+
+type TestDataMarshaler struct {
+	DataMarshaler
+}
+
+func NewTestDataMarshaler() TestHandler {
+	return TestDataMarshaler{
+		DataMarshaler: NewDataMarshaler(zap.NewNop().Sugar()),
 	}
 }
