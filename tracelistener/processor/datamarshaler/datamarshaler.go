@@ -21,7 +21,16 @@ type Handler interface {
 }
 
 type TestHandler interface {
-	AccountBytes(accountNumber, sequenceNumber uint64, address string) []byte
+	Account(accountNumber, sequenceNumber uint64, address string) []byte
+	Coin(denom string, amount int64) []byte
+	Delegation(validator, delegator string, shares int64) []byte
+	IBCChannel(state, ordering int32, counterPortID, counterChannelID string, hop string) []byte
+	IBCClient(state TestClientState) []byte
+	IBCConnection(conn TestConnection) []byte
+	MapConnectionState(s int32) string
+	IBCDenomTraces(path, baseDenom string) []byte
+	Validator(v TestValidator) []byte
+	UnbondingDelegation(u TestUnbondingDelegation) []byte
 }
 
 // Compile-time check! DataMarshaler must always implement Handler.
