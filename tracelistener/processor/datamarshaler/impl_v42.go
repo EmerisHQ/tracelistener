@@ -15,7 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
 	ibcConnectionTypes "github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
 	channelTypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
@@ -48,7 +47,7 @@ func getCodec() codec.Marshaler {
 
 func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRow, error) {
 	addrBytes := data.Key
-	pLen := len(types.BalancesPrefix)
+	pLen := len(BankKey)
 	addr := addrBytes[pLen : pLen+20]
 
 	coins := sdk.Coin{
@@ -260,7 +259,7 @@ func (d DataMarshaler) IBCConnections(data tracelistener.TraceOperation) (models
 
 	// IBC keys are mostly strings
 	if len(keyFields) == 2 {
-		if keyFields[0] == host.KeyConnectionPrefix { // this is a ConnectionEnd
+		if keyFields[0] == IBCConnectionsKey { // this is a ConnectionEnd
 			ce := ibcConnectionTypes.ConnectionEnd{}
 			if err := getCodec().UnmarshalBinaryBare(data.Value, &ce); err != nil {
 				return models.IBCConnectionRow{}, fmt.Errorf("cannot unmarshal connection end, %w", err)

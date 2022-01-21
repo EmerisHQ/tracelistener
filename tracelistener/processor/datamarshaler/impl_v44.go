@@ -13,7 +13,7 @@ import (
 
 func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRow, error) {
 	addrBytes := data.Key
-	pLen := len(types.BalancesPrefix)
+	pLen := len(datamarshaler.BankKey)
 	addr := addrBytes[pLen : pLen+20]
 
 	coins := sdk.Coin{
