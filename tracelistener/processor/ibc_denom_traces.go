@@ -7,7 +7,6 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
-	transferTypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +45,7 @@ func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *ibcDenomTracesProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, transferTypes.DenomTraceKey)
+	return bytes.HasPrefix(key, datamarshaler.IBCDenomTracesKey)
 }
 
 func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) error {

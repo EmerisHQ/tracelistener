@@ -3,7 +3,6 @@ package processor
 import (
 	"bytes"
 
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
@@ -51,7 +50,7 @@ func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *bankProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, types.BalancesPrefix)
+	return bytes.HasPrefix(key, datamarshaler.BankKey)
 }
 
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
@@ -65,7 +64,7 @@ func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp
 }
 
 func (b *unbondingDelegationsProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, types.UnbondingDelegationKey)
+	return bytes.HasPrefix(key, datamarshaler.UnbondingDelegationKey)
 }
 
 func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperation) error {

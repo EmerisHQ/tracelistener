@@ -5,7 +5,6 @@ import (
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
@@ -18,7 +17,7 @@ type connectionCacheEntry struct {
 }
 
 var ibcObservedKeys = [][]byte{
-	[]byte(host.KeyConnectionPrefix),
+	[]byte(datamarshaler.IBCConnectionsKey),
 }
 
 type ibcConnectionsProcessor struct {

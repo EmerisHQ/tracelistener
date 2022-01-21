@@ -6,7 +6,6 @@ import (
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +49,7 @@ func (b *authProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *authProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, types.AddressStoreKeyPrefix)
+	return bytes.HasPrefix(key, datamarshaler.AuthKey)
 }
 
 func (b *authProcessor) Process(data tracelistener.TraceOperation) error {

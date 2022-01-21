@@ -5,7 +5,6 @@ import (
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
@@ -52,7 +51,7 @@ func (b *ibcClientsProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *ibcClientsProcessor) OwnsKey(key []byte) bool {
-	return bytes.Contains(key, []byte(host.KeyClientState))
+	return bytes.Contains(key, []byte(datamarshaler.IBCClientsKey))
 }
 
 func (b *ibcClientsProcessor) Process(data tracelistener.TraceOperation) error {

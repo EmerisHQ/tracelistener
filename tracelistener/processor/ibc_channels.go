@@ -5,7 +5,6 @@ import (
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
-	host "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
@@ -52,7 +51,7 @@ func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *ibcChannelsProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, []byte(host.KeyChannelEndPrefix))
+	return bytes.HasPrefix(key, []byte(datamarshaler.IBCChannelKey))
 }
 
 func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error {
