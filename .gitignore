@@ -6,7 +6,6 @@
 *.dll
 *.so
 *.dylib
-tracelistener
 .tracelistener.fifo
 # Test binary, built with `go test -c`
 *.test

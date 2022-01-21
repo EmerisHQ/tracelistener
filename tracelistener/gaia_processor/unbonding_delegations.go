@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
+
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener"
 )
 
 type unbondingDelegationCacheEntry struct {

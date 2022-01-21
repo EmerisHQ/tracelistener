@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"go.uber.org/zap"
 
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 type bankCacheEntry struct {
