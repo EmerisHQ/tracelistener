@@ -8,8 +8,25 @@ on:
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 jobs:
+  setup-matrix:
+    runs-on: self-hosted
+    steps:
+      - name: install make
+        run: apt update && apt install make git jq -y
+      - uses: actions/checkout@v2
+      - name: Setup matrix combinations
+        id: setup-matrix-combinations
+        run: |
+          MATRIX_PARAMS_COMBINATIONS="$(make versions-json)"
+          echo ::set-output name=matrix-combinations::{\"include\":$MATRIX_PARAMS_COMBINATIONS}
+    outputs:
+      matrix-combinations: ${{ steps.setup-matrix-combinations.outputs.matrix-combinations }}
+
   code_cov:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    needs: setup-matrix
+    strategy:
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix-combinations) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -27,10 +44,10 @@ jobs:
           git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
 
       - name: Run Tests
-        run: make test
+        run: make test-${{ matrix.versions }}
 
       - name: Run coverage
-        run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+        run: make coverage-${{ matrix.versions }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:

@@ -1,48 +1,37 @@
-name: Build docker images
+name: Build and push Docker images on dev env
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Run tests]
-    branches: [main]
-    types: [completed]
+  pull_request:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - cmd/**
+      - go.mod
+      - go.sum
+      - "*.go"
+      - helm/**
 
 jobs:
-  run-tests:
+  setup-matrix:
     runs-on: self-hosted
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - uses: actions/cache@v2
-        with:
-          # In order:
-          # * Module download cache
-          # * Build cache (Linux)
-          # * Build cache (Mac)
-          # * Build cache (Windows)
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Setup Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "1.17"
+      - uses: actions/checkout@v2
+      - name: Setup matrix combinations
+        id: setup-matrix-combinations
+        run: |
+          MATRIX_PARAMS_COMBINATIONS="$(make versions-json)"
+          echo ::set-output name=matrix-combinations::{\"include\":$MATRIX_PARAMS_COMBINATIONS}
+    outputs:
+      matrix-combinations: ${{ steps.setup-matrix-combinations.outputs.matrix-combinations }}
 
-      - name: Set allinbits org as GOPRIVATE
-        run: go env -w GOPRIVATE=github.com/allinbits/*
-
-      - name: Set git rewrite for private repos
-        run: git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
-
-      - name: Run tests
-        run: go test ./...
-
-  build-tracelistener-image:
+  tracelistener:
     runs-on: self-hosted
-    needs: run-tests
+    needs: setup-matrix
+    strategy:
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix-combinations) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -70,6 +59,15 @@ jobs:
           push: true
           context: .
           file: Dockerfile
-          tags: gcr.io/tendermint-dev/emeris-tracelistener:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener:${{ github.sha }}
+          tags: gcr.io/tendermint-dev/emeris-tracelistener-${{ matrix.versions }}:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener-${{ matrix.versions }}:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
+            SDK_TARGET=${{ matrix.versions }}
+
+      - name: Call repository_dispatch on demeris-backend
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
+          repository: allinbits/demeris-backend
+          event-type: dev-push-tracelistener-${{ matrix.versions }}
+          client-payload: '{"repo_name":"tracelistener","branch_name":"main","image_name":"emeris-tracelistener-${{ matrix.versions }}","image_sha":"${{ github.sha }}","service_name":"tracelistener-${{ matrix.versions }}"}'
