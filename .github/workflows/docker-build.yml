@@ -1,8 +1,6 @@
-name: Build and push Docker images on dev env
-
+name: Build and push Docker images
 on:
   workflow_dispatch:
-  pull_request:
   push:
     branches:
       - main
@@ -63,11 +61,3 @@ jobs:
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
             SDK_TARGET=${{ matrix.versions }}
-
-      - name: Call repository_dispatch on demeris-backend
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
-          repository: allinbits/demeris-backend
-          event-type: dev-push-tracelistener-${{ matrix.versions }}
-          client-payload: '{"repo_name":"tracelistener","branch_name":"main","image_name":"emeris-tracelistener-${{ matrix.versions }}","image_sha":"${{ github.sha }}","service_name":"tracelistener-${{ matrix.versions }}"}'
