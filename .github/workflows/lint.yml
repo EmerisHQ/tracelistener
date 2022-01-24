@@ -7,9 +7,24 @@ env:
   GOPRIVATE: "github.com/allinbits/*"
 
 jobs:
+  setup-matrix:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup matrix combinations
+        id: setup-matrix-combinations
+        run: |
+          MATRIX_PARAMS_COMBINATIONS="$(make versions-json)"
+          echo ::set-output name=matrix-combinations::{\"include\":$MATRIX_PARAMS_COMBINATIONS}
+    outputs:
+      matrix-combinations: ${{ steps.setup-matrix-combinations.outputs.matrix-combinations }}
+
   golangci:
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    needs: setup-matrix
+    strategy:
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix-combinations) }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
@@ -22,5 +37,5 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.43
-          args: --timeout 10m
+          args: --timeout 10m --build-tags sdk_${{ matrix.versions }}
           github-token: ${{ secrets.TENDERBOT_GIT_TOKEN }}
