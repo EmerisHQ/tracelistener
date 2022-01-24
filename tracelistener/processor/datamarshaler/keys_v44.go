@@ -6,8 +6,8 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	transferTypes "github.com/cosmos/ibc-go/modules/apps/transfer/types"
-	host "github.com/cosmos/ibc-go/modules/core/24-host"
+	transferTypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
+	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 )
 
 var (

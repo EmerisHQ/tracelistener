@@ -13,16 +13,18 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gaia "github.com/cosmos/gaia/v6/app"
-	transferTypes "github.com/cosmos/ibc-go/modules/apps/transfer/types"
-	ibcConnectionTypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
-	channelTypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/modules/core/24-host"
-	"github.com/cosmos/ibc-go/modules/core/exported"
-	tmIBCTypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
+	transferTypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
+	ibcConnectionTypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
+	channelTypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v2/modules/core/exported"
+	tmIBCTypes "github.com/cosmos/ibc-go/v2/modules/light-clients/07-tendermint/types"
 )
 
 var (
@@ -46,23 +48,49 @@ func getCodec() codec.Codec {
 }
 
 func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRow, error) {
-	addrBytes := data.Key
-	pLen := len(BankKey)
-	addr := addrBytes[pLen : pLen+20]
+	// How's a length-prefixed data.Key is made you ask?
+	// 0x02<length prefix><address bytes>
+	//
+	// AddressFromBalancesStore requires the key data without the store prefix
+	// so we simply reslice data.Key to get rid of it.
+	//
+	// If data.Operation == "delete", the trace that's been observed has a different data.Key:
+	// 0x02<length prefix><address bytes><denom>
+	//
+	// This different schema is used when the balance associated to <denom> is being set to zero.
+	// So, to obtain this denom one must subslice rawAddress to the length of <address bytes> + 1
+	// to bypass the length prefix byte.
+	rawAddress := data.Key[1:]
+	addrBytes, err := bankTypes.AddressFromBalancesStore(rawAddress)
+	if err != nil {
+		return models.BalanceRow{}, fmt.Errorf("cannot parse address from balance store key, %w", err)
+	}
+
+	hAddr := hex.EncodeToString(addrBytes)
 
 	coins := sdk.Coin{
 		Amount: sdk.NewInt(0),
 	}
 
 	if err := getCodec().Unmarshal(data.Value, &coins); err != nil {
-		return models.BalanceRow{}, nil
+		return models.BalanceRow{}, err
 	}
 
+	// Since SDK 0.44.x x/bank now deletes keys from store when the balance is 0
+	// (picture someone who sends all their balance to another address).
+	// To work around this issue, we don't return when coin is invalid when data.Operation is "delete",
+	// and we set balance == 0 instead.
 	if !coins.IsValid() {
-		return models.BalanceRow{}, nil
+		if data.Operation == tracelistener.DeleteOp.String() {
+			// rawAddress still contains the lenght prefix, so we have to jump it by
+			// reading 1 byte after len(addrBytes)
+			denom := rawAddress[len(addrBytes)+1:]
+			coins.Denom = string(denom)
+		} else {
+			return models.BalanceRow{}, nil
+		}
 	}
 
-	hAddr := hex.EncodeToString(addr)
 	d.l.Debugw("new bank store write",
 		"operation", data.Operation,
 		"address", hAddr,
@@ -70,6 +98,7 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
 	)
+
 	return models.BalanceRow{
 		Address:     hAddr,
 		Amount:      coins.String(),
@@ -80,7 +109,8 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 
 func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, error) {
 	d.l.Debugw("auth processor entered", "key", string(data.Key), "value", string(data.Value))
-	if len(data.Key) != 1 { // TODO: Fix this
+
+	if len(data.Key) > address.MaxAddrLen+1 {
 		d.l.Debugw("auth got key that isn't supposed to")
 		// key len must be len(account bytes) + 1
 		return models.AuthRow{}, nil
