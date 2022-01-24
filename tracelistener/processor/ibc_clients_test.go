@@ -69,7 +69,7 @@ func TestIbcClientProcess(t *testing.T) {
 				Key:       []byte("some/text"),
 			},
 			datamarshaler.TestClientState{
-				ChainId: "cosmos",
+				ChainId: "cosmos-102",
 				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
@@ -103,7 +103,7 @@ func TestIbcClientProcess(t *testing.T) {
 				Value:     []byte("some"),
 			},
 			datamarshaler.TestClientState{
-				ChainId: "cosmos",
+				ChainId: "cosmos-102",
 				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
@@ -137,7 +137,7 @@ func TestIbcClientProcess(t *testing.T) {
 				Value:     []byte("some"),
 			},
 			datamarshaler.TestClientState{
-				ChainId: "cosmos",
+				ChainId: "cosmos-102",
 				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
@@ -171,7 +171,7 @@ func TestIbcClientProcess(t *testing.T) {
 				Value:     []byte("some"),
 			},
 			datamarshaler.TestClientState{
-				ChainId: "cosmos",
+				ChainId: "cosmos-102",
 				TrustLevel: datamarshaler.TestFraction{
 					Numerator:   1,
 					Denominator: 3,
