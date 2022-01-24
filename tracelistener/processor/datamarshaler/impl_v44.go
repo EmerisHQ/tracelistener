@@ -20,6 +20,7 @@ import (
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gaia "github.com/cosmos/gaia/v6/app"
 	transferTypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
+	clientTypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 	ibcConnectionTypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
 	channelTypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
@@ -271,6 +272,15 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 
 	keySplit := strings.Split(string(data.Key), "/")
 	clientID := keySplit[1]
+
+	if clientTypes.IsRevisionFormat(dest.ChainId) {
+		// the following code has been taken from ibc-go/v2 directly
+		// blame them, not us
+		splitStr := strings.Split(dest.ChainId, "-")
+		if len(splitStr) != 1 {
+			dest.ChainId = splitStr[0]
+		}
+	}
 
 	return models.IBCClientStateRow{
 		ChainID:        dest.ChainId,
