@@ -23,6 +23,7 @@ type Handler interface {
 type TestHandler interface {
 	Account(accountNumber, sequenceNumber uint64, address string) []byte
 	Coin(denom string, amount int64) []byte
+	BankAddress(addr string) []byte
 	Delegation(validator, delegator string, shares int64) []byte
 	IBCChannel(state, ordering int32, counterPortID, counterChannelID string, hop string) []byte
 	IBCClient(state TestClientState) []byte
