@@ -4,13 +4,18 @@ package datamarshaler
 
 import (
 	ics23 "github.com/confio/ics23/go"
-	transferTypes "github.com/cosmos/ibc-go/modules/apps/transfer/types"
-	clientTypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	connectionTypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
-	ibcChannelTypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	ibcTypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	lightClientTypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
+	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	transferTypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
+	clientTypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	connectionTypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
+	ibcChannelTypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
+	ibcTypes "github.com/cosmos/ibc-go/v2/modules/core/23-commitment/types"
+	lightClientTypes "github.com/cosmos/ibc-go/v2/modules/light-clients/07-tendermint/types"
 )
+
+func (d TestDataMarshaler) BankAddress(addr string) []byte {
+	return bankTypes.CreateAccountBalancesPrefix([]byte(addr))
+}
 
 func (d TestDataMarshaler) IBCChannel(state, ordering int32, counterPortID, counterChannelID, hop string) []byte {
 	c := ibcChannelTypes.Channel{

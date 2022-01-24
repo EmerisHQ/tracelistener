@@ -12,6 +12,10 @@ import (
 	lightClientTypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 )
 
+func (d TestDataMarshaler) BankAddress(addr string) []byte {
+	return []byte(addr)
+}
+
 func (d TestDataMarshaler) IBCChannel(state, ordering int32, counterPortID, counterChannelID, hop string) []byte {
 	c := ibcChannelTypes.Channel{
 		State:    ibcChannelTypes.State(state),
