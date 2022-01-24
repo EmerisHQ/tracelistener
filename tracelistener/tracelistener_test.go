@@ -1,8 +1,6 @@
 package tracelistener_test
 
 import (
-	"fmt"
-	"io"
 	"os"
 	"testing"
 	"time"
@@ -79,7 +77,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 		wantErr     bool
 		differentOp bool
 		shouldPanic bool
-		errSent     error
 	}{
 		{
 			"write operation is configured and read accordingly",
@@ -90,7 +87,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			false,
 			false,
 			false,
-			nil,
 		},
 		{
 			"write operation is not configured and not read",
@@ -101,7 +97,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			false,
 			true,
 			false,
-			nil,
 		},
 		{
 			"any operation is configured and read accordingly",
@@ -110,7 +105,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			false,
 			false,
 			false,
-			nil,
 		},
 		{
 			"an EOF doesn't impact anything",
@@ -119,7 +113,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			false,
 			false,
 			false,
-			io.EOF,
 		},
 		{
 			"a random error panics",
@@ -128,11 +121,12 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			true,
 			false,
 			true,
-			fmt.Errorf("error"),
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			f, err := os.CreateTemp("", "test_data")
 			require.NoError(t, err)
 
@@ -158,11 +152,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 					tw.Watch()
 				}
 			}()
-
-			if tt.errSent != nil && !tt.shouldPanic {
-
-				tw.DataSourcePath = f.Name()
-			}
 
 			n, err := f.Write([]byte(tt.data))
 			require.NoError(t, err)
