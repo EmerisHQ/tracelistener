@@ -11,8 +11,6 @@ jobs:
   setup-matrix:
     runs-on: self-hosted
     steps:
-      - name: install make
-        run: apt update && apt install make git jq -y
       - uses: actions/checkout@v2
       - name: Setup matrix combinations
         id: setup-matrix-combinations
