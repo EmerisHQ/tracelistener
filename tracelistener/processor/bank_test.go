@@ -89,6 +89,7 @@ func TestBankProcess(t *testing.T) {
 			b.heightCache = map[bankCacheEntry]models.BalanceRow{}
 			b.l = zap.NewNop().Sugar()
 
+			tt.newMessage.Key = datamarshaler.NewTestDataMarshaler().BankAddress(string(tt.newMessage.Key))
 			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().Coin(
 				tt.coin.Denom,
 				tt.coin.Amount,
