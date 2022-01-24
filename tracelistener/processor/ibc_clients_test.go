@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -251,7 +252,7 @@ func TestIbcClientProcess(t *testing.T) {
 				require.NotNil(t, row)
 
 				chainID := row.ChainID
-				require.Equal(t, tt.client.ChainId, chainID)
+				require.True(t, strings.HasPrefix(tt.client.ChainId, chainID))
 
 				return
 			}
