@@ -132,8 +132,16 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 		return []WritebackOp{wo}
 	}
 
-	// amount of statements in each new WritebackOp.Data slice
-	splitAmount := int64(math.Ceil(float64(limit) / float64(dbQueryPlaceholderAmount)))
+	// general amount of chunks that we want to create
+	chunksAmount := math.Ceil(float64(dbQueryPlaceholderAmount) / float64(limit))
+
+	// amount of placeholders in each chunk
+	placeholderPerChunkAmount := float64(dbQueryPlaceholderAmount) / chunksAmount
+
+	// amount of tracelistener.DatabaseEntrier for each new WritebackOp
+	splitAmount := int64(
+		placeholderPerChunkAmount / float64(wo.DBSinglePlaceholderAmount()),
+	)
 
 	ret := make([]WritebackOp, 0, splitAmount)
 	for _, chunk := range buildEntrierChunks(wo.Data, int64(splitAmount)) {
