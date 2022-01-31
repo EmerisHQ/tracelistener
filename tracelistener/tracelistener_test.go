@@ -10,11 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestOperation_String(t *testing.T) {
@@ -192,6 +191,162 @@ func TestTraceWatcher_Watch(t *testing.T) {
 					return d.Key != nil
 				}, time.Second, 10*time.Millisecond)
 			}
+		})
+	}
+}
+
+func TestWritebackOp_SplitStatements(t *testing.T) {
+	tests := []struct {
+		name           string
+		needle         tracelistener.WritebackOp
+		limit          int
+		expectedAmount int64
+		mustPanic      bool
+	}{
+		{
+			"limit equal to (fieldsAmount*4 - 1), returns 4 elements",
+			tracelistener.WritebackOp{
+				DatabaseExec: "",
+				Data: []models.DatabaseEntrier{
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+				},
+			},
+			15,
+			4,
+			false,
+		},
+		{
+			"limit of fieldsAmount returns exactly len(needle.Data)",
+			tracelistener.WritebackOp{
+				DatabaseExec: "statement",
+				Data: []models.DatabaseEntrier{
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+				},
+			},
+			4,
+			4,
+			false,
+		},
+		{
+			"limit greater than fieldsAmount*4 returns exactly 1 element",
+			tracelistener.WritebackOp{
+				DatabaseExec: "statement",
+				Data: []models.DatabaseEntrier{
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+					models.AuthRow{
+						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+							ChainName: "chain",
+						},
+						Address:        "address",
+						SequenceNumber: 1,
+						AccountNumber:  1,
+					},
+				},
+			},
+			40,
+			1,
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			panicf := require.Panics
+			if !tt.mustPanic {
+				panicf = require.NotPanics
+			}
+
+			val := []tracelistener.WritebackOp{}
+			panicf(t, func() {
+				val = tt.needle.SplitStatements(tt.limit)
+			})
+
+			require.Len(t, val, int(tt.expectedAmount))
 		})
 	}
 }

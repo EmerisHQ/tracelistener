@@ -129,13 +129,16 @@ func main() {
 					logger.Debugw("writeback unit", "data", asd)
 				}
 
-				is := p.InterfaceSlice()
-				if len(is) == 0 {
-					continue
-				}
+				wbUnits := p.SplitStatementToDBLimit()
+				for _, wbUnit := range wbUnits {
+					is := wbUnit.InterfaceSlice()
+					if len(is) == 0 {
+						continue
+					}
 
-				if err := di.Add(p.DatabaseExec, is); err != nil {
-					logger.Error("database error ", err)
+					if err := di.Add(wbUnit.DatabaseExec, is); err != nil {
+						logger.Error("database error ", err)
+					}
 				}
 			}
 		}
