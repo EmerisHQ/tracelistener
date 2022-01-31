@@ -4,7 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -112,6 +115,17 @@ func main() {
 
 	go watcher.Watch()
 
+	dbWorkQueue := sync.WaitGroup{}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		logger.Infow("detected SIGTERM, waiting for last database writeback to end")
+		dbWorkQueue.Wait()
+		os.Exit(0)
+	}()
+
 	for {
 		select {
 		case e := <-errChan:
@@ -125,6 +139,7 @@ func main() {
 				"moduleName", te.Module)
 		case b := <-dpi.WritebackChan():
 			for _, p := range b {
+				dbWorkQueue.Add(1)
 				for _, asd := range p.Data {
 					logger.Debugw("writeback unit", "data", asd)
 				}
@@ -137,6 +152,7 @@ func main() {
 				if err := di.Add(p.DatabaseExec, is); err != nil {
 					logger.Error("database error ", err)
 				}
+				dbWorkQueue.Done()
 			}
 		}
 	}
