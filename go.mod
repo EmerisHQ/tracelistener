@@ -18,8 +18,6 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/gravity-devs/liquidity v1.2.9
-	github.com/jmoiron/sqlx v1.3.4
-	github.com/lib/pq v1.10.3
 	github.com/nxadm/tail v1.4.8
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
@@ -90,9 +88,11 @@ require (
 	github.com/jackc/pgtype v1.8.1 // indirect
 	github.com/jackc/pgx/v4 v4.13.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
+	github.com/jmoiron/sqlx v1.3.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/lib/pq v1.10.3 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
