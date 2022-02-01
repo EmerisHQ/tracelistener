@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/allinbits/tracelistener/tracelistener/database"
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -516,4 +519,62 @@ func TestWritebackOp_SplitStatementToDBLimit(t *testing.T) {
 
 	out := wu.SplitStatementToDBLimit()
 	require.Len(t, out, 3)
+}
+
+type InsertType struct {
+	Field string `db:"field"`
+}
+
+// implement models.DatabaseEntrier on insertType
+func (i InsertType) WithChainName(cn string) models.DatabaseEntrier {
+	// no-op
+	return i
+}
+
+func TestWritebackOp_ChunkingWorks(t *testing.T) {
+	ts, err := testserver.NewTestServer()
+	require.NoError(t, err)
+	require.NoError(t, ts.WaitForInit())
+	defer func() {
+		ts.Stop()
+	}()
+
+	connString := ts.PGURL().String()
+
+	i, err := database.New(connString)
+	require.NoError(t, err)
+
+	// fake database schema
+	schema := `create table defaultdb.testtable (field text not null)`
+	insert := `insert into defaultdb.testtable (field) values (:field)`
+
+	insertData := make([]models.DatabaseEntrier, 0, 70000)
+	for i := 0; i < 70000; i++ {
+		insertData = append(insertData, InsertType{
+			Field: strconv.Itoa(i),
+		})
+	}
+
+	_, err = i.Instance.DB.Exec(schema)
+	require.NoError(
+		t,
+		err,
+	)
+
+	dbe := tracelistener.WritebackOp{
+		DatabaseExec: insert,
+		Data:         insertData,
+	}
+
+	insertErr := i.Add(insert, dbe.InterfaceSlice())
+
+	require.Error(t, insertErr)
+	require.Contains(t, insertErr.Error(), "placeholder index must be between 1 and 65536", insertErr.Error())
+
+	// insert with chunking
+	for _, chunk := range dbe.SplitStatementToDBLimit() {
+		insertErr := i.Add(insert, chunk.InterfaceSlice())
+
+		require.NoError(t, insertErr)
+	}
 }
