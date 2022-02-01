@@ -4,7 +4,6 @@ go 1.17
 
 replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/jmoiron/sqlx => github.com/abraithwaite/sqlx v1.3.2-0.20210331022513-df9bf9884350
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
 
@@ -12,12 +11,15 @@ require (
 	github.com/allinbits/demeris-backend-models v0.0.0-20211018093214-0546d958f4d9
 	github.com/allinbits/emeris-utils v1.0.0
 	github.com/cockroachdb/cockroach-go/v2 v2.2.6
+	github.com/confio/ics23/go v0.6.6
 	github.com/containerd/fifo v1.0.0
 	github.com/cosmos/cosmos-sdk v0.42.10
 	github.com/cosmos/gaia/v5 v5.0.8
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/gravity-devs/liquidity v1.2.9
+	github.com/jmoiron/sqlx v1.3.4
+	github.com/lib/pq v1.10.3
 	github.com/nxadm/tail v1.4.8
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
@@ -37,7 +39,6 @@ require (
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/confio/ics23/go v0.6.6 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/iavl v0.17.1 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.11.1 // indirect
@@ -89,11 +90,9 @@ require (
 	github.com/jackc/pgtype v1.8.1 // indirect
 	github.com/jackc/pgx/v4 v4.13.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/jmoiron/sqlx v1.3.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lib/pq v1.10.3 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
