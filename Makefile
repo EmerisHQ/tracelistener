@@ -23,3 +23,10 @@ test:
 
 $(OBJS):
 	go build -o build/$@ -ldflags='-X main.Version=${BRANCH}-${COMMIT}' ${EXTRAFLAGS} ${BASEPKG}/cmd/$@
+
+generate-test-data:
+	./tracelistener/scripts/multichain_setup_script.sh
+	./tracelistener/scripts/generate_txs.sh
+	./tracelistener/scripts/relayer_script.sh
+	./tracelistener/scripts/stop_daemon.sh
+
