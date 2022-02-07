@@ -33,6 +33,9 @@ jobs:
           GIT_TOKEN: ${{ secrets.TENDERBOT_GIT_TOKEN }}
         run: git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
 
+      - name: Setup multisdk
+        run: make setup-${{ matrix.versions }}
+      
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
