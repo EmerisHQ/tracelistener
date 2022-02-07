@@ -6,7 +6,6 @@ import (
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -111,8 +110,8 @@ func (d TestDataMarshaler) Validator(v TestValidator) []byte {
 		Tokens:          sdk.NewInt(v.Tokens),
 		DelegatorShares: sdk.NewDec(v.DelegatorShares),
 		UnbondingHeight: v.UnbondingHeight,
-		Commission: types.Commission{
-			CommissionRates: types.CommissionRates{
+		Commission: stakingTypes.Commission{
+			CommissionRates: stakingTypes.CommissionRates{
 				Rate:          sdk.NewDec(v.Commission.Rate),
 				MaxRate:       sdk.NewDec(v.Commission.MaxRate),
 				MaxChangeRate: sdk.NewDec(v.Commission.MaxChangeRate),
@@ -138,14 +137,14 @@ type TestUnbondingDelegation struct {
 }
 
 func (d TestDataMarshaler) UnbondingDelegation(u TestUnbondingDelegation) []byte {
-	uu := types.UnbondingDelegation{
+	uu := stakingTypes.UnbondingDelegation{
 		DelegatorAddress: u.Delegator,
 		ValidatorAddress: u.Validator,
 	}
 
 	for _, e := range u.Entries {
 		uu.Entries = append(uu.Entries,
-			types.UnbondingDelegationEntry{
+			stakingTypes.UnbondingDelegationEntry{
 				CreationHeight: e.Height,
 				InitialBalance: sdk.NewInt(e.InitialBalance),
 				Balance:        sdk.NewInt(e.Balance),

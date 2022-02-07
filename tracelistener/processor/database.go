@@ -58,34 +58,37 @@ DO UPDATE SET
 	counter_client_id=EXCLUDED.counter_client_id
 `
 
-	// Liquidity pool-related queries
-	createPoolsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.liquidity_pools (
-	id serial unique primary key,
-	chain_name text not null,
-	pool_id bigint not null,
-	type_id bigint not null,
-	reserve_coin_denoms text[] not null,
-	reserve_account_address text not null,
-	pool_coin_denom text not null,
-	unique(chain_name, pool_id)
-)
-`
-	insertPool = `
-INSERT INTO tracelistener.liquidity_pools
-	(chain_name, pool_id, type_id, reserve_coin_denoms, reserve_account_address, pool_coin_denom)
-VALUES
-	(:chain_name, :pool_id, :type_id, :reserve_coin_denoms, :reserve_account_address, :pool_coin_denom)
-ON CONFLICT
-	(chain_name, pool_id)
-DO UPDATE SET
-	chain_name=EXCLUDED.chain_name,
-	pool_id=EXCLUDED.pool_id,
-	type_id=EXCLUDED.type_id,
-	reserve_coin_denoms=EXCLUDED.reserve_coin_denoms,
-	reserve_account_address=EXCLUDED.reserve_account_address,
-	pool_coin_denom=EXCLUDED.pool_coin_denom
-`
+	// Commented out for now, will be useful when the liquidity chain is deployed
+	/*
+	   	// Liquidity pool-related queries
+	   	createPoolsTable = `
+	   CREATE TABLE IF NOT EXISTS tracelistener.liquidity_pools (
+	   	id serial unique primary key,
+	   	chain_name text not null,
+	   	pool_id bigint not null,
+	   	type_id bigint not null,
+	   	reserve_coin_denoms text[] not null,
+	   	reserve_account_address text not null,
+	   	pool_coin_denom text not null,
+	   	unique(chain_name, pool_id)
+	   )
+	   `
+	   	insertPool = `
+	   INSERT INTO tracelistener.liquidity_pools
+	   	(chain_name, pool_id, type_id, reserve_coin_denoms, reserve_account_address, pool_coin_denom)
+	   VALUES
+	   	(:chain_name, :pool_id, :type_id, :reserve_coin_denoms, :reserve_account_address, :pool_coin_denom)
+	   ON CONFLICT
+	   	(chain_name, pool_id)
+	   DO UPDATE SET
+	   	chain_name=EXCLUDED.chain_name,
+	   	pool_id=EXCLUDED.pool_id,
+	   	type_id=EXCLUDED.type_id,
+	   	reserve_coin_denoms=EXCLUDED.reserve_coin_denoms,
+	   	reserve_account_address=EXCLUDED.reserve_account_address,
+	   	pool_coin_denom=EXCLUDED.pool_coin_denom
+	   `
+	*/
 
 	// Liquidity swaps-related queries
 	// nolint :changing succeeded spelling might break db

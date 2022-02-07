@@ -30,10 +30,6 @@ var (
 	cdcOnce sync.Once
 )
 
-const (
-	transferMsgType = "transfer"
-)
-
 func initCodec() {
 	c, _ := gaia.MakeCodecs()
 	cdc = c
