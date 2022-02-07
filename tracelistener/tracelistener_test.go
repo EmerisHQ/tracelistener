@@ -169,14 +169,14 @@ func TestTraceWatcher_Watch(t *testing.T) {
 					require.Eventually(t, func() bool {
 						d := <-dataChan
 						return d.Key != nil
-					}, time.Second, 10*time.Millisecond)
+					}, 10*time.Second, 10*time.Millisecond)
 					return
 				}
 
 				require.Never(t, func() bool {
 					d := <-dataChan
 					return d.Key != nil
-				}, time.Second, 10*time.Millisecond)
+				}, 10*time.Second, 10*time.Millisecond)
 			}
 		})
 	}
