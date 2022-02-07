@@ -33,10 +33,6 @@ var (
 	cdcOnce sync.Once
 )
 
-const (
-	transferMsgType = "transfer"
-)
-
 func initCodec() {
 	c := gaia.MakeEncodingConfig().Marshaler
 	cdc = c
@@ -83,7 +79,7 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 	// and we set balance == 0 instead.
 	if !coins.IsValid() {
 		if data.Operation == tracelistener.DeleteOp.String() {
-			// rawAddress still contains the lenght prefix, so we have to jump it by
+			// rawAddress still contains the length prefix, so we have to jump it by
 			// reading 1 byte after len(addrBytes)
 			denom := rawAddress[len(addrBytes)+1:]
 			coins.Denom = string(denom)
