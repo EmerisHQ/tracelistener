@@ -53,3 +53,10 @@ $(COVERAGE_VERSIONS):
 	go test -v -failfast -coverprofile=coverage.out -covermode=atomic \
 		-tags $(shell echo $@ | sed -e 's/coverage-/sdk_/g' -e 's/-/_/g'),muslc \
 		./...
+
+generate-test-data:
+	./tracelistener/scripts/multichain_setup_script.sh
+	./tracelistener/scripts/generate_txs.sh
+	./tracelistener/scripts/relayer_script.sh
+	./tracelistener/scripts/stop_daemon.sh
+
