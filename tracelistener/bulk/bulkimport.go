@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/allinbits/tracelistener/tracelistener/database"
-
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"
 
@@ -139,54 +139,53 @@ func (i *Importer) Do() error {
 
 	keysLen := len(keys)
 
-	//eg := errgroup.Group{}
-
+	eg := errgroup.Group{}
 	for idx, key := range keys {
 		key := key
 		idx := idx
-		//eg.Go(func() error {
-		i.Logger.Infow("processing started", "module", key.Name(), "index", idx+1, "total", keysLen)
+		eg.Go(func() error {
+			i.Logger.Infow("processing started", "module", key.Name(), "index", idx+1, "total", keysLen)
 
-		store := rm.GetKVStore(key)
-		ii := store.Iterator(nil, nil)
+			store := rm.GetKVStore(key)
+			ii := store.Iterator(nil, nil)
 
-		for ; ii.Valid(); ii.Next() {
-			to := tracelistener.TraceOperation{
-				Operation: tracelistener.WriteOp.String(),
-				Key:       ii.Key(),
-				Value:     ii.Value(),
+			for ; ii.Valid(); ii.Next() {
+				to := tracelistener.TraceOperation{
+					Operation: tracelistener.WriteOp.String(),
+					Key:       ii.Key(),
+					Value:     ii.Value(),
+				}
+
+				if err := i.TraceWatcher.ParseOperation(to); err != nil {
+					return fmt.Errorf("cannot parse operation %v, %w", to, err)
+				}
+
+				i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
 			}
 
-			if err := i.TraceWatcher.ParseOperation(to); err != nil {
-				return fmt.Errorf("cannot parse operation %v, %w", to, err)
+			if err := ii.Error(); err != nil {
+				return fmt.Errorf("iterator error, %w", err)
 			}
 
-			i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
-		}
+			if err := ii.Close(); err != nil {
+				return fmt.Errorf("cannot close iterator, %w", err)
+			}
 
-		if err := ii.Error(); err != nil {
-			return fmt.Errorf("iterator error, %w", err)
-		}
+			time.Sleep(1 * time.Second)
 
-		if err := ii.Close(); err != nil {
-			return fmt.Errorf("cannot close iterator, %w", err)
-		}
+			if err := i.Processor.Flush(); err != nil {
+				return fmt.Errorf("cannot flush processor cache, %w", err)
+			}
 
-		time.Sleep(1 * time.Second)
+			i.Logger.Infow("processing done", "module", key.Name(), "index", idx+1, "total", keysLen)
 
-		if err := i.Processor.Flush(); err != nil {
-			return fmt.Errorf("cannot flush processor cache, %w", err)
-		}
-
-		i.Logger.Infow("processing done", "module", key.Name(), "index", idx+1, "total", keysLen)
-
-		//	return nil
-		//})
+			return nil
+		})
 	}
 
-	//if err := eg.Wait(); err != nil {
-	//	return err
-	//}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
 
 	if err := db.Close(); err != nil {
 		return fmt.Errorf("database closing error, %w", err)
