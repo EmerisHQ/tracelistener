@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
@@ -17,6 +18,7 @@ type authCacheEntry struct {
 type authProcessor struct {
 	l           *zap.SugaredLogger
 	heightCache map[authCacheEntry]models.AuthRow
+	m           sync.Mutex
 }
 
 func (*authProcessor) TableSchema() string {
@@ -28,6 +30,8 @@ func (b *authProcessor) ModuleName() string {
 }
 
 func (b *authProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
 	if len(b.heightCache) == 0 {
 		return nil
 	}
@@ -53,6 +57,9 @@ func (b *authProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *authProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).Auth(data)
 	if err != nil {
 		return err

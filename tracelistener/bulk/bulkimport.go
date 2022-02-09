@@ -88,13 +88,18 @@ func (i *Importer) Do() error {
 						i.Logger.Debugw("writeback unit", "data", asd)
 					}
 
-					is := p.InterfaceSlice()
-					if len(is) == 0 {
-						continue
-					}
+					wbUnits := p.SplitStatementToDBLimit()
+					for _, wbUnit := range wbUnits {
+						is := wbUnit.InterfaceSlice()
+						if len(is) == 0 {
+							continue
+						}
 
-					if err := i.Database.Add(p.DatabaseExec, is); err != nil {
-						i.Logger.Error("database error ", err)
+						i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
+
+						if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
+							i.Logger.Error("database error ", err)
+						}
 					}
 				}
 
@@ -133,28 +138,23 @@ func (i *Importer) Do() error {
 	processingTime := time.Now()
 
 	keysLen := len(keys)
+
+	//eg := errgroup.Group{}
+
 	for idx, key := range keys {
+		key := key
+		idx := idx
+		//eg.Go(func() error {
 		i.Logger.Infow("processing started", "module", key.Name(), "index", idx+1, "total", keysLen)
 
 		store := rm.GetKVStore(key)
 		ii := store.Iterator(nil, nil)
 
-		writtenIdx := 0
 		for ; ii.Valid(); ii.Next() {
-			writtenIdx++
-
 			to := tracelistener.TraceOperation{
 				Operation: tracelistener.WriteOp.String(),
 				Key:       ii.Key(),
 				Value:     ii.Value(),
-			}
-
-			if writtenIdx == 1000 {
-				time.Sleep(1 * time.Second)
-				if err := i.Processor.Flush(); err != nil {
-					return fmt.Errorf("cannot flush processor cache, %w", err)
-				}
-				writtenIdx = 0
 			}
 
 			if err := i.TraceWatcher.ParseOperation(to); err != nil {
@@ -179,7 +179,14 @@ func (i *Importer) Do() error {
 		}
 
 		i.Logger.Infow("processing done", "module", key.Name(), "index", idx+1, "total", keysLen)
+
+		//	return nil
+		//})
 	}
+
+	//if err := eg.Wait(); err != nil {
+	//	return err
+	//}
 
 	if err := db.Close(); err != nil {
 		return fmt.Errorf("database closing error, %w", err)

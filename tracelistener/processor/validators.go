@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
@@ -17,6 +18,7 @@ type validatorsProcessor struct {
 	l                     *zap.SugaredLogger
 	insertValidatorsCache map[validatorCacheEntry]models.ValidatorRow
 	deleteValidatorsCache map[validatorCacheEntry]models.ValidatorRow
+	m                     sync.Mutex
 }
 
 func (*validatorsProcessor) TableSchema() string {
@@ -28,6 +30,8 @@ func (b *validatorsProcessor) ModuleName() string {
 }
 
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
 
 	if len(b.insertValidatorsCache) == 0 && len(b.deleteValidatorsCache) == 0 {
 		return nil
@@ -68,6 +72,9 @@ func (b *validatorsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).Validators(data)
 	if err != nil {
 		return err

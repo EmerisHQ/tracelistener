@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ type unbondingDelegationsProcessor struct {
 	l                 *zap.SugaredLogger
 	insertHeightCache map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow
 	deleteHeightCache map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow
+	m                 sync.Mutex
 }
 
 func (*unbondingDelegationsProcessor) TableSchema() string {
@@ -30,6 +32,9 @@ func (b *unbondingDelegationsProcessor) ModuleName() string {
 }
 
 func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	insert := make([]models.DatabaseEntrier, 0, len(b.insertHeightCache))
 	deleteEntries := make([]models.DatabaseEntrier, 0, len(b.deleteHeightCache))
 
@@ -68,6 +73,9 @@ func (b *unbondingDelegationsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).UnbondingDelegations(data)
 	if err != nil {
 		return err

@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
@@ -13,6 +14,7 @@ import (
 type ibcDenomTracesProcessor struct {
 	l                *zap.SugaredLogger
 	denomTracesCache map[string]models.IBCDenomTraceRow
+	m                sync.Mutex
 }
 
 func (*ibcDenomTracesProcessor) TableSchema() string {
@@ -24,6 +26,9 @@ func (b *ibcDenomTracesProcessor) ModuleName() string {
 }
 
 func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	if len(b.denomTracesCache) == 0 {
 		return nil
 	}
@@ -49,6 +54,9 @@ func (b *ibcDenomTracesProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcDenomTracesProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).IBCDenomTraces(data)
 	if err != nil {
 		return err

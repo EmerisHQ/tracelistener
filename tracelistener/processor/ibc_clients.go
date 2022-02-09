@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
@@ -19,6 +20,7 @@ type clientCacheEntry struct {
 type ibcClientsProcessor struct {
 	l            *zap.SugaredLogger
 	clientsCache map[clientCacheEntry]models.IBCClientStateRow
+	m            sync.Mutex
 }
 
 func (*ibcClientsProcessor) TableSchema() string {
@@ -30,6 +32,9 @@ func (b *ibcClientsProcessor) ModuleName() string {
 }
 
 func (b *ibcClientsProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	if len(b.clientsCache) == 0 {
 		return nil
 	}
@@ -55,6 +60,9 @@ func (b *ibcClientsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcClientsProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).IBCClients(data)
 	if err != nil {
 		return err
