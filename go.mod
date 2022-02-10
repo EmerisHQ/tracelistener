@@ -11,7 +11,7 @@ replace (
 require (
 	github.com/allinbits/demeris-backend-models v0.0.0-20211018093214-0546d958f4d9
 	github.com/allinbits/emeris-utils v1.0.0
-	github.com/cockroachdb/cockroach-go/v2 v2.2.6
+	github.com/cockroachdb/cockroach-go/v2 v2.2.8
 	github.com/confio/ics23/go v0.6.6
 	github.com/containerd/fifo v1.0.0
 	github.com/cosmos/cosmos-sdk v0.42.10
