@@ -170,7 +170,7 @@ func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.De
 	d.l.Debugw("new delegation write",
 		"operation", data.Operation,
 		"delegator", delegator,
-		"validator", "validator",
+		"validator", validator,
 		"amount", delegation.Shares.String(),
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
