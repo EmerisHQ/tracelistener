@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// DataMarshaler describes a type which is capable of marshaling/unmarshaling
+// Handler describes a type which is capable of marshaling/unmarshaling
 // Cosmos SDK objects.
 type Handler interface {
 	Bank(data tracelistener.TraceOperation) (models.BalanceRow, error)
