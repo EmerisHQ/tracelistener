@@ -15,6 +15,7 @@ type Module interface {
 	OwnsKey(key []byte) bool
 	Process(data tracelistener.TraceOperation) error
 	ModuleName() string
+	SDKModuleName() string
 	TableSchema() string
 }
 

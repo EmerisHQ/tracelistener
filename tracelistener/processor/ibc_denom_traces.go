@@ -25,6 +25,10 @@ func (b *ibcDenomTracesProcessor) ModuleName() string {
 	return "ibc_denom_traces"
 }
 
+func (b *ibcDenomTracesProcessor) SDKModuleName() string {
+	return "transfer"
+}
+
 func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()

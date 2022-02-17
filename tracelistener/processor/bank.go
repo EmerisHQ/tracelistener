@@ -30,6 +30,10 @@ func (b *bankProcessor) ModuleName() string {
 	return "bank"
 }
 
+func (b *bankProcessor) SDKModuleName() string {
+	return "bank"
+}
+
 func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()

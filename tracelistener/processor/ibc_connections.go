@@ -35,6 +35,10 @@ func (b *ibcConnectionsProcessor) ModuleName() string {
 	return "ibc_connections"
 }
 
+func (b *ibcConnectionsProcessor) SDKModuleName() string {
+	return "ibc"
+}
+
 func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()

@@ -29,6 +29,10 @@ func (b *validatorsProcessor) ModuleName() string {
 	return "validators"
 }
 
+func (b *validatorsProcessor) SDKModuleName() string {
+	return "staking"
+}
+
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -68,7 +72,8 @@ func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 	}
 }
 func (b *validatorsProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, datamarshaler.ValidatorsKey)
+	ret := bytes.HasPrefix(key, datamarshaler.ValidatorsKey)
+	return ret
 }
 
 func (b *validatorsProcessor) Process(data tracelistener.TraceOperation) error {

@@ -29,6 +29,10 @@ func (b *authProcessor) ModuleName() string {
 	return "auth"
 }
 
+func (b *authProcessor) SDKModuleName() string {
+	return "acc"
+}
+
 func (b *authProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
