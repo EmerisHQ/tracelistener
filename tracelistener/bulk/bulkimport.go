@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
@@ -93,9 +94,6 @@ func (i *Importer) Do() error {
 					wbUnits := p.SplitStatementToDBLimit()
 					for _, wbUnit := range wbUnits {
 						is := wbUnit.InterfaceSlice()
-						if len(is) == 0 {
-							continue
-						}
 
 						i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
 
@@ -132,6 +130,7 @@ func (i *Importer) Do() error {
 	if err != nil {
 		return fmt.Errorf("cannot open chain database, %w", err)
 	}
+
 	latestBlockHeight := getLatestVersion(db)
 
 	rm := rootmulti.NewStore(db)
@@ -165,6 +164,9 @@ func (i *Importer) Do() error {
 
 			for ; ii.Valid(); ii.Next() {
 				to := tracelistener.TraceOperation{
+					Operation:          tracelistener.WriteOp.String(),
+					Key:                ii.Key(),
+					Value:              ii.Value(),
 					BlockHeight:        uint64(latestBlockHeight),
 					SuggestedProcessor: key.Name(),
 				}
