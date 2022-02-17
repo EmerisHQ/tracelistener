@@ -84,9 +84,11 @@ func (i *Importer) Do() error {
 			case b := <-i.Processor.WritebackChan():
 				importingWg.Add(1)
 				for _, p := range b {
-					for _, asd := range p.Data {
-						i.Logger.Debugw("writeback unit", "data", asd)
+					if len(p.Data) == 0 {
+						continue
 					}
+
+					totalUnitsAmt := uint64(0)
 
 					wbUnits := p.SplitStatementToDBLimit()
 					for _, wbUnit := range wbUnits {
@@ -97,10 +99,18 @@ func (i *Importer) Do() error {
 
 						i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
 
+						totalUnitsAmt += uint64(len(wbUnit.Data))
+
 						if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
 							i.Logger.Error("database error ", err)
 						}
 					}
+
+					i.Logger.Infow("total database rows to be written",
+						"amount", len(p.Data),
+						"chunked amount written", totalUnitsAmt,
+						"equal", uint64(len(p.Data)) == totalUnitsAmt,
+					)
 				}
 
 				i.Logger.Debugw("finished processing writeback data")
@@ -149,6 +159,8 @@ func (i *Importer) Do() error {
 			store := rm.GetKVStore(key)
 			ii := store.Iterator(nil, nil)
 
+			processedRows := uint64(0)
+
 			for ; ii.Valid(); ii.Next() {
 				to := tracelistener.TraceOperation{
 					Operation: tracelistener.WriteOp.String(),
@@ -161,6 +173,7 @@ func (i *Importer) Do() error {
 				}
 
 				i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
+				processedRows++
 			}
 
 			if err := ii.Error(); err != nil {
@@ -177,8 +190,7 @@ func (i *Importer) Do() error {
 				return fmt.Errorf("cannot flush processor cache, %w", err)
 			}
 
-			i.Logger.Infow("processing done", "module", key.Name(), "index", idx+1, "total", keysLen)
-
+			i.Logger.Infow("processing done", "module", key.Name(), "total_rows", processedRows, "index", idx+1, "total", keysLen)
 			return nil
 		})
 	}
