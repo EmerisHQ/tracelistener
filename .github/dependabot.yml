@@ -22,3 +22,4 @@ updates:
       - dependency-name: "github.com/cosmos/*"
       - dependency-name: "github.com/tendermint/*"
       - dependency-name: "github.com/gravity-devs/*"
+      - dependency-name: "github.com/allinbits/*"
