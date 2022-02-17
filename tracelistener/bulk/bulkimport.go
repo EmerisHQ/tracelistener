@@ -132,6 +132,8 @@ func (i *Importer) Do() error {
 	if err != nil {
 		return fmt.Errorf("cannot open chain database, %w", err)
 	}
+	latestBlockHeight := getLatestVersion(db)
+
 	rm := rootmulti.NewStore(db)
 	keys := make([]types2.StoreKey, 0, len(i.Modules))
 
@@ -163,9 +165,8 @@ func (i *Importer) Do() error {
 
 			for ; ii.Valid(); ii.Next() {
 				to := tracelistener.TraceOperation{
-					Operation: tracelistener.WriteOp.String(),
-					Key:       ii.Key(),
-					Value:     ii.Value(),
+					BlockHeight:        uint64(latestBlockHeight),
+					SuggestedProcessor: key.Name(),
 				}
 
 				if err := i.TraceWatcher.ParseOperation(to); err != nil {
@@ -208,4 +209,26 @@ func (i *Importer) Do() error {
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
 
 	return nil
+}
+
+// vendored from cosmos-sdk/store/rootmulti/rootmulti.go
+const (
+	latestVersionKey = "s/latest"
+)
+
+func getLatestVersion(db db2.DB) int64 {
+	bz, err := db.Get([]byte(latestVersionKey))
+	if err != nil {
+		panic(err)
+	} else if bz == nil {
+		return 0
+	}
+
+	var latestVersion int64
+
+	if err := gogotypes.StdInt64Unmarshal(&latestVersion, bz); err != nil {
+		panic(err)
+	}
+
+	return latestVersion
 }
