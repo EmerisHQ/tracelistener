@@ -224,9 +224,13 @@ func (p *Processor) lifecycle() {
 				continue
 			}
 
+			mn := mp.ModuleName()
 			// Log line used to trigger Grafana alerts.
 			// Do not modify or remove without changing the corresponding dashboards
-			p.l.Infow("Probe", "c", "gaia", "n", mp.ModuleName())
+			if data.SuggestedProcessor == "" {
+				// log this only when running non in bulk import mode
+				p.l.Infow("Probe", "c", "gaia", "n", mn)
+			}
 
 			if err := mp.Process(data); err != nil {
 				p.errorsChan <- tracelistener.TracingError{
