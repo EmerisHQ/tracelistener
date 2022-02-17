@@ -16,6 +16,10 @@ type TraceOperation struct {
 	Value       []byte `json:"value"`
 	BlockHeight uint64 `json:"block_height"`
 	TxHash      string `json:"tx_hash"`
+
+	// SuggestedProcessor signals to the trace processor that
+	// what SDK module this trace comes from.
+	SuggestedProcessor string
 }
 
 func (t TraceOperation) String() string {
