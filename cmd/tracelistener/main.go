@@ -10,6 +10,7 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener/bulk"
 	"github.com/allinbits/tracelistener/tracelistener/processor"
+	"github.com/pkg/profile"
 
 	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
@@ -45,6 +46,11 @@ func main() {
 	}
 
 	logger := buildLogger(cfg)
+
+	if cfg.Debug == true {
+		logger.Debugw("enabling cpu profiling")
+		defer profile.Start(profile.ProfilePath(".")).Stop()
+	}
 
 	logger.Infow("tracelistener", "version", Version, "supported_sdk_version", SupportedSDKVersion)
 
