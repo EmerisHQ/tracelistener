@@ -129,10 +129,6 @@ func main() {
 				"moduleName", te.Module)
 		case b := <-dpi.WritebackChan():
 			for _, p := range b {
-				for _, asd := range p.Data {
-					logger.Debugw("writeback unit", "data", asd)
-				}
-
 				wbUnits := p.SplitStatementToDBLimit()
 				for _, wbUnit := range wbUnits {
 					is := wbUnit.InterfaceSlice()
