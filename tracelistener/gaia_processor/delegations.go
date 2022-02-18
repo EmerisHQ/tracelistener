@@ -71,12 +71,18 @@ func (b *delegationsProcessor) OwnsKey(key []byte) bool {
 
 func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 41 { // 20 bytes by address, 1 prefix = 2*20 + 1
-			return nil // found probably liquidity stuff being deleted
+		if len(data.Key) < 3 { // At least Prefix + lenDelegator + lenValidator
+			return fmt.Errorf("malformed key: %v", data.Key)
 		}
+		addresses := data.Key[1:] // Strip the prefix byte.
+		delegatorAddrLength := addresses[0]
+		addresses = addresses[1:] // Strip the address byte.
+		delegatorAddr := hex.EncodeToString(addresses[0:delegatorAddrLength])
 
-		delegatorAddr := hex.EncodeToString(data.Key[1:21])
-		validatorAddr := hex.EncodeToString(data.Key[21:41])
+		addresses = addresses[delegatorAddrLength:] // Strip the delegator address portion.
+		addresses = addresses[1:]                   // Strip the address length byte.
+
+		validatorAddr := hex.EncodeToString(addresses[0:])
 		b.l.Debugw("new delegation delete", "delegatorAddr", delegatorAddr, "validatorAddr", validatorAddr)
 
 		b.deleteHeightCache[delegationCacheEntry{
@@ -109,7 +115,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 	b.l.Debugw("new delegation write",
 		"operation", data.Operation,
 		"delegator", delegator,
-		"validator", "validator",
+		"validator", validator,
 		"amount", delegation.Shares.String(),
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
