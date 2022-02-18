@@ -45,12 +45,12 @@ $(STORE_MOD_VERSIONS):
 	cp ./go.sum mods/go.sum.$(shell echo $@ | sed 's/store-mod-//g')
 
 $(TEST_VERSIONS):
-	go test -v -failfast -race \
+	go test -v -failfast -race -count=1 \
 		-tags $(shell echo $@ | sed -e 's/test-/sdk_/g' -e 's/-/_/g'),muslc \
 		./...
 
 $(COVERAGE_VERSIONS):
-	go test -v -failfast -coverprofile=coverage.out -covermode=atomic \
+	go test -v -failfast -coverprofile=coverage.out -covermode=atomic -count=1\
 		-tags $(shell echo $@ | sed -e 's/coverage-/sdk_/g' -e 's/-/_/g'),muslc \
 		./...
 
