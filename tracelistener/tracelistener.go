@@ -144,7 +144,7 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 	)
 
 	ret := make([]WritebackOp, 0, splitAmount)
-	for _, chunk := range buildEntrierChunks(wo.Data, int64(splitAmount)) {
+	for _, chunk := range buildEntrierChunks(wo.Data, splitAmount) {
 		ret = append(ret, WritebackOp{
 			DatabaseExec: wo.DatabaseExec,
 			Data:         chunk,
@@ -159,7 +159,7 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 func buildEntrierChunks(slice []models.DatabaseEntrier, chunkSize int64) [][]models.DatabaseEntrier {
 	var chunks [][]models.DatabaseEntrier
 	for i := int64(0); i < int64(len(slice)); i += chunkSize {
-		end := int64(i + chunkSize)
+		end := i + chunkSize
 
 		// necessary check to avoid slicing beyond
 		// slice capacity
