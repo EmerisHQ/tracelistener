@@ -155,7 +155,7 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 }
 
 // Taken from: https://freshman.tech/snippets/go/split-slice-into-chunks/
-// for lazyness.
+// for laziness.
 func buildEntrierChunks(slice []models.DatabaseEntrier, chunkSize int64) [][]models.DatabaseEntrier {
 	var chunks [][]models.DatabaseEntrier
 	for i := int64(0); i < int64(len(slice)); i += chunkSize {
