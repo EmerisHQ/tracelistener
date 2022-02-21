@@ -3,6 +3,7 @@ package gaia_processor
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.uber.org/zap"
@@ -70,10 +71,23 @@ func (b *delegationsProcessor) OwnsKey(key []byte) bool {
 
 func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		_, delegator, validator, err := tracelistener.SplitDelegationKey(data.Key)
+		delegator, validator, err := tracelistener.SplitDelegationKey(data.Key)
 		if err != nil {
 			return err
 		}
+
+		if delegator == "" || validator == "" {
+			var msg []string
+			if delegator == "" {
+				msg = append(msg, "delegator")
+			}
+			if validator == "" {
+				msg = append(msg, "validator")
+			}
+			b.l.Debugw("delegation delete", "empty address found", strings.Join(msg, " and "))
+			return nil
+		}
+
 		b.l.Debugw("new delegation delete", "delegatorAddr", delegator, "validatorAddr", validator)
 
 		b.deleteHeightCache[delegationCacheEntry{

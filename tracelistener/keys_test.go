@@ -58,7 +58,7 @@ func TestValidKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, da, va, err := SplitDelegationKey(tt.key)
+			da, va, err := SplitDelegationKey(tt.key)
 			require.NoError(t, err)
 			require.Equal(t, da, tt.wantDelAddr)
 			require.Equal(t, va, tt.wantValAddr)
@@ -87,19 +87,19 @@ func TestInValidKeys(t *testing.T) {
 		{
 			name:   "wrong len prefix - less found",
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 6, 0, 42, 5, 51, 6},
-			errMsg: "malformed key: validator. want: 6 got: 5",
+			errMsg: "malformed key: validator address length out of range. want: 6 got: 5",
 		},
 		{
 			name:   "wrong len prefix - more found",
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 4, 0, 42, 5, 51, 6},
-			errMsg: "malformed key: validator. want: 4 got: 5",
+			errMsg: "malformed key: validator address length out of range. want: 4 got: 5",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, _, _, err := SplitDelegationKey(tt.key)
+			_, _, err := SplitDelegationKey(tt.key)
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.errMsg)
 		})
