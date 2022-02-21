@@ -74,7 +74,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		if err != nil {
 			return err
 		}
-		b.l.Debugw("new delegation delete", "delegator", delegator, "validator", validator)
+		b.l.Debugw("new delegation delete", "delegatorAddr", delegator, "validatorAddr", validator)
 
 		b.deleteHeightCache[delegationCacheEntry{
 			delegator: delegator,
