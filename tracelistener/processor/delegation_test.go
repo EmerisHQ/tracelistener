@@ -75,7 +75,8 @@ func TestDelegationProcess(t *testing.T) {
 			testDelegation{},
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.DeleteOp),
-				Key:       []byte("QXRkbFY4cUQ2bzZKMnNoc2o5YWNwSSs5T3BkL2U1dVRxWklpN05LNWkzeTk="),
+				// <prefix><9><"delegator"><9><"validator">
+				Key: []byte{49, 9, 100, 101, 108, 101, 103, 97, 116, 111, 114, 9, 118, 97, 108, 105, 100, 97, 116, 111, 114},
 			},
 			false,
 			1,
