@@ -14,7 +14,7 @@ import (
 // 4. Validator Address Len   	length: 1 Byte
 // 5. Validator Address         length: From 4
 // key : <prefix><del-addr-len><del-addr><val-addr-len><val-addr>
-// Len	    1	    0 - 255       <-         0 - 255      <-
+// Len	    1	       1          0-255        1         0-255
 //
 // Note: Address len 0 does not make sense, but since in the SDK it's "possible" to
 // have 0 len address for delegator/validator, we also consider empty address valid.
