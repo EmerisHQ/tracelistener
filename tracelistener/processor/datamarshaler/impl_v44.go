@@ -169,16 +169,28 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 
 func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.DelegationRow, error) {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 41 { // 20 bytes by address, 1 prefix = 2*20 + 1
-			return models.DelegationRow{}, nil // found probably liquidity stuff being deleted
+		delegator, validator, err := tracelistener.SplitDelegationKey(data.Key)
+		if err != nil {
+			return models.DelegationRow{}, err
 		}
 
-		delegatorAddr := hex.EncodeToString(data.Key[1:21])
-		validatorAddr := hex.EncodeToString(data.Key[21:41])
-		d.l.Debugw("new delegation delete", "delegatorAddr", delegatorAddr, "validatorAddr", validatorAddr)
+		if delegator == "" || validator == "" {
+			var msg []string
+			if delegator == "" {
+				msg = append(msg, "delegator")
+			}
+			if validator == "" {
+				msg = append(msg, "validator")
+			}
+
+			d.l.Debugw("delegation delete", "empty address found", strings.Join(msg, " and "))
+
+			return models.DelegationRow{}, fmt.Errorf(`badly-formatted key: validator "%s", delegator "%s"`, validator, delegator)
+		}
+
 		return models.DelegationRow{
-			Delegator: delegatorAddr,
-			Validator: validatorAddr,
+			Delegator: delegator,
+			Validator: validator,
 		}, nil
 	}
 
