@@ -439,11 +439,13 @@ func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (
 
 func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.ValidatorRow, error) {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 21 {
-			return models.ValidatorRow{}, nil
+		// strip key prefix
+		data := data.Key[1:]
+		rawAddress, err := tracelistener.FromLengthPrefix(data)
+		if err != nil {
+			return models.ValidatorRow{}, fmt.Errorf("cannot parse length-prefixed operator address, %w", err)
 		}
-
-		operatorAddress := hex.EncodeToString(data.Key[1:21])
+		operatorAddress := hex.EncodeToString(rawAddress)
 		d.l.Debugw("new validator delete", "operator address", operatorAddress)
 
 		return models.ValidatorRow{
