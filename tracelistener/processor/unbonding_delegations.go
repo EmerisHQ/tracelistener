@@ -64,7 +64,8 @@ func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp
 }
 
 func (b *unbondingDelegationsProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, datamarshaler.UnbondingDelegationKey)
+	return bytes.HasPrefix(key, datamarshaler.UnbondingDelegationKey) ||
+		bytes.HasPrefix(key, datamarshaler.UnbondingDelegationByValidatorKey)
 }
 
 func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperation) error {
@@ -73,8 +74,11 @@ func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperatio
 		return err
 	}
 
-	if data.Operation == tracelistener.DeleteOp.String() {
+	if res.Delegator == "" && res.Validator == "" {
+		return nil // case in which this is an error operation, but the key wasn't UnbondingDelegationByValidatorKey
+	}
 
+	if data.Operation == tracelistener.DeleteOp.String() {
 		b.deleteHeightCache[unbondingDelegationCacheEntry{
 			validator: res.Validator,
 			delegator: res.Delegator,

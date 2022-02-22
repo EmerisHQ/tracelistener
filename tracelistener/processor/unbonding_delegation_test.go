@@ -28,6 +28,12 @@ func TestUnbondingDelegationOwnsKey(t *testing.T) {
 			false,
 		},
 		{
+			"Second correct prefix - no error",
+			datamarshaler.UnbondingDelegationByValidatorKey,
+			"key",
+			false,
+		},
+		{
 			"Incorrect prefix- error",
 			[]byte{0x0},
 			"key",
@@ -64,7 +70,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 		expectedLen         int
 	}{
 		{
-			"Delete unbonding delegation operation - no error",
+			"Delete unbonding delegation operation - key prefix is not the one which index by validator address",
 			datamarshaler.TestUnbondingDelegation{
 				Delegator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
 				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
@@ -72,7 +78,25 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			tracelistener.TraceOperation{
 				Operation:   string(tracelistener.DeleteOp),
 				Key:         []byte("QXRkbFY4cUQ2bzZKMnNoc2o5YWNwSSs5T3BkL2U1dVRxWklpN05LNWkzeTk="),
-				Value:       []byte("Ci1jb3Ntb3MxeHJubmVyOXM3ODM0NDZ5ejNoaHNocHI1ZnB6Nnd6Y3drdnd2NWoSNGNvc21vc3ZhbG9wZXIxOXhhd2d2Z244ODdlOWdlZjV2a3prZW13aDMzbXRnd2E2aGFhN3MaHAiYIBILCICSuMOY/v///wEaBDEwMDAiBDExMDA="),
+				Value:       []byte{},
+				BlockHeight: 0,
+			},
+			false,
+			0,
+		},
+		{
+			"Delete unbonding delegation operation - no error",
+			datamarshaler.TestUnbondingDelegation{
+				Delegator: "delegator",
+				Validator: "validator",
+			},
+			tracelistener.TraceOperation{
+				Operation: string(tracelistener.DeleteOp),
+				Key: []byte{
+					0x33, // prefix
+					9, 118, 97, 108, 105, 100, 97, 116, 111, 114, 9, 100, 101, 108, 101, 103, 97, 116, 111, 114,
+				},
+				Value:       []byte{},
 				BlockHeight: 0,
 			},
 			false,
