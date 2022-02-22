@@ -2,9 +2,10 @@ package tracelistener
 
 import (
 	"encoding/hex"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
-	"testing"
 )
 
 func TestValidKeys(t *testing.T) {
@@ -67,8 +68,6 @@ func TestValidKeys(t *testing.T) {
 }
 
 func TestInValidKeys(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name   string
 		key    []byte
@@ -98,10 +97,66 @@ func TestInValidKeys(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			_, _, err := SplitDelegationKey(tt.key)
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.errMsg)
+		})
+	}
+}
+
+func TestFromLengthPrefix(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawData []byte
+		want    []byte
+		wantErr bool
+	}{
+		{
+			"a length-prefix works",
+			[]byte{
+				4,          // length prefix
+				1, 2, 3, 4, // data
+			},
+			[]byte{1, 2, 3, 4},
+			false,
+		},
+		{
+			"a length-prefix with more data than anticipated",
+			[]byte{
+				4,             // length prefix
+				1, 2, 3, 4, 5, // data
+			},
+			nil,
+			true,
+		},
+		{
+			"a length-prefix with less data than anticipated",
+			[]byte{
+				4,       // length prefix
+				1, 2, 3, // data
+			},
+			nil,
+			true,
+		},
+		{
+			"nil rawData",
+			nil,
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := FromLengthPrefix(tt.rawData)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Empty(t, res)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.want, res)
 		})
 	}
 }
