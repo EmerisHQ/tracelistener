@@ -86,12 +86,12 @@ func TestInValidKeys(t *testing.T) {
 		{
 			name:   "wrong len prefix - less found",
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 6, 0, 42, 5, 51, 6},
-			errMsg: "malformed key: validator address length out of range. want: 6 got: 5",
+			errMsg: "length prefix signals 6 bytes, but total data is 5 bytes long",
 		},
 		{
 			name:   "wrong len prefix - more found",
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 4, 0, 42, 5, 51, 6},
-			errMsg: "malformed key: validator address length out of range. want: 4 got: 5",
+			errMsg: "length prefix signals 4 bytes, but total data is 5 bytes long",
 		},
 	}
 

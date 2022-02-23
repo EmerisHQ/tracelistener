@@ -25,18 +25,9 @@ func SplitDelegationKey(key []byte) (string, string, error) {
 		return "", "", fmt.Errorf("malformed key: length %d not in range", len(key))
 	}
 	_, addresses := key[0], key[1:] // Strip the prefix byte.
-	delAddrLen := addresses[0]      // Strip the delegator length byte.
+	delAddrLen := addresses[0]      // Gets delegator address length
 	if delAddrLen > 255 {
 		return "", "", fmt.Errorf("malformed key: delegator address length out of range %d", delAddrLen)
-	}
-
-	// Check if we have enough bytes for the address of delegator + at least 1 byte for validator address length
-	if len(addresses) < int(delAddrLen) {
-		return "", "", fmt.Errorf(
-			"malformed key: delegator key length not sufficient. want atlease: %d got: %d",
-			delAddrLen,
-			len(addresses),
-		)
 	}
 
 	totalPrefixedFirstAddressSz := delAddrLen + 1 // we are subslicing including the length-prefix, since FromLengthPrefix uses it
@@ -47,23 +38,13 @@ func SplitDelegationKey(key []byte) (string, string, error) {
 
 	delAddr := hex.EncodeToString(delAddrBytes)
 
-	addresses = addresses[totalPrefixedFirstAddressSz:] // Strip the delegator address,
-	valAddrLen := addresses[0]                          // Strip the address length byte.
+	addresses = addresses[totalPrefixedFirstAddressSz:] // Subslice past the delegator address
+	valAddrLen := addresses[0]                          // Get validator address length
 	if valAddrLen > 255 {
 		return "", "", fmt.Errorf("malformed key: validator address length out of range %d", valAddrLen)
 	}
-	// Check if we have exact number of bytes for the address of validator.
-	// Subtracting 1 here since it's the length-prefix, which will be consumed later.
-	if len(addresses)-1 != int(valAddrLen) {
-		return "", "", fmt.Errorf(
-			"malformed key: validator address length out of range. want: %d got: %d",
-			valAddrLen,
-			len(addresses)-1,
-		)
-	}
 
-	totalPrefixedSecondAddressSz := valAddrLen + 1
-	valAddrBytes, err := FromLengthPrefix(addresses[:totalPrefixedSecondAddressSz])
+	valAddrBytes, err := FromLengthPrefix(addresses) // We don't do any subslicing here because FromLengthPrefix will take care of parsing errors
 	if err != nil {
 		return "", "", err
 	}
