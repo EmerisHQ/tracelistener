@@ -21,4 +21,9 @@ var (
 	UnbondingDelegationKey            = stakingTypes.UnbondingDelegationKey
 	UnbondingDelegationByValidatorKey = stakingTypes.UnbondingDelegationByValIndexKey
 	ValidatorsKey                     = stakingTypes.ValidatorsKey
+
+	UnbondingDelegationKeys = [][]byte{
+		UnbondingDelegationKey,
+		UnbondingDelegationByValidatorKey,
+	}
 )
