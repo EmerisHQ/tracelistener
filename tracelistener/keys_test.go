@@ -97,7 +97,7 @@ func TestInValidKeys(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 			_, _, err := SplitDelegationKey(tt.key)
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.errMsg)
