@@ -64,8 +64,13 @@ func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp
 }
 
 func (b *unbondingDelegationsProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, datamarshaler.UnbondingDelegationKey) ||
-		bytes.HasPrefix(key, datamarshaler.UnbondingDelegationByValidatorKey)
+	for _, rkey := range datamarshaler.UnbondingDelegationKeys {
+		if bytes.HasPrefix(key, rkey) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (b *unbondingDelegationsProcessor) Process(data tracelistener.TraceOperation) error {
