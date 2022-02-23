@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/allinbits/tracelistener/tracelistener/bulk"
+	"github.com/allinbits/tracelistener/tracelistener/processor"
 
 	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
@@ -17,14 +18,20 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/allinbits/tracelistener/tracelistener/database"
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
 	"github.com/containerd/fifo"
 	"go.uber.org/zap"
 )
 
-var Version = "not specified"
+var (
+	Version             = "not specified"
+	SupportedSDKVersion = ""
+)
 
 func main() {
+	if SupportedSDKVersion == "" {
+		panic("missing sdk version at compile time, panic!")
+	}
+
 	ca := readCLI()
 
 	if ca.bulkImportSupportedModules {
@@ -39,18 +46,9 @@ func main() {
 
 	logger := buildLogger(cfg)
 
-	logger.Infow("tracelistener", "version", Version)
+	logger.Infow("tracelistener", "version", Version, "supported_sdk_version", SupportedSDKVersion)
 
-	var processorFunc tracelistener.DataProcessorFunc
-
-	switch cfg.Type {
-	case "gaia":
-		processorFunc = gaia_processor.New
-	default:
-		logger.Panicw("no processor associated with type", "type", cfg.Type)
-	}
-
-	dpi, err := processorFunc(logger, cfg)
+	dpi, err := processor.New(logger, cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -129,13 +127,16 @@ func main() {
 					logger.Debugw("writeback unit", "data", asd)
 				}
 
-				is := p.InterfaceSlice()
-				if len(is) == 0 {
-					continue
-				}
+				wbUnits := p.SplitStatementToDBLimit()
+				for _, wbUnit := range wbUnits {
+					is := wbUnit.InterfaceSlice()
+					if len(is) == 0 {
+						continue
+					}
 
-				if err := di.Add(p.DatabaseExec, is); err != nil {
-					logger.Error("database error ", err)
+					if err := di.Add(wbUnit.DatabaseExec, is); err != nil {
+						logger.Error("database error ", err)
+					}
 				}
 			}
 		}

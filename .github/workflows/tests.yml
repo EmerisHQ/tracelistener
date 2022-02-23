@@ -8,8 +8,23 @@ on:
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 jobs:
+  setup-matrix:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup matrix combinations
+        id: setup-matrix-combinations
+        run: |
+          MATRIX_PARAMS_COMBINATIONS="$(make versions-json)"
+          echo ::set-output name=matrix-combinations::{\"include\":$MATRIX_PARAMS_COMBINATIONS}
+    outputs:
+      matrix-combinations: ${{ steps.setup-matrix-combinations.outputs.matrix-combinations }}
+
   code_cov:
     runs-on: self-hosted
+    needs: setup-matrix
+    strategy:
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix-combinations) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -24,13 +39,17 @@ jobs:
       - name: Setup token for pulling from allinbits private repos
         run: |
           go env -w GOPRIVATE=github.com/allinbits/*
+          go env -w GOPROXY=direct
           git config --global url."https://git:${{ secrets.TENDERBOT_GIT_TOKEN }}@github.com".insteadOf "https://github.com"
 
+      - name: Setup multisdk
+        run: make setup-${{ matrix.versions }}
+
       - name: Run Tests
-        run: make test
+        run: make test-${{ matrix.versions }}
 
       - name: Run coverage
-        run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+        run: make coverage-${{ matrix.versions }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
