@@ -12,15 +12,17 @@ import (
 	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
 )
 
+type unbondingDelegationsOwnsKeyTest struct {
+	name        string
+	prefix      []byte
+	key         string
+	expectedErr bool
+}
+
 func TestUnbondingDelegationOwnsKey(t *testing.T) {
 	u := unbondingDelegationsProcessor{}
 
-	tests := []struct {
-		name        string
-		prefix      []byte
-		key         string
-		expectedErr bool
-	}{
+	tests := []unbondingDelegationsOwnsKeyTest{
 		{
 			"Correct prefix- no error",
 			datamarshaler.UnbondingDelegationKey,
@@ -35,6 +37,8 @@ func TestUnbondingDelegationOwnsKey(t *testing.T) {
 		},
 	}
 
+	tests = append(tests, versionSpecificUnbondingDelegationsOwnsKeyTests()...)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -47,6 +51,14 @@ func TestUnbondingDelegationOwnsKey(t *testing.T) {
 	}
 }
 
+type unbondingDelegationsProcessTest struct {
+	name                string
+	unbondingDelegation datamarshaler.TestUnbondingDelegation
+	newMessage          tracelistener.TraceOperation
+	expectedEr          bool
+	expectedLen         int
+}
+
 func TestUnbondingDelegationProcess(t *testing.T) {
 	u := unbondingDelegationsProcessor{}
 
@@ -56,28 +68,7 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 	gp := DataProcessor.(*Processor)
 	require.NotNil(t, gp)
 
-	tests := []struct {
-		name                string
-		unbondingDelegation datamarshaler.TestUnbondingDelegation
-		newMessage          tracelistener.TraceOperation
-		expectedEr          bool
-		expectedLen         int
-	}{
-		{
-			"Delete unbonding delegation operation - no error",
-			datamarshaler.TestUnbondingDelegation{
-				Delegator: "cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j",
-				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
-			},
-			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.DeleteOp),
-				Key:         []byte("QXRkbFY4cUQ2bzZKMnNoc2o5YWNwSSs5T3BkL2U1dVRxWklpN05LNWkzeTk="),
-				Value:       []byte("Ci1jb3Ntb3MxeHJubmVyOXM3ODM0NDZ5ejNoaHNocHI1ZnB6Nnd6Y3drdnd2NWoSNGNvc21vc3ZhbG9wZXIxOXhhd2d2Z244ODdlOWdlZjV2a3prZW13aDMzbXRnd2E2aGFhN3MaHAiYIBILCICSuMOY/v///wEaBDEwMDAiBDExMDA="),
-				BlockHeight: 0,
-			},
-			false,
-			1,
-		},
+	tests := []unbondingDelegationsProcessTest{
 		{
 			"Write unbonding delegation - no error",
 			datamarshaler.TestUnbondingDelegation{
@@ -113,6 +104,8 @@ func TestUnbondingDelegationProcess(t *testing.T) {
 			0,
 		},
 	}
+
+	tests = append(tests, versionSpecificUnbondingDelegationsProcessTests()...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

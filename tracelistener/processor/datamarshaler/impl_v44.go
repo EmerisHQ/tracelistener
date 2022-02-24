@@ -174,16 +174,28 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 
 func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.DelegationRow, error) {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 41 { // 20 bytes by address, 1 prefix = 2*20 + 1
-			return models.DelegationRow{}, nil // found probably liquidity stuff being deleted
+		delegator, validator, err := tracelistener.SplitDelegationKey(data.Key)
+		if err != nil {
+			return models.DelegationRow{}, err
 		}
 
-		delegatorAddr := hex.EncodeToString(data.Key[1:21])
-		validatorAddr := hex.EncodeToString(data.Key[21:41])
-		d.l.Debugw("new delegation delete", "delegatorAddr", delegatorAddr, "validatorAddr", validatorAddr)
+		if delegator == "" || validator == "" {
+			var msg []string
+			if delegator == "" {
+				msg = append(msg, "delegator")
+			}
+			if validator == "" {
+				msg = append(msg, "validator")
+			}
+
+			d.l.Debugw("delegation delete", "empty address found", strings.Join(msg, " and "))
+
+			return models.DelegationRow{}, fmt.Errorf(`badly-formatted key: validator "%s", delegator "%s"`, validator, delegator)
+		}
+
 		return models.DelegationRow{
-			Delegator: delegatorAddr,
-			Validator: validatorAddr,
+			Delegator: delegator,
+			Validator: validator,
 		}, nil
 	}
 
@@ -358,11 +370,24 @@ func (d DataMarshaler) IBCDenomTraces(data tracelistener.TraceOperation) (models
 
 func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (models.UnbondingDelegationRow, error) {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 41 { // 20 bytes by address, 1 prefix = 2*20 + 1
-			return models.UnbondingDelegationRow{}, nil // found probably liquidity stuff being deleted
+		if !bytes.HasPrefix(data.Key, stakingTypes.UnbondingDelegationByValIndexKey) {
+			// we ignore this case, since any delete operation that ended up here, and that doesn't have this prefix
+			// is useless for us
+
+			return models.UnbondingDelegationRow{}, nil
 		}
-		delegatorAddr := hex.EncodeToString(data.Key[1:21])
-		validatorAddr := hex.EncodeToString(data.Key[21:41])
+
+		// morph the key into something our unbonding delegations key parsing function can digest
+		// Explain: unbonding delegations are indexed by validator, and in this instance
+		// the key is arranged like this: (validatorAddr, delegatorAddr).
+		// Our SplitDelegationKey handles (delegatorAddr, validatorAddr), and somehow the SDK people
+		// have a func that flips the key we're handling, morphing it into something SplitDelegationKey can handle.
+		// Thanks SDK people!
+		delegatorAddr, validatorAddr, err := tracelistener.SplitDelegationKey(stakingTypes.GetUBDKeyFromValIndexKey(data.Key))
+		if err != nil {
+			return models.UnbondingDelegationRow{}, fmt.Errorf("cannot parse unbonding delegation key, %w", err)
+		}
+
 		d.l.Debugw("new unbonding_delegation delete", "delegatorAddr", delegatorAddr, "validatorAddr", validatorAddr)
 
 		return models.UnbondingDelegationRow{
@@ -418,11 +443,13 @@ func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (
 
 func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.ValidatorRow, error) {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		if len(data.Key) < 21 {
-			return models.ValidatorRow{}, nil
+		// strip key prefix
+		data := data.Key[1:]
+		rawAddress, err := tracelistener.FromLengthPrefix(data)
+		if err != nil {
+			return models.ValidatorRow{}, fmt.Errorf("cannot parse length-prefixed operator address, %w", err)
 		}
-
-		operatorAddress := hex.EncodeToString(data.Key[1:21])
+		operatorAddress := hex.EncodeToString(rawAddress)
 		d.l.Debugw("new validator delete", "operator address", operatorAddress)
 
 		return models.ValidatorRow{

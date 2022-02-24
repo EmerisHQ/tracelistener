@@ -1,16 +1,10 @@
 name: Build and push Docker images
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - Dockerfile
-      - cmd/**
-      - go.mod
-      - go.sum
-      - "*.go"
-      - helm/**
+  workflow_run:
+    workflows: [Run Tests]
+    branches: [main]
+    types: [completed]
 
 jobs:
   setup-matrix:
