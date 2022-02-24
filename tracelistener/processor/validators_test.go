@@ -66,7 +66,7 @@ func TestValidatorProcess(t *testing.T) {
 		{
 			"Delete validator operation - no error",
 			datamarshaler.TestValidator{
-				OperatorAddress: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
+				OperatorAddress: "operatoraddress",
 				ConsensusPubkey: "dlxLxyNmux++E2mjN4GR6u/whv8uMsMTIS1Tw1WylJw=",
 				Jailed:          false,
 				Status:          3, // bonded
@@ -82,7 +82,10 @@ func TestValidatorProcess(t *testing.T) {
 			},
 			tracelistener.TraceOperation{
 				Operation: string(tracelistener.DeleteOp),
-				Key:       []byte("cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s"),
+				Key: []byte{
+					0x21, // prefix
+					15, 111, 112, 101, 114, 97, 116, 111, 114, 97, 100, 100, 114, 101, 115, 115,
+				},
 			},
 			false,
 			1,
