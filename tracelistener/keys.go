@@ -65,7 +65,5 @@ func FromLengthPrefix(rawData []byte) ([]byte, error) {
 		return nil, fmt.Errorf("length prefix signals %d bytes, but total data is %d bytes long", length, len(rawData))
 	}
 
-	data := rawData[:length]
-
-	return data, nil
+	return rawData, nil
 }
