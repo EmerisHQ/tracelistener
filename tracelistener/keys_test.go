@@ -68,6 +68,8 @@ func TestValidKeys(t *testing.T) {
 }
 
 func TestInValidKeys(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		key    []byte
@@ -106,6 +108,7 @@ func TestInValidKeys(t *testing.T) {
 }
 
 func TestFromLengthPrefix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		rawData []byte
@@ -148,6 +151,8 @@ func TestFromLengthPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			res, err := FromLengthPrefix(tt.rawData)
 			if tt.wantErr {
 				require.Error(t, err)
