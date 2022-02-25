@@ -47,7 +47,7 @@ func main() {
 
 	logger := buildLogger(cfg)
 
-	if cfg.Debug == true {
+	if cfg.Debug {
 		logger.Debugw("enabling cpu profiling")
 		defer profile.Start(profile.ProfilePath(".")).Stop()
 	}
