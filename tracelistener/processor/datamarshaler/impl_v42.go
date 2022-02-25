@@ -3,6 +3,7 @@
 package datamarshaler
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
