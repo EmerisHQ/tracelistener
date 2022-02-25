@@ -16,6 +16,45 @@ import (
 	"go.uber.org/zap"
 )
 
+// SDKModuleName represent a Cosmos SDK module name, available under the 'x' directory in the SDK
+// codebase.
+type SDKModuleName string
+
+// String implements the fmt.Stringer interface.
+func (smn SDKModuleName) String() string {
+	return string(smn)
+}
+
+const (
+	// Bank SDK module
+	Bank SDKModuleName = "bank"
+
+	// IBC SDK module
+	IBC SDKModuleName = "ibc"
+
+	// Staking SDK module
+	Staking SDKModuleName = "staking"
+
+	// Distribution SDK module
+	Distribution SDKModuleName = "distribution"
+
+	// IBC Transfer SDK module
+	Transfer SDKModuleName = "transfer"
+
+	// Account storage SDK module
+	Acc SDKModuleName = "acc"
+)
+
+// SupportedSDKModuleList holds all the Cosmos SDK module names tracelistener supports.
+var SupportedSDKModuleList = map[SDKModuleName]struct{}{
+	Bank:         {},
+	IBC:          {},
+	Staking:      {},
+	Distribution: {},
+	Transfer:     {},
+	Acc:          {},
+}
+
 // Info: https://github.com/cockroachdb/cockroach/issues/49256
 const dbPlaceholderLimit = 65535
 

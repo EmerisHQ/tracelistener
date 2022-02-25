@@ -15,7 +15,7 @@ type Module interface {
 	OwnsKey(key []byte) bool
 	Process(data tracelistener.TraceOperation) error
 	ModuleName() string
-	SDKModuleName() string
+	SDKModuleName() tracelistener.SDKModuleName
 	TableSchema() string
 }
 
@@ -40,7 +40,7 @@ type Processor struct {
 	lastHeight       uint64
 	chainName        string
 	moduleProcessors []Module
-	sdkModuleMapping map[string][]Module
+	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
 }
 
 func (p *Processor) OpsChan() chan tracelistener.TraceOperation {
@@ -69,7 +69,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	mp := make([]Module, 0)
 	tableSchemas := make([]string, 0)
 
-	sdkModuleMapping := map[string][]Module{}
+	sdkModuleMapping := map[tracelistener.SDKModuleName][]Module{}
 
 	for _, ep := range c.ProcessorsEnabled {
 		p, err := processorByName(ep, logger)

@@ -25,8 +25,8 @@ func (b *ibcDenomTracesProcessor) ModuleName() string {
 	return "ibc_denom_traces"
 }
 
-func (b *ibcDenomTracesProcessor) SDKModuleName() string {
-	return "transfer"
+func (b *ibcDenomTracesProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Transfer
 }
 
 func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {

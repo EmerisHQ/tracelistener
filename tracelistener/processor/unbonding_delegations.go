@@ -31,8 +31,8 @@ func (b *unbondingDelegationsProcessor) ModuleName() string {
 	return "unbonding_delegations"
 }
 
-func (b *unbondingDelegationsProcessor) SDKModuleName() string {
-	return "staking"
+func (b *unbondingDelegationsProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Staking
 }
 
 func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp {

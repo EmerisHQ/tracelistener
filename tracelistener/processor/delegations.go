@@ -31,8 +31,8 @@ func (b *delegationsProcessor) ModuleName() string {
 	return "delegations"
 }
 
-func (b *delegationsProcessor) SDKModuleName() string {
-	return "staking"
+func (b *delegationsProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Staking
 }
 
 func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {

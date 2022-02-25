@@ -35,8 +35,8 @@ func (b *ibcConnectionsProcessor) ModuleName() string {
 	return "ibc_connections"
 }
 
-func (b *ibcConnectionsProcessor) SDKModuleName() string {
-	return "ibc"
+func (b *ibcConnectionsProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.IBC
 }
 
 func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {

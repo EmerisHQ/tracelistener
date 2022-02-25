@@ -19,7 +19,7 @@ type TraceOperation struct {
 
 	// SuggestedProcessor signals to the trace processor that
 	// what SDK module this trace comes from.
-	SuggestedProcessor string
+	SuggestedProcessor SDKModuleName
 }
 
 func (t TraceOperation) String() string {

@@ -32,19 +32,10 @@ type Importer struct {
 	Modules      []string
 }
 
-var moduleList = map[string]struct{}{
-	"bank":         {},
-	"ibc":          {},
-	"staking":      {},
-	"distribution": {},
-	"transfer":     {},
-	"acc":          {},
-}
-
 func ImportableModulesList() []string {
-	ml := make([]string, 0, len(moduleList))
-	for k := range moduleList {
-		ml = append(ml, k)
+	ml := make([]string, 0, len(tracelistener.SupportedSDKModuleList))
+	for k := range tracelistener.SupportedSDKModuleList {
+		ml = append(ml, k.String())
 	}
 
 	return ml
@@ -52,7 +43,7 @@ func ImportableModulesList() []string {
 
 func (i Importer) validateModulesList() error {
 	for _, m := range i.Modules {
-		if _, ok := moduleList[m]; !ok {
+		if _, ok := tracelistener.SupportedSDKModuleList[tracelistener.SDKModuleName(m)]; !ok {
 			return fmt.Errorf("unknown bulk import module %s", m)
 		}
 	}
@@ -168,7 +159,7 @@ func (i *Importer) Do() error {
 					Key:                ii.Key(),
 					Value:              ii.Value(),
 					BlockHeight:        uint64(latestBlockHeight),
-					SuggestedProcessor: key.Name(),
+					SuggestedProcessor: tracelistener.SDKModuleName(key.Name()),
 				}
 
 				if err := i.TraceWatcher.ParseOperation(to); err != nil {

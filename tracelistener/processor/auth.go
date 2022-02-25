@@ -29,8 +29,8 @@ func (b *authProcessor) ModuleName() string {
 	return "auth"
 }
 
-func (b *authProcessor) SDKModuleName() string {
-	return "acc"
+func (b *authProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Acc
 }
 
 func (b *authProcessor) FlushCache() []tracelistener.WritebackOp {

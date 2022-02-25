@@ -29,8 +29,8 @@ func (b *validatorsProcessor) ModuleName() string {
 	return "validators"
 }
 
-func (b *validatorsProcessor) SDKModuleName() string {
-	return "staking"
+func (b *validatorsProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Staking
 }
 
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {

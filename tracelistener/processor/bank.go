@@ -30,8 +30,8 @@ func (b *bankProcessor) ModuleName() string {
 	return "bank"
 }
 
-func (b *bankProcessor) SDKModuleName() string {
-	return "bank"
+func (b *bankProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Bank
 }
 
 func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
