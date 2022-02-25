@@ -141,7 +141,6 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 		return models.AuthRow{}, fmt.Errorf("cannot cast account to BaseAccount, type %T, account object type %T", baseAcc, acc)
 	}
 
-	baseAcc.Validate()
 	_, bz, err := bech32.DecodeAndConvert(baseAcc.Address)
 	if err != nil {
 		d.l.Debugw("found invalid base account, bech32 invalid", "account", baseAcc, "error", err)
