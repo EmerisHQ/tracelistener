@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/allinbits/tracelistener/tracelistener/database"
-
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"
 
@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/allinbits/tracelistener/tracelistener"
+	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
@@ -31,19 +32,10 @@ type Importer struct {
 	Modules      []string
 }
 
-var moduleList = map[string]struct{}{
-	"bank":         {},
-	"ibc":          {},
-	"staking":      {},
-	"distribution": {},
-	"transfer":     {},
-	"acc":          {},
-}
-
 func ImportableModulesList() []string {
-	ml := make([]string, 0, len(moduleList))
-	for k := range moduleList {
-		ml = append(ml, k)
+	ml := make([]string, 0, len(tracelistener.SupportedSDKModuleList))
+	for k := range tracelistener.SupportedSDKModuleList {
+		ml = append(ml, k.String())
 	}
 
 	return ml
@@ -51,7 +43,7 @@ func ImportableModulesList() []string {
 
 func (i Importer) validateModulesList() error {
 	for _, m := range i.Modules {
-		if _, ok := moduleList[m]; !ok {
+		if _, ok := tracelistener.SupportedSDKModuleList[tracelistener.SDKModuleName(m)]; !ok {
 			return fmt.Errorf("unknown bulk import module %s", m)
 		}
 	}
@@ -84,18 +76,30 @@ func (i *Importer) Do() error {
 			case b := <-i.Processor.WritebackChan():
 				importingWg.Add(1)
 				for _, p := range b {
-					for _, asd := range p.Data {
-						i.Logger.Debugw("writeback unit", "data", asd)
-					}
-
-					is := p.InterfaceSlice()
-					if len(is) == 0 {
+					if len(p.Data) == 0 {
 						continue
 					}
 
-					if err := i.Database.Add(p.DatabaseExec, is); err != nil {
-						i.Logger.Error("database error ", err)
+					totalUnitsAmt := uint64(0)
+
+					wbUnits := p.SplitStatementToDBLimit()
+					for _, wbUnit := range wbUnits {
+						is := wbUnit.InterfaceSlice()
+
+						i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
+
+						totalUnitsAmt += uint64(len(wbUnit.Data))
+
+						if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
+							i.Logger.Error("database error ", err)
+						}
 					}
+
+					i.Logger.Infow("total database rows to be written",
+						"amount", len(p.Data),
+						"chunked amount written", totalUnitsAmt,
+						"equal", uint64(len(p.Data)) == totalUnitsAmt,
+					)
 				}
 
 				i.Logger.Debugw("finished processing writeback data")
@@ -117,6 +121,9 @@ func (i *Importer) Do() error {
 	if err != nil {
 		return fmt.Errorf("cannot open chain database, %w", err)
 	}
+
+	latestBlockHeight := getLatestVersion(db)
+
 	rm := rootmulti.NewStore(db)
 	keys := make([]types2.StoreKey, 0, len(i.Modules))
 
@@ -133,52 +140,57 @@ func (i *Importer) Do() error {
 	processingTime := time.Now()
 
 	keysLen := len(keys)
+
+	eg := errgroup.Group{}
 	for idx, key := range keys {
-		i.Logger.Infow("processing started", "module", key.Name(), "index", idx+1, "total", keysLen)
+		key := key
+		idx := idx
+		eg.Go(func() error {
+			i.Logger.Infow("processing started", "module", key.Name(), "index", idx+1, "total", keysLen)
 
-		store := rm.GetKVStore(key)
-		ii := store.Iterator(nil, nil)
+			store := rm.GetKVStore(key)
+			ii := store.Iterator(nil, nil)
 
-		writtenIdx := 0
-		for ; ii.Valid(); ii.Next() {
-			writtenIdx++
+			processedRows := uint64(0)
 
-			to := tracelistener.TraceOperation{
-				Operation: tracelistener.WriteOp.String(),
-				Key:       ii.Key(),
-				Value:     ii.Value(),
-			}
-
-			if writtenIdx == 1000 {
-				time.Sleep(1 * time.Second)
-				if err := i.Processor.Flush(); err != nil {
-					return fmt.Errorf("cannot flush processor cache, %w", err)
+			for ; ii.Valid(); ii.Next() {
+				to := tracelistener.TraceOperation{
+					Operation:          tracelistener.WriteOp.String(),
+					Key:                ii.Key(),
+					Value:              ii.Value(),
+					BlockHeight:        uint64(latestBlockHeight),
+					SuggestedProcessor: tracelistener.SDKModuleName(key.Name()),
 				}
-				writtenIdx = 0
+
+				if err := i.TraceWatcher.ParseOperation(to); err != nil {
+					return fmt.Errorf("cannot parse operation %v, %w", to, err)
+				}
+
+				i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
+				processedRows++
 			}
 
-			if err := i.TraceWatcher.ParseOperation(to); err != nil {
-				return fmt.Errorf("cannot parse operation %v, %w", to, err)
+			if err := ii.Error(); err != nil {
+				return fmt.Errorf("iterator error, %w", err)
 			}
 
-			i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
-		}
+			if err := ii.Close(); err != nil {
+				return fmt.Errorf("cannot close iterator, %w", err)
+			}
 
-		if err := ii.Error(); err != nil {
-			return fmt.Errorf("iterator error, %w", err)
-		}
+			time.Sleep(1 * time.Second)
 
-		if err := ii.Close(); err != nil {
-			return fmt.Errorf("cannot close iterator, %w", err)
-		}
+			if err := i.Processor.Flush(); err != nil {
+				return fmt.Errorf("cannot flush processor cache, %w", err)
+			}
 
-		time.Sleep(1 * time.Second)
+			i.Logger.Infow("processing done", "module", key.Name(), "total_rows", processedRows, "index", idx+1, "total", keysLen)
+			return nil
+		})
+	}
 
-		if err := i.Processor.Flush(); err != nil {
-			return fmt.Errorf("cannot flush processor cache, %w", err)
-		}
-
-		i.Logger.Infow("processing done", "module", key.Name(), "index", idx+1, "total", keysLen)
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 
 	if err := db.Close(); err != nil {
@@ -190,4 +202,26 @@ func (i *Importer) Do() error {
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
 
 	return nil
+}
+
+// vendored from cosmos-sdk/store/rootmulti/rootmulti.go
+const (
+	latestVersionKey = "s/latest"
+)
+
+func getLatestVersion(db db2.DB) int64 {
+	bz, err := db.Get([]byte(latestVersionKey))
+	if err != nil {
+		panic(err)
+	} else if bz == nil {
+		return 0
+	}
+
+	var latestVersion int64
+
+	if err := gogotypes.StdInt64Unmarshal(&latestVersion, bz); err != nil {
+		panic(err)
+	}
+
+	return latestVersion
 }

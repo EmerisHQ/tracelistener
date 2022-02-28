@@ -10,6 +10,7 @@ import (
 
 	"github.com/allinbits/tracelistener/tracelistener/bulk"
 	"github.com/allinbits/tracelistener/tracelistener/processor"
+	"github.com/pkg/profile"
 
 	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 
@@ -45,6 +46,11 @@ func main() {
 	}
 
 	logger := buildLogger(cfg)
+
+	if cfg.Debug {
+		logger.Debugw("enabling cpu profiling")
+		defer profile.Start(profile.ProfilePath(".")).Stop()
+	}
 
 	logger.Infow("tracelistener", "version", Version, "supported_sdk_version", SupportedSDKVersion)
 
@@ -123,10 +129,6 @@ func main() {
 				"moduleName", te.Module)
 		case b := <-dpi.WritebackChan():
 			for _, p := range b {
-				for _, asd := range p.Data {
-					logger.Debugw("writeback unit", "data", asd)
-				}
-
 				wbUnits := p.SplitStatementToDBLimit()
 				for _, wbUnit := range wbUnits {
 					is := wbUnit.InterfaceSlice()

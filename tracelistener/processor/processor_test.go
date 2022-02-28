@@ -33,6 +33,10 @@ func (d dumbModule) FlushCache() []tracelistener.WritebackOp {
 	return d.wbOp
 }
 
+func (d dumbModule) SDKModuleName() tracelistener.SDKModuleName {
+	return "dumbModule"
+}
+
 func (d dumbModule) OwnsKey(key []byte) bool {
 	if d.alwaysOwnsKey {
 		return true
