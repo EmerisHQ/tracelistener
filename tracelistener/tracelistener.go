@@ -251,6 +251,12 @@ func (tr *TraceWatcher) Watch() {
 				tr.ErrorChan <- fmt.Errorf("failed parsing operation, %w, data: %s", err, line.Text)
 				continue
 			}
+
+			tr.Logger.Infow("trace processed",
+				"kind", to.Operation,
+				"block_height", to.BlockHeight,
+				"tx_hash", to.TxHash,
+			)
 		}
 	}
 }
