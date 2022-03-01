@@ -3,6 +3,7 @@ package bulk
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -221,6 +222,7 @@ func (i *Importer) Do() error {
 		After that, we acquire the lock and continue with our own way.
 	*/
 	for dbWritebackCallAmt != len(keys) {
+		runtime.Gosched()
 	}
 	dbMutex.Lock()
 	i.Logger.Info("database lock acquired, finalizing")
