@@ -60,7 +60,7 @@ func (i *Importer) Do() error {
 		i.Modules = ImportableModulesList()
 	}
 
-	importingWg := sync.WaitGroup{}
+	dbMutex := sync.Mutex{}
 	t0 := time.Now()
 	// spawn a goroutine that logs errors from processor's error chan
 	go func() {
@@ -74,7 +74,9 @@ func (i *Importer) Do() error {
 					"data", te.Data,
 					"moduleName", te.Module)
 			case b := <-i.Processor.WritebackChan():
-				importingWg.Add(1)
+				i.Logger.Info("requesting database lock for writing...")
+				dbMutex.Lock()
+				i.Logger.Info("lock acquired, proceeding with database write!")
 				for _, p := range b {
 					if len(p.Data) == 0 {
 						continue
@@ -103,7 +105,8 @@ func (i *Importer) Do() error {
 				}
 
 				i.Logger.Debugw("finished processing writeback data")
-				importingWg.Done()
+				dbMutex.Unlock()
+				i.Logger.Info("releasing database lock now!")
 			}
 		}
 	}()
@@ -197,7 +200,9 @@ func (i *Importer) Do() error {
 		return fmt.Errorf("database closing error, %w", err)
 	}
 
-	importingWg.Wait()
+	i.Logger.Info("requesting database lock before finalizing bulk import...")
+	dbMutex.Lock()
+	i.Logger.Info("database lock acquired, finalizing")
 	tn := time.Now()
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
 
