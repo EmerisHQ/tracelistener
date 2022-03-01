@@ -79,6 +79,7 @@ func (i *Importer) Do() error {
 				i.Logger.Debugw("wbchan called", "idx", dbWritebackCallAmt)
 				i.Logger.Info("requesting database lock for writing...")
 				dbMutex.Lock()
+				defer dbMutex.Unlock()
 				dbWritebackCallAmt++
 				i.Logger.Info("lock acquired, proceeding with database write!")
 				for _, p := range b {
@@ -109,7 +110,6 @@ func (i *Importer) Do() error {
 				}
 
 				i.Logger.Debugw("finished processing writeback data")
-				dbMutex.Unlock()
 				i.Logger.Info("releasing database lock now!")
 			}
 		}
