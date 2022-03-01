@@ -61,6 +61,7 @@ func (i *Importer) Do() error {
 	}
 
 	dbMutex := sync.Mutex{}
+	dbWritebackCallAmt := 0
 	t0 := time.Now()
 	// spawn a goroutine that logs errors from processor's error chan
 	go func() {
@@ -74,8 +75,10 @@ func (i *Importer) Do() error {
 					"data", te.Data,
 					"moduleName", te.Module)
 			case b := <-i.Processor.WritebackChan():
+				i.Logger.Debugw("wbchan called", "idx", dbWritebackCallAmt)
 				i.Logger.Info("requesting database lock for writing...")
 				dbMutex.Lock()
+				dbWritebackCallAmt++
 				i.Logger.Info("lock acquired, proceeding with database write!")
 				for _, p := range b {
 					if len(p.Data) == 0 {
@@ -201,6 +204,24 @@ func (i *Importer) Do() error {
 	}
 
 	i.Logger.Info("requesting database lock before finalizing bulk import...")
+
+	/*
+		This is dumb but it works.
+
+		What's happening here?
+		Since we're importing we know beforehand how many database flushes will happen, hence we know how many times
+		the case
+		    case b := <-i.Processor.WritebackChan():
+		in the processor's select will happen: exactly len(keys) times.
+
+		To make sure we wait until this is true, we wait forever until dbWritebackCallAmt is equal to len(keys).
+		To further strengthen our logic here we only increment dbWritebackCallAmt when the WritebackChan acquires a lock
+		on dbMutex, so that when this infinite for cycle will actually break, we block again until the database func call has
+		finished writing.
+		After that, we acquire the lock and continue with our own way.
+	*/
+	for dbWritebackCallAmt != len(keys) {
+	}
 	dbMutex.Lock()
 	i.Logger.Info("database lock acquired, finalizing")
 	tn := time.Now()
