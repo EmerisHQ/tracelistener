@@ -557,8 +557,19 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 	require.Error(t, insertErr)
 	require.Contains(t, insertErr.Error(), "placeholder index must be between 1 and 65536", insertErr.Error())
 
+	// check that the amount of statements after split is equal to
+	// the amount before split
+	splitStatements := dbe.SplitStatementToDBLimit()
+
+	totalStatements := 0
+	for _, ss := range splitStatements {
+		totalStatements += len(ss.Data)
+	}
+
+	require.Equal(t, len(dbe.Data), totalStatements)
+
 	// insert with chunking
-	for _, chunk := range dbe.SplitStatementToDBLimit() {
+	for _, chunk := range splitStatements {
 		insertErr := i.Add(insert, chunk.InterfaceSlice())
 
 		require.NoError(t, insertErr)
