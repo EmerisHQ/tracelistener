@@ -9,6 +9,8 @@ import (
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+
+	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 	bulk "github.com/allinbits/tracelistener/tracelistener/bulk"
 	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/allinbits/tracelistener/tracelistener/database"
@@ -34,15 +36,14 @@ func TestImporterDo(t *testing.T) {
 		{
 			"Importer - no error",
 			config.Config{
-				FIFOPath:              "./tracelistener.fifo",
-				DatabaseConnectionURL: "postgresql://demo:demo31621@/defaultdb?host=%2Ftmp%2Fdemo446173521&port=26257",
-				ChainName:             "gaia",
-				Debug:                 true,
+				FIFOPath:  "./tracelistener.fifo",
+				ChainName: "gaia",
+				Debug:     true,
 			},
 			bulk.Importer{
-				Path: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener/bulk/testdata/application.db",
+				Path: "./testdata/application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
-					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
+					DataSourcePath: "./tracelistener.fifo",
 					WatchedOps: []tracelistener.Operation{
 						tracelistener.WriteOp,
 						tracelistener.DeleteOp,
@@ -61,15 +62,14 @@ func TestImporterDo(t *testing.T) {
 		{
 			"cannot open chain database - error",
 			config.Config{
-				FIFOPath:              "./tracelistener.fifo",
-				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
-				ChainName:             "gaia",
-				Debug:                 true,
+				FIFOPath:  "./tracelistener.fifo",
+				ChainName: "gaia",
+				Debug:     true,
 			},
 			bulk.Importer{
 				Path: "./application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
-					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
+					DataSourcePath: "./tracelistener.fifo",
 					WatchedOps: []tracelistener.Operation{
 						tracelistener.WriteOp,
 						tracelistener.DeleteOp,
@@ -105,9 +105,11 @@ func TestImporterDo(t *testing.T) {
 				}()
 
 				if tt.connString == "" {
-					// tt.connString = ts.PGURL().String()
-					tt.connString = "postgresql://demo:demo29922@/defaultdb?host=%2Ftmp%2Fdemo639490172&port=26257"
+					tt.connString = ts.PGURL().String()
 				}
+
+				database.RegisterMigration(dpi.DatabaseMigrations()...)
+				database.RegisterMigration(blocktime.CreateTable)
 
 				di, err := database.New(tt.connString)
 				if tt.expectedDBErr {
@@ -139,6 +141,18 @@ func TestImporterDo(t *testing.T) {
 					require.NotZero(t, len(auth))
 					require.NotNil(t, auth[0].Address)
 
+					// check balances
+					var bal []models.BalanceRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.balances where address='5911b844d7bc224654fe0dcd16babd2d253f2fdf'`,
+							nil,
+							&bal,
+						),
+					)
+					require.NotZero(t, len(bal))
+					require.NotNil(t, bal)
+
 					// check delegations
 					var del []models.DelegationRow
 					require.NoError(t,
@@ -151,9 +165,56 @@ func TestImporterDo(t *testing.T) {
 					require.NotZero(t, len(del))
 					require.NotNil(t, del[0].Delegator)
 					require.NotZero(t, del[0].Amount)
+
+					// check validtaors
+					var val []models.ValidatorRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.validators where operator_address='cosmosvaloper1mspv63nh3xznwj7gxay03yeclej8ct2vq8zqxh'`,
+							nil,
+							&val,
+						),
+					)
+					require.NotZero(t, len(val))
+					require.NotNil(t, val)
+
+					// check unbonding_delegations
+					var unDel []models.UnbondingDelegationRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.unbonding_delegations where delegator_address='dc02cd46778985374bc83748f89338fe647c2d4c'`,
+							nil,
+							&unDel,
+						),
+					)
+					require.NotZero(t, len(unDel))
+					require.NotNil(t, unDel)
+
+					// check ibc connections
+					var conn []models.IBCConnectionRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.connections where client_id='07-tendermint-0'`,
+							nil,
+							&conn,
+						),
+					)
+					require.NotZero(t, len(conn))
+					require.NotNil(t, conn)
+
+					// check ibc clients
+					var cli []models.IBCClientStateRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.clients where client_id='07-tendermint-0'`,
+							nil,
+							&cli,
+						),
+					)
+					require.NotZero(t, len(cli))
+					require.NotNil(t, cli)
 				}
 			}
-
 		})
 	}
 }
