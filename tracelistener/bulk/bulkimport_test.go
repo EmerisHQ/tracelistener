@@ -141,13 +141,19 @@ func TestImporterDo(t *testing.T) {
 					require.NotZero(t, len(auth))
 					require.NotNil(t, auth[0].Address)
 
+					addr := "dc02cd46778985374bc83748f89338fe647c2d4c"
 					// check balances
 					var bal []models.BalanceRow
+					q, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.balances where address=:address`)
+					require.NoError(t, err)
+					defer q.Close()
+
 					require.NoError(t,
-						di.Instance.Exec(
-							`select * from tracelistener.balances where address='5911b844d7bc224654fe0dcd16babd2d253f2fdf'`,
-							nil,
+						q.Select(
 							&bal,
+							map[string]interface{}{
+								"address": addr,
+							},
 						),
 					)
 					require.NotZero(t, len(bal))
@@ -155,16 +161,36 @@ func TestImporterDo(t *testing.T) {
 
 					// check delegations
 					var del []models.DelegationRow
+					d, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.delegations where delegator_address=:delegator_address`)
+					require.NoError(t, err)
+					defer d.Close()
 					require.NoError(t,
-						di.Instance.Exec(
-							`select * from tracelistener.delegations`,
-							nil,
+						d.Select(
 							&del,
+							map[string]interface{}{
+								"delegator_address": addr,
+							},
 						),
 					)
 					require.NotZero(t, len(del))
 					require.NotNil(t, del[0].Delegator)
 					require.NotZero(t, del[0].Amount)
+
+					// check unbonding_delegations
+					var unDel []models.UnbondingDelegationRow
+					ud, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.unbonding_delegations where delegator_address=:delegator_address`)
+					require.NoError(t, err)
+					defer ud.Close()
+					require.NoError(t,
+						ud.Select(
+							&unDel,
+							map[string]interface{}{
+								"delegator_address": addr,
+							},
+						),
+					)
+					require.NotZero(t, len(unDel))
+					require.NotNil(t, unDel)
 
 					// check validtaors
 					var val []models.ValidatorRow
@@ -177,18 +203,6 @@ func TestImporterDo(t *testing.T) {
 					)
 					require.NotZero(t, len(val))
 					require.NotNil(t, val)
-
-					// check unbonding_delegations
-					var unDel []models.UnbondingDelegationRow
-					require.NoError(t,
-						di.Instance.Exec(
-							`select * from tracelistener.unbonding_delegations where delegator_address='dc02cd46778985374bc83748f89338fe647c2d4c'`,
-							nil,
-							&unDel,
-						),
-					)
-					require.NotZero(t, len(unDel))
-					require.NotNil(t, unDel)
 
 					// check ibc connections
 					var conn []models.IBCConnectionRow

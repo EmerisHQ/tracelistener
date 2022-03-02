@@ -6,7 +6,7 @@ export DAEMON_HOME=~/.gaia_test
 export CHAINID=test
 export DENOM=stake
 export GH_URL=https://github.com/cosmos/gaia
-export CHAIN_VERSION=v5.0.4 
+export CHAIN_VERSION=v6.0.0  
 export DAEMON=gaiad
 export TRACELISTENER_URL=github.com/allinbits/tracelistener
 
