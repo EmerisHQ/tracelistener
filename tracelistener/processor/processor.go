@@ -15,6 +15,7 @@ type Module interface {
 	OwnsKey(key []byte) bool
 	Process(data tracelistener.TraceOperation) error
 	ModuleName() string
+	SDKModuleName() tracelistener.SDKModuleName
 	TableSchema() string
 }
 
@@ -39,6 +40,7 @@ type Processor struct {
 	lastHeight       uint64
 	chainName        string
 	moduleProcessors []Module
+	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
 }
 
 func (p *Processor) OpsChan() chan tracelistener.TraceOperation {
@@ -67,6 +69,8 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	mp := make([]Module, 0)
 	tableSchemas := make([]string, 0)
 
+	sdkModuleMapping := map[tracelistener.SDKModuleName][]Module{}
+
 	for _, ep := range c.ProcessorsEnabled {
 		p, err := processorByName(ep, logger)
 		if err != nil {
@@ -75,6 +79,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 
 		mp = append(mp, p)
 		tableSchemas = append(tableSchemas, p.TableSchema())
+		sdkModuleMapping[p.SDKModuleName()] = append(sdkModuleMapping[p.SDKModuleName()], p)
 	}
 
 	logger.Infow("processor initialized", "processors", c.ProcessorsEnabled)
@@ -87,6 +92,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		errorsChan:       make(chan error),
 		moduleProcessors: mp,
 		migrations:       tableSchemas,
+		sdkModuleMapping: sdkModuleMapping,
 	}
 
 	go p.lifecycle()
@@ -201,14 +207,30 @@ func (p *Processor) lifecycle() {
 			p.lastHeight = data.BlockHeight
 		}
 
-		for _, mp := range p.moduleProcessors {
+		processorList := p.moduleProcessors
+
+		if data.SuggestedProcessor != "" {
+			p.l.Debugw("suggested processor", "name", data.SuggestedProcessor)
+			// only consider the associated processors
+			plist, ok := p.sdkModuleMapping[data.SuggestedProcessor]
+			if ok {
+				p.l.Debugw("found processor matching against sdk module mapping", "requested module", data.SuggestedProcessor)
+				processorList = plist
+			}
+		}
+
+		for _, mp := range processorList {
 			if !mp.OwnsKey(data.Key) {
 				continue
 			}
 
+			mn := mp.ModuleName()
 			// Log line used to trigger Grafana alerts.
 			// Do not modify or remove without changing the corresponding dashboards
-			p.l.Infow("Probe", "c", "gaia", "n", mp.ModuleName())
+			if data.SuggestedProcessor == "" {
+				// log this only when running non in bulk import mode
+				p.l.Infow("Probe", "c", "gaia", "n", mn)
+			}
 
 			if err := mp.Process(data); err != nil {
 				p.errorsChan <- tracelistener.TracingError{

@@ -20,4 +20,6 @@ var (
 	IBCDenomTracesKey      = transferTypes.DenomTraceKey
 	UnbondingDelegationKey = stakingTypes.UnbondingDelegationKey
 	ValidatorsKey          = stakingTypes.ValidatorsKey
+
+	UnbondingDelegationKeys = [][]byte{UnbondingDelegationKey}
 )

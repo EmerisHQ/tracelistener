@@ -6,6 +6,7 @@ SHELL := /usr/bin/env bash
 
 SETUP_VERSIONS = $(shell jq -r '.versions|map("setup-\(.)")[]'  ${TARGETS})
 BUILD_VERSIONS = $(shell jq -r '.versions|map("build-\(.)")[]' ${TARGETS})
+BUILD_VERSIONS_DEBUG = $(shell jq -r '.versions|map("build-\(.)-debug")[]' ${TARGETS})
 STORE_MOD_VERSIONS = $(shell jq -r '.versions|map("store-mod-\(.)")[]' ${TARGETS})
 TEST_VERSIONS = $(shell jq -r '.versions|map("test-\(.)")[]' ${TARGETS})
 COVERAGE_VERSIONS = $(shell jq -r '.versions|map("coverage-\(.)")[]' ${TARGETS})
@@ -20,6 +21,13 @@ $(BUILD_VERSIONS):
 	 -tags $(shell echo $@ | sed -e 's/build-/sdk_/g' -e 's/-/_/g'),muslc \
 	 -ldflags "-X main.Version=${BRANCH}-${COMMIT} -X main.SupportedSDKVersion=$(shell echo $@ | sed -e 's/build-//g' -e 's/-/_/g')" \
 	 ${BASEPKG}/cmd/tracelistener
+
+$(BUILD_VERSIONS_DEBUG):
+	go build -o build/tracelistener -v \
+	 -gcflags=all="-N -l" \
+	 -tags $(shell echo $@ | sed -e 's/build-/sdk_/g' -e 's/-/_/g' -e 's/_debug//g'),muslc \
+	 -ldflags "-X main.Version=${BRANCH}-${COMMIT} -X main.SupportedSDKVersion=$(shell echo $@ | sed -e 's/build-//g' -e 's/-/_/g')" \
+	 ${BASEPKG}/cmd/tracelistener	 
 
 clean:
 	rm -rf build

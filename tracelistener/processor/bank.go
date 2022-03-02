@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -18,6 +19,7 @@ type bankCacheEntry struct {
 type bankProcessor struct {
 	l           *zap.SugaredLogger
 	heightCache map[bankCacheEntry]models.BalanceRow
+	m           sync.Mutex
 }
 
 func (*bankProcessor) TableSchema() string {
@@ -28,7 +30,14 @@ func (b *bankProcessor) ModuleName() string {
 	return "bank"
 }
 
+func (b *bankProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.Bank
+}
+
 func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	if len(b.heightCache) == 0 {
 		return nil
 	}
@@ -54,6 +63,9 @@ func (b *bankProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).Bank(data)
 	if err != nil {
 		return err

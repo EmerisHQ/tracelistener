@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
@@ -23,6 +24,7 @@ var ibcObservedKeys = [][]byte{
 type ibcConnectionsProcessor struct {
 	l                *zap.SugaredLogger
 	connectionsCache map[connectionCacheEntry]models.IBCConnectionRow
+	m                sync.Mutex
 }
 
 func (*ibcConnectionsProcessor) TableSchema() string {
@@ -33,7 +35,14 @@ func (b *ibcConnectionsProcessor) ModuleName() string {
 	return "ibc_connections"
 }
 
+func (b *ibcConnectionsProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.IBC
+}
+
 func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	if len(b.connectionsCache) == 0 {
 		return nil
 	}
@@ -65,6 +74,9 @@ func (b *ibcConnectionsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcConnectionsProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).IBCConnections(data)
 	if err != nil {
 		return err

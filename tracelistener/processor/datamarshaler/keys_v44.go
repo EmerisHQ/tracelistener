@@ -11,13 +11,19 @@ import (
 )
 
 var (
-	BankKey                = types.BalancesPrefix
-	AuthKey                = authTypes.AddressStoreKeyPrefix
-	DelegationKey          = stakingTypes.DelegationKey
-	IBCChannelKey          = host.KeyChannelEndPrefix
-	IBCClientsKey          = host.KeyClientState
-	IBCConnectionsKey      = host.KeyConnectionPrefix
-	IBCDenomTracesKey      = transferTypes.DenomTraceKey
-	UnbondingDelegationKey = stakingTypes.UnbondingDelegationKey
-	ValidatorsKey          = stakingTypes.ValidatorsKey
+	BankKey                           = types.BalancesPrefix
+	AuthKey                           = authTypes.AddressStoreKeyPrefix
+	DelegationKey                     = stakingTypes.DelegationKey
+	IBCChannelKey                     = host.KeyChannelEndPrefix
+	IBCClientsKey                     = host.KeyClientState
+	IBCConnectionsKey                 = host.KeyConnectionPrefix
+	IBCDenomTracesKey                 = transferTypes.DenomTraceKey
+	UnbondingDelegationKey            = stakingTypes.UnbondingDelegationKey
+	UnbondingDelegationByValidatorKey = stakingTypes.UnbondingDelegationByValIndexKey
+	ValidatorsKey                     = stakingTypes.ValidatorsKey
+
+	UnbondingDelegationKeys = [][]byte{
+		UnbondingDelegationKey,
+		UnbondingDelegationByValidatorKey,
+	}
 )

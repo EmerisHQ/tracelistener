@@ -2,9 +2,10 @@ package tracelistener
 
 import (
 	"encoding/hex"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
-	"testing"
 )
 
 func TestValidKeys(t *testing.T) {
@@ -87,12 +88,12 @@ func TestInValidKeys(t *testing.T) {
 		{
 			name:   "wrong len prefix - less found",
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 6, 0, 42, 5, 51, 6},
-			errMsg: "malformed key: validator address length out of range. want: 6 got: 5",
+			errMsg: "length prefix signals 6 bytes, but total data is 5 bytes long",
 		},
 		{
 			name:   "wrong len prefix - more found",
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 4, 0, 42, 5, 51, 6},
-			errMsg: "malformed key: validator address length out of range. want: 4 got: 5",
+			errMsg: "length prefix signals 4 bytes, but total data is 5 bytes long",
 		},
 	}
 
@@ -102,6 +103,65 @@ func TestInValidKeys(t *testing.T) {
 			_, _, err := SplitDelegationKey(tt.key)
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.errMsg)
+		})
+	}
+}
+
+func TestFromLengthPrefix(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		rawData []byte
+		want    []byte
+		wantErr bool
+	}{
+		{
+			"a length-prefix works",
+			[]byte{
+				4,          // length prefix
+				1, 2, 3, 4, // data
+			},
+			[]byte{1, 2, 3, 4},
+			false,
+		},
+		{
+			"a length-prefix with more data than anticipated",
+			[]byte{
+				4,             // length prefix
+				1, 2, 3, 4, 5, // data
+			},
+			nil,
+			true,
+		},
+		{
+			"a length-prefix with less data than anticipated",
+			[]byte{
+				4,       // length prefix
+				1, 2, 3, // data
+			},
+			nil,
+			true,
+		},
+		{
+			"nil rawData",
+			nil,
+			nil,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			res, err := FromLengthPrefix(tt.rawData)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Empty(t, res)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.want, res)
 		})
 	}
 }

@@ -3,6 +3,7 @@
 package datamarshaler
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -109,14 +110,17 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 		return models.AuthRow{}, fmt.Errorf("cannot cast account to BaseAccount, type %T, account object type %T", baseAcc, acc)
 	}
 
-	if err := baseAcc.Validate(); err != nil {
-		d.l.Debugw("found invalid base account", "account", baseAcc, "error", err)
-		return models.AuthRow{}, fmt.Errorf("non compliant auth account, %w", err)
-	}
-
 	_, bz, err := bech32.DecodeAndConvert(baseAcc.Address)
 	if err != nil {
-		return models.AuthRow{}, fmt.Errorf("cannot parse %s as bech32, %w", baseAcc.Address, err)
+		d.l.Debugw("found invalid base account, bech32 invalid", "account", baseAcc, "error", err)
+		return models.AuthRow{}, fmt.Errorf("non compliant auth account, bech32 invalid, %w", err)
+	}
+
+	if baseAcc.GetPubKey() != nil {
+		if !bytes.Equal(baseAcc.GetPubKey().Address().Bytes(), bz) {
+			d.l.Debugw("found invalid base account, account address and parsed address bytes do not match", "account", baseAcc, "error", err)
+			return models.AuthRow{}, fmt.Errorf("non compliant auth account, account address and parsed address bytes do not match")
+		}
 	}
 
 	hAddr := hex.EncodeToString(bz)

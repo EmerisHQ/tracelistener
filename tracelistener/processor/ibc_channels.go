@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"sync"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
@@ -19,6 +20,7 @@ type channelCacheEntry struct {
 type ibcChannelsProcessor struct {
 	l             *zap.SugaredLogger
 	channelsCache map[channelCacheEntry]models.IBCChannelRow
+	m             sync.Mutex
 }
 
 func (*ibcChannelsProcessor) TableSchema() string {
@@ -29,7 +31,14 @@ func (b *ibcChannelsProcessor) ModuleName() string {
 	return "ibc_channels"
 }
 
+func (b *ibcChannelsProcessor) SDKModuleName() tracelistener.SDKModuleName {
+	return tracelistener.IBC
+}
+
 func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	if len(b.channelsCache) == 0 {
 		return nil
 	}
@@ -55,6 +64,9 @@ func (b *ibcChannelsProcessor) OwnsKey(key []byte) bool {
 }
 
 func (b *ibcChannelsProcessor) Process(data tracelistener.TraceOperation) error {
+	b.m.Lock()
+	defer b.m.Unlock()
+
 	res, err := datamarshaler.NewDataMarshaler(b.l).IBCChannels(data)
 	if err != nil {
 		return err
