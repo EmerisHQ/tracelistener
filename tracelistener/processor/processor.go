@@ -174,7 +174,7 @@ func (p *Processor) Flush() error {
 	for _, mp := range p.moduleProcessors {
 		cd := mp.FlushCache()
 		for _, entry := range cd {
-			if entry.Data == nil {
+			if len(entry.Data) == 0 {
 				continue
 			}
 
