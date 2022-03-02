@@ -1,6 +1,3 @@
-//go:build norace
-// +build norace
-
 package bulk_test
 
 import (
@@ -10,18 +7,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
 	bulk "github.com/allinbits/tracelistener/tracelistener/bulk"
 	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/allinbits/tracelistener/tracelistener/database"
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
+	"github.com/allinbits/tracelistener/tracelistener/processor"
 )
 
 func TestImporterDo(t *testing.T) {
 	var processorFunc tracelistener.DataProcessorFunc
 	logger := zap.NewNop().Sugar()
 
-	processorFunc = gaia_processor.New
+	processorFunc = processor.New
 
 	tests := []struct {
 		name          string
@@ -31,19 +29,20 @@ func TestImporterDo(t *testing.T) {
 		expectedDBErr bool
 		wantErr       bool
 		startDB       bool
+		checkInsert   bool
 	}{
 		{
 			"Importer - no error",
 			config.Config{
 				FIFOPath:              "./tracelistener.fifo",
-				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
+				DatabaseConnectionURL: "postgresql://demo:demo31621@/defaultdb?host=%2Ftmp%2Fdemo446173521&port=26257",
 				ChainName:             "gaia",
 				Debug:                 true,
 			},
 			bulk.Importer{
-				Path: "./testdata/application.db",
+				Path: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener/bulk/testdata/application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
-					DataSourcePath: "./tracelistener.fifo",
+					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
 					WatchedOps: []tracelistener.Operation{
 						tracelistener.WriteOp,
 						tracelistener.DeleteOp,
@@ -56,6 +55,7 @@ func TestImporterDo(t *testing.T) {
 			"",
 			false,
 			false,
+			true,
 			true,
 		},
 		{
@@ -83,6 +83,7 @@ func TestImporterDo(t *testing.T) {
 			true,
 			true,
 			false,
+			false,
 		},
 	}
 
@@ -104,26 +105,55 @@ func TestImporterDo(t *testing.T) {
 				}()
 
 				if tt.connString == "" {
-					tt.connString = ts.PGURL().String()
+					// tt.connString = ts.PGURL().String()
+					tt.connString = "postgresql://demo:demo29922@/defaultdb?host=%2Ftmp%2Fdemo639490172&port=26257"
+				}
+
+				di, err := database.New(tt.connString)
+				if tt.expectedDBErr {
+					require.Error(t, err)
+					require.Nil(t, di)
+					return
+				}
+
+				tt.im.Database = di
+
+				err = tt.im.Do()
+				if tt.wantErr {
+					require.Error(t, err)
+					return
+				}
+
+				require.NoError(t, err)
+
+				if tt.checkInsert {
+					// check auth rows
+					var auth []models.AuthRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.auth`,
+							nil,
+							&auth,
+						),
+					)
+					require.NotZero(t, len(auth))
+					require.NotNil(t, auth[0].Address)
+
+					// check delegations
+					var del []models.DelegationRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.delegations`,
+							nil,
+							&del,
+						),
+					)
+					require.NotZero(t, len(del))
+					require.NotNil(t, del[0].Delegator)
+					require.NotZero(t, del[0].Amount)
 				}
 			}
 
-			di, err := database.New(tt.connString)
-			if tt.expectedDBErr {
-				require.Error(t, err)
-				require.Nil(t, di)
-				return
-			}
-
-			tt.im.Database = di
-
-			err = tt.im.Do()
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
 		})
 	}
 }
