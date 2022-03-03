@@ -10,6 +10,7 @@ BUILD_VERSIONS_DEBUG = $(shell jq -r '.versions|map("build-\(.)-debug")[]' ${TAR
 STORE_MOD_VERSIONS = $(shell jq -r '.versions|map("store-mod-\(.)")[]' ${TARGETS})
 TEST_VERSIONS = $(shell jq -r '.versions|map("test-\(.)")[]' ${TARGETS})
 COVERAGE_VERSIONS = $(shell jq -r '.versions|map("coverage-\(.)")[]' ${TARGETS})
+BENCHMARK_VERSIONS = $(shell jq -r '.versions|map("benchmark-\(.)")[]' ${TARGETS})
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 
@@ -55,6 +56,11 @@ $(STORE_MOD_VERSIONS):
 $(TEST_VERSIONS):
 	go test -v -failfast -race -count=1 \
 		-tags $(shell echo $@ | sed -e 's/test-/sdk_/g' -e 's/-/_/g'),muslc \
+		./...
+	
+$(BENCHMARK_VERSIONS):
+	go test -v -failfast -bench=. -run=^# -benchmem -count=1 \
+		-tags $(shell echo $@ | sed -e 's/benchmark-/sdk_/g' -e 's/-/_/g'),muslc \
 		./...
 
 $(COVERAGE_VERSIONS):
