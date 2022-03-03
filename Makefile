@@ -59,9 +59,9 @@ $(TEST_VERSIONS):
 		./...
 	
 $(BENCHMARK_VERSIONS):
-	go test -v -failfast -bench=. -run=^# -benchmem -count=1 \
+	go test -v -failfast -bench=. -run=^# -benchmem -count=1 -cpuprofile=cpu.out -memprofile=mem.out -trace=trace.out \
 		-tags $(shell echo $@ | sed -e 's/benchmark-/sdk_/g' -e 's/-/_/g'),muslc \
-		./...
+		./tracelistener
 
 $(COVERAGE_VERSIONS):
 	go test -v -failfast -coverprofile=coverage.out -covermode=atomic -count=1\
