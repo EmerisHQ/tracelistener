@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func setup(b *testing.B) io.ReadWriteCloser {
+func setup(b *testing.B) (io.ReadWriteCloser, string) {
 	b.Helper()
 	f, err := os.CreateTemp("", "test_data")
 	if err != nil {
@@ -25,7 +25,6 @@ func setup(b *testing.B) io.ReadWriteCloser {
 	if err != nil {
 		panic(err)
 	}
-	defer os.Remove(f.Name())
 
 	dataChan := make(chan tracelistener.TraceOperation)
 	errChan := make(chan error)
@@ -56,11 +55,11 @@ func setup(b *testing.B) io.ReadWriteCloser {
 		panic(err)
 	}
 
-	return ff
+	return ff, f.Name()
 }
 
 func runBenchmark(b *testing.B, amount int, kind string) {
-	ff := setup(b)
+	ff, fifoName := setup(b)
 
 	b.ResetTimer()
 
@@ -70,6 +69,8 @@ func runBenchmark(b *testing.B, amount int, kind string) {
 			panic(err)
 		}
 	}
+
+	os.Remove(fifoName)
 
 	ff.Close()
 }
@@ -82,13 +83,17 @@ func BenchmarkTracelistenerRealTraces(b *testing.B) {
 	}
 	b.Log("finished reading test traces file!")
 
-	ff := setup(b)
+	ff, fifoName := setup(b)
 
 	b.ResetTimer()
 
 	for _, line := range lines {
 		fmt.Fprintf(ff, line+"\n")
 	}
+
+	os.Remove(fifoName)
+
+	ff.Close()
 }
 
 func BenchmarkTraceListenerKindWrite(b *testing.B) {
