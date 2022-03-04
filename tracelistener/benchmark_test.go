@@ -1,6 +1,7 @@
 package tracelistener_test
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -13,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func runBenchmark(b *testing.B, amount int, kind string) {
+func setup(b *testing.B) io.ReadWriteCloser {
 	b.Helper()
 	f, err := os.CreateTemp("", "test_data")
 	if err != nil {
@@ -54,6 +55,15 @@ func runBenchmark(b *testing.B, amount int, kind string) {
 	if err != nil {
 		panic(err)
 	}
+
+	return ff
+}
+
+func runBenchmark(b *testing.B, amount int, kind string) {
+	ff := setup(b)
+
+	b.ResetTimer()
+
 	for i := 0; i < amount; i++ {
 		err := loadTest(b, i, ff, kind)
 		if err != nil {
@@ -62,6 +72,23 @@ func runBenchmark(b *testing.B, amount int, kind string) {
 	}
 
 	ff.Close()
+}
+
+func BenchmarkTracelistenerRealTraces(b *testing.B) {
+	b.Log("reading test traces file...")
+	lines, err := loadTestFile(b)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Log("finished reading test traces file!")
+
+	ff := setup(b)
+
+	b.ResetTimer()
+
+	for _, line := range lines {
+		fmt.Fprintf(ff, line+"\n")
+	}
 }
 
 func BenchmarkTraceListenerKindWrite(b *testing.B) {
@@ -106,4 +133,33 @@ func loadTest(b *testing.B, height int, ff io.Writer, kind string) error {
 	fmt.Fprintf(ff, s+"\n", kind)
 
 	return nil
+}
+
+func loadTestFile(b *testing.B) ([]string, error) {
+	b.Helper()
+
+	fname := os.Getenv("TRACELISTENER_BENCH_TRACEFILE")
+	if fname == "" {
+		return nil, fmt.Errorf("TRACELISTENER_BENCH_TRACEFILE environment variable not defined")
+	}
+
+	file, err := os.Open(fname)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open file %s, %w", fname, err)
+	}
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 1000000) // a very high capacity
+	scanner.Buffer(buf, 1000000)
+
+	ret := []string{}
+	for scanner.Scan() {
+		ret = append(ret, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scanning error, %w", err)
+	}
+
+	return ret, nil
 }
