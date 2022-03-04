@@ -1,14 +1,11 @@
 package tracelistener_test
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"syscall"
 	"testing"
 
 	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/containerd/fifo"
 	"go.uber.org/zap"
 )
 
@@ -18,10 +15,6 @@ func BenchmarkTraceListener(b *testing.B) {
 		panic(err)
 	}
 
-	err = f.Close()
-	if err != nil {
-		panic(err)
-	}
 	defer os.Remove(f.Name())
 
 	dataChan := make(chan tracelistener.TraceOperation)
@@ -43,24 +36,17 @@ func BenchmarkTraceListener(b *testing.B) {
 	}()
 
 	for i := 0; i < b.N; i++ {
-		err := loadTest(b, i, f.Name())
-		if err != nil {
-			panic(err)
-		}
+		loadTest(b, i, f)
+	}
+
+	err = f.Close()
+	if err != nil {
+		panic(err)
 	}
 }
 
-func loadTest(b *testing.B, height int, file string) error {
+func loadTest(b *testing.B, height int, file *os.File) {
 	b.Helper()
-	ff, err := fifo.OpenFifo(context.Background(), file, syscall.O_WRONLY, 0655)
-	if err != nil {
-		return err
-	}
 	op := fmt.Sprintf(`{"operation":"write","key":"aGVsbG8K","value":"aGVsbG8K","metadata":{"blockHeight":%d,"txHash":"A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB"}}`, height)
-	ff.Write([]byte(op))
-	err = ff.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	fmt.Fprintf(file, "%s\n", op)
 }
