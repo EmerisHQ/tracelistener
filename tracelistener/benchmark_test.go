@@ -41,6 +41,12 @@ func runBenchmark(b *testing.B, amount int, kind string) {
 	}
 
 	go func() {
+		// drain data channel
+		for range dataChan {
+		}
+	}()
+
+	go func() {
 		tw.Watch()
 	}()
 
