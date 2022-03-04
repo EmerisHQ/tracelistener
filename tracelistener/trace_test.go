@@ -84,10 +84,12 @@ func TestTraceOperation_UnmarshalJSON(t1 *testing.T) {
 			"operation with block height",
 			opWithBlockHeight,
 			tracelistener.TraceOperation{
-				Operation:   "write",
-				Key:         []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xa},
-				Value:       []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xa},
-				BlockHeight: 42,
+				Operation: "write",
+				Key:       []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xa},
+				Value:     []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xa},
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 42,
+				},
 			},
 			false,
 		},
@@ -98,7 +100,9 @@ func TestTraceOperation_UnmarshalJSON(t1 *testing.T) {
 				Operation: "write",
 				Key:       []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xa},
 				Value:     []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xa},
-				TxHash:    "hash",
+				Metadata: tracelistener.TraceMetadata{
+					TxHash: "hash",
+				},
 			},
 			false,
 		},

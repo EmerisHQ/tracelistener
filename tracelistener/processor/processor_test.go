@@ -120,10 +120,12 @@ func TestLifecycle(t *testing.T) {
 			"no error when queueing new message accepted by the processor",
 			nil,
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("key"),
-				Value:       []byte("key"),
-				BlockHeight: 0,
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("key"),
+				Value:     []byte("key"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 1,
+				},
 			},
 			func(_ tracelistener.TraceOperation) error {
 				return nil
@@ -135,10 +137,12 @@ func TestLifecycle(t *testing.T) {
 			"error when queueing new message accepted by the processor",
 			nil,
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("key"),
-				Value:       []byte("key"),
-				BlockHeight: 0,
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("key"),
+				Value:     []byte("key"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 0,
+				},
 			},
 			func(_ tracelistener.TraceOperation) error {
 				return fmt.Errorf("oh no, error")
@@ -150,17 +154,21 @@ func TestLifecycle(t *testing.T) {
 			"new message, block different re: last height",
 			[]tracelistener.TraceOperation{
 				{
-					Operation:   string(tracelistener.WriteOp),
-					Key:         []byte("key"),
-					Value:       []byte("key"),
-					BlockHeight: 0,
+					Operation: string(tracelistener.WriteOp),
+					Key:       []byte("key"),
+					Value:     []byte("key"),
+					Metadata: tracelistener.TraceMetadata{
+						BlockHeight: 0,
+					},
 				},
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("key"),
-				Value:       []byte("key"),
-				BlockHeight: 1,
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("key"),
+				Value:     []byte("key"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 1,
+				},
 			},
 			func(_ tracelistener.TraceOperation) error {
 				return nil

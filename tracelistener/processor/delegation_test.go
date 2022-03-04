@@ -89,10 +89,12 @@ func TestDelegationProcess(t *testing.T) {
 				Shares:    100,
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
-				BlockHeight: 1,
-				TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 1,
+					TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+				},
 			},
 			false,
 			1,
@@ -103,10 +105,11 @@ func TestDelegationProcess(t *testing.T) {
 				Shares: 100,
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
-				BlockHeight: 1,
-				TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+				Operation: string(tracelistener.WriteOp),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 1,
+					TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+				},
 			},
 			true,
 			0,

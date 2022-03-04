@@ -2,9 +2,6 @@ package tracelistener
 
 import (
 	"fmt"
-	"sync"
-
-	"github.com/goccy/go-json"
 )
 
 const (
@@ -12,23 +9,23 @@ const (
 	metadataTxHash      = "txHash"
 )
 
-var toiPool = sync.Pool{
-	New: func() interface{} {
-		return &traceOperationInter{}
-	},
-}
+// var toiPool = sync.Pool{
+// 	New: func() interface{} {
+// 		return &traceOperationInter{}
+// 	},
+// }
 
-type TraceOperation struct {
-	Operation   string `json:"operation"`
-	Key         []byte `json:"key"`
-	Value       []byte `json:"value"`
-	BlockHeight uint64 `json:"block_height"`
-	TxHash      string `json:"tx_hash"`
+// type TraceOperation struct {
+// 	Operation   string `json:"operation"`
+// 	Key         []byte `json:"key"`
+// 	Value       []byte `json:"value"`
+// 	BlockHeight uint64 `json:"block_height"`
+// 	TxHash      string `json:"tx_hash"`
 
-	// SuggestedProcessor signals to the trace processor that
-	// what SDK module this trace comes from.
-	SuggestedProcessor SDKModuleName
-}
+// 	// SuggestedProcessor signals to the trace processor that
+// 	// what SDK module this trace comes from.
+// 	SuggestedProcessor SDKModuleName
+// }
 
 func (to *TraceOperation) Copy() TraceOperation {
 	ret := TraceOperation{}
@@ -40,8 +37,8 @@ func (to *TraceOperation) Reset() {
 	to.Operation = ""
 	to.Key = to.Key[:0]
 	to.Value = to.Value[:0]
-	to.BlockHeight = 0
-	to.TxHash = ""
+	to.Metadata.BlockHeight = 0
+	to.Metadata.TxHash = ""
 	to.SuggestedProcessor = ""
 }
 
@@ -49,39 +46,45 @@ func (t TraceOperation) String() string {
 	return fmt.Sprintf(`[%s] "%v" -> "%v"`, t.Operation, string(t.Key), string(t.Value))
 }
 
-type traceOperationInter struct {
-	Operation string `json:"operation"`
-	Key       []byte `json:"key"`
-	Value     []byte `json:"value"`
-	Metadata  struct {
-		BlockHeight uint64 `json:"blockHeight"`
-		TxHash      string `json:"txHash"`
-	} `json:"metadata"`
+type TraceMetadata struct {
+	BlockHeight uint64 `json:"blockHeight"`
+	TxHash      string `json:"txHash"`
 }
 
-func (toi *traceOperationInter) Reset() {
-	toi.Operation = ""
-	toi.Key = toi.Key[:0]
-	toi.Value = toi.Value[:0]
-	toi.Metadata.BlockHeight = 0
-	toi.Metadata.TxHash = ""
+type TraceOperation struct {
+	Operation string        `json:"operation"`
+	Key       []byte        `json:"key"`
+	Value     []byte        `json:"value"`
+	Metadata  TraceMetadata `json:"metadata"`
+
+	// SuggestedProcessor signals to the trace processor that
+	// what SDK module this trace comes from.
+	SuggestedProcessor SDKModuleName
 }
 
-func (t *TraceOperation) UnmarshalJSON(bytes []byte) error {
-	toi := toiPool.Get().(*traceOperationInter)
-	toi.Reset()
+// func (toi *traceOperationInter) Reset() {
+// 	toi.Operation = ""
+// 	toi.Key = toi.Key[:0]
+// 	toi.Value = toi.Value[:0]
+// 	toi.Metadata.BlockHeight = 0
+// 	toi.Metadata.TxHash = ""
+// }
 
-	if err := json.Unmarshal(bytes, &toi); err != nil {
-		return err
-	}
+// func (t *TraceOperation) UnmarshalJSON(bytes []byte) error {
+// 	toi := toiPool.Get().(*traceOperationInter)
+// 	toi.Reset()
 
-	t.BlockHeight = toi.Metadata.BlockHeight
-	t.TxHash = toi.Metadata.TxHash
-	t.Operation = toi.Operation
-	t.Key = toi.Key
-	t.Value = toi.Value
+// 	if err := json.Unmarshal(bytes, &toi); err != nil {
+// 		return err
+// 	}
 
-	toiPool.Put(toi)
+// 	t.BlockHeight = toi.Metadata.BlockHeight
+// 	t.TxHash = toi.Metadata.TxHash
+// 	t.Operation = toi.Operation
+// 	t.Key = toi.Key
+// 	t.Value = toi.Value
 
-	return nil
-}
+// 	toiPool.Put(toi)
+
+// 	return nil
+// }

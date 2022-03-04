@@ -1,6 +1,7 @@
 package tracelistener
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
@@ -8,7 +9,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/goccy/go-json"
+	//"github.com/goccy/go-json"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
@@ -321,8 +322,8 @@ func (tr *TraceWatcher) handleLine(line *tail.Line) {
 
 	tr.Logger.Infow("trace processed",
 		"kind", to.Operation,
-		"block_height", to.BlockHeight,
-		"tx_hash", to.TxHash,
+		"block_height", to.Metadata.BlockHeight,
+		"tx_hash", to.Metadata.TxHash,
 	)
 }
 

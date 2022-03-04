@@ -93,15 +93,15 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 		"operation", data.Operation,
 		"address", hAddr,
 		"new_balance", coins.String(),
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
+		"height", data.Metadata.BlockHeight,
+		"txHash", data.Metadata.TxHash,
 	)
 
 	return models.BalanceRow{
 		Address:     hAddr,
 		Amount:      coins.String(),
 		Denom:       coins.Denom,
-		BlockHeight: data.BlockHeight,
+		BlockHeight: data.Metadata.BlockHeight,
 	}, nil
 }
 
@@ -160,8 +160,8 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 		"address", hAddr,
 		"sequence_number", acc.GetSequence(),
 		"account_number", acc.GetAccountNumber(),
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
+		"height", data.Metadata.BlockHeight,
+		"txHash", data.Metadata.TxHash,
 	)
 
 	return models.AuthRow{
@@ -219,15 +219,15 @@ func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.De
 		"delegator", delegator,
 		"validator", validator,
 		"amount", delegation.Shares.String(),
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
+		"height", data.Metadata.BlockHeight,
+		"txHash", data.Metadata.TxHash,
 	)
 
 	return models.DelegationRow{
 		Delegator:   delegator,
 		Validator:   validator,
 		Amount:      delegation.Shares.String(),
-		BlockHeight: data.BlockHeight,
+		BlockHeight: data.Metadata.BlockHeight,
 	}, nil
 }
 
@@ -421,8 +421,8 @@ func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (
 		"delegator", delegator,
 		"validator", validator,
 		"entries", string(entries),
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
+		"height", data.Metadata.BlockHeight,
+		"txHash", data.Metadata.TxHash,
 	)
 
 	var entriesStore models.UnbondingDelegationEntries
@@ -469,9 +469,9 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 
 	d.l.Debugw("new validator write",
 		"operator_address", v.OperatorAddress,
-		"height", data.BlockHeight,
-		"txHash", data.TxHash,
-		"cons pub key type", data.TxHash,
+		"height", data.Metadata.BlockHeight,
+		"txHash", data.Metadata.TxHash,
+		"cons pub key type", data.Metadata.TxHash,
 		"cons pub key", val,
 		"key", k,
 	)

@@ -196,7 +196,7 @@ func (p *Processor) Flush() error {
 
 func (p *Processor) lifecycle() {
 	for data := range p.writeChan {
-		if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
+		if data.Metadata.BlockHeight != p.lastHeight && data.Metadata.BlockHeight != 0 {
 			if err := p.Flush(); err != nil {
 				p.errorsChan <- fmt.Errorf("error while flushing caches, %w", err)
 				continue
@@ -204,7 +204,7 @@ func (p *Processor) lifecycle() {
 
 			p.l.Infow("processed new block", "height", p.lastHeight)
 
-			p.lastHeight = data.BlockHeight
+			p.lastHeight = data.Metadata.BlockHeight
 		}
 
 		processorList := p.moduleProcessors

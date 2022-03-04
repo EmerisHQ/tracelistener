@@ -75,9 +75,11 @@ func TestBankProcess(t *testing.T) {
 				Amount: 500,
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j"),
-				BlockHeight: 101,
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("cosmos1xrnner9s783446yz3hhshpr5fpz6wzcwkvwv5j"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 101,
+				},
 			},
 			false,
 			1,

@@ -29,10 +29,12 @@ func versionSpecificUnbondingDelegationsProcessTests() []unbondingDelegationsPro
 				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.DeleteOp),
-				Key:         []byte("QXRkbFY4cUQ2bzZKMnNoc2o5YWNwSSs5T3BkL2U1dVRxWklpN05LNWkzeTk="),
-				Value:       []byte{},
-				BlockHeight: 0,
+				Operation: string(tracelistener.DeleteOp),
+				Key:       []byte("QXRkbFY4cUQ2bzZKMnNoc2o5YWNwSSs5T3BkL2U1dVRxWklpN05LNWkzeTk="),
+				Value:     []byte{},
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 0,
+				},
 			},
 			false,
 			0,
@@ -49,8 +51,10 @@ func versionSpecificUnbondingDelegationsProcessTests() []unbondingDelegationsPro
 					0x33, // prefix
 					9, 118, 97, 108, 105, 100, 97, 116, 111, 114, 9, 100, 101, 108, 101, 103, 97, 116, 111, 114,
 				},
-				Value:       []byte{},
-				BlockHeight: 0,
+				Value: []byte{},
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 0,
+				},
 			},
 			false,
 			1,
