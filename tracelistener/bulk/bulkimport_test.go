@@ -10,18 +10,21 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/allinbits/tracelistener/tracelistener"
+
+	"github.com/allinbits/tracelistener/tracelistener/blocktime"
 	bulk "github.com/allinbits/tracelistener/tracelistener/bulk"
 	"github.com/allinbits/tracelistener/tracelistener/config"
 	"github.com/allinbits/tracelistener/tracelistener/database"
-	"github.com/allinbits/tracelistener/tracelistener/gaia_processor"
+	"github.com/allinbits/tracelistener/tracelistener/processor"
 )
 
 func TestImporterDo(t *testing.T) {
 	var processorFunc tracelistener.DataProcessorFunc
 	logger := zap.NewNop().Sugar()
 
-	processorFunc = gaia_processor.New
+	processorFunc = processor.New
 
 	tests := []struct {
 		name          string
@@ -31,14 +34,14 @@ func TestImporterDo(t *testing.T) {
 		expectedDBErr bool
 		wantErr       bool
 		startDB       bool
+		checkInsert   bool
 	}{
 		{
 			"Importer - no error",
 			config.Config{
-				FIFOPath:              "./tracelistener.fifo",
-				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
-				ChainName:             "gaia",
-				Debug:                 true,
+				FIFOPath:  "./tracelistener.fifo",
+				ChainName: "gaia",
+				Debug:     true,
 			},
 			bulk.Importer{
 				Path: "./testdata/application.db",
@@ -57,19 +60,19 @@ func TestImporterDo(t *testing.T) {
 			false,
 			false,
 			true,
+			true,
 		},
 		{
 			"cannot open chain database - error",
 			config.Config{
-				FIFOPath:              "./tracelistener.fifo",
-				DatabaseConnectionURL: "postgres://demo:demo32622@127.0.0.1:26257?sslmode=require",
-				ChainName:             "gaia",
-				Debug:                 true,
+				FIFOPath:  "./tracelistener.fifo",
+				ChainName: "gaia",
+				Debug:     true,
 			},
 			bulk.Importer{
 				Path: "./application.db",
 				TraceWatcher: tracelistener.TraceWatcher{
-					DataSourcePath: "/home/vitwit/go/src/github.com/allinbits/tracelistener/tracelistener.fifo",
+					DataSourcePath: "./tracelistener.fifo",
 					WatchedOps: []tracelistener.Operation{
 						tracelistener.WriteOp,
 						tracelistener.DeleteOp,
@@ -82,6 +85,7 @@ func TestImporterDo(t *testing.T) {
 			"invalid connection",
 			true,
 			true,
+			false,
 			false,
 		},
 	}
@@ -106,24 +110,128 @@ func TestImporterDo(t *testing.T) {
 				if tt.connString == "" {
 					tt.connString = ts.PGURL().String()
 				}
+
+				database.RegisterMigration(dpi.DatabaseMigrations()...)
+				database.RegisterMigration(blocktime.CreateTable)
+
+				di, err := database.New(tt.connString)
+				if tt.expectedDBErr {
+					require.Error(t, err)
+					require.Nil(t, di)
+					return
+				}
+
+				tt.im.Database = di
+
+				err = tt.im.Do()
+				if tt.wantErr {
+					require.Error(t, err)
+					return
+				}
+
+				require.NoError(t, err)
+
+				if tt.checkInsert {
+					// check auth rows
+					var auth []models.AuthRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.auth`,
+							nil,
+							&auth,
+						),
+					)
+					require.NotZero(t, len(auth))
+					require.NotNil(t, auth[0].Address)
+
+					addr := "dc02cd46778985374bc83748f89338fe647c2d4c"
+					// check balances
+					var bal []models.BalanceRow
+					q, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.balances where address=:address`)
+					require.NoError(t, err)
+					defer q.Close()
+
+					require.NoError(t,
+						q.Select(
+							&bal,
+							map[string]interface{}{
+								"address": addr,
+							},
+						),
+					)
+					require.NotZero(t, len(bal))
+					require.NotNil(t, bal)
+
+					// check delegations
+					var del []models.DelegationRow
+					d, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.delegations where delegator_address=:delegator_address`)
+					require.NoError(t, err)
+					defer d.Close()
+					require.NoError(t,
+						d.Select(
+							&del,
+							map[string]interface{}{
+								"delegator_address": addr,
+							},
+						),
+					)
+					require.NotZero(t, len(del))
+					require.NotNil(t, del[0].Delegator)
+					require.NotZero(t, del[0].Amount)
+
+					// check unbonding_delegations
+					var unDel []models.UnbondingDelegationRow
+					ud, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.unbonding_delegations where delegator_address=:delegator_address`)
+					require.NoError(t, err)
+					defer ud.Close()
+					require.NoError(t,
+						ud.Select(
+							&unDel,
+							map[string]interface{}{
+								"delegator_address": addr,
+							},
+						),
+					)
+					require.NotZero(t, len(unDel))
+					require.NotNil(t, unDel)
+
+					// check validtaors
+					var val []models.ValidatorRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.validators where operator_address='cosmosvaloper1mspv63nh3xznwj7gxay03yeclej8ct2vq8zqxh'`,
+							nil,
+							&val,
+						),
+					)
+					require.NotZero(t, len(val))
+					require.NotNil(t, val)
+
+					// check ibc connections
+					var conn []models.IBCConnectionRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.connections where client_id='07-tendermint-0'`,
+							nil,
+							&conn,
+						),
+					)
+					require.NotZero(t, len(conn))
+					require.NotNil(t, conn)
+
+					// check ibc clients
+					var cli []models.IBCClientStateRow
+					require.NoError(t,
+						di.Instance.Exec(
+							`select * from tracelistener.clients where client_id='07-tendermint-0'`,
+							nil,
+							&cli,
+						),
+					)
+					require.NotZero(t, len(cli))
+					require.NotNil(t, cli)
+				}
 			}
-
-			di, err := database.New(tt.connString)
-			if tt.expectedDBErr {
-				require.Error(t, err)
-				require.Nil(t, di)
-				return
-			}
-
-			tt.im.Database = di
-
-			err = tt.im.Do()
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
 		})
 	}
 }
