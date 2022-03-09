@@ -14,6 +14,7 @@ type Config struct {
 	LogPath               string
 	Debug                 bool
 	JSONLogs              bool
+	EnableCpuProfiling    bool
 
 	// Processors configs
 	Processor ProcessorConfig
