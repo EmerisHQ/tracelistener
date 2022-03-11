@@ -16,7 +16,9 @@ COPY . .
 RUN make clean
 
 RUN CGO_ENABLED=0 GOPROXY=direct make setup-${SDK_TARGET}
-RUN CGO_ENABLED=0 GOPROXY=direct make build-${SDK_TARGET}
+RUN --mount=type=cache,target=/go/pkg/mod \
+	--mount=type=cache,target=/root/.cache/go-build \
+	CGO_ENABLED=0 GOPROXY=direct make build-${SDK_TARGET}
 
 FROM alpine:latest
 
