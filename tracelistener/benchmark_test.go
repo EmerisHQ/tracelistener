@@ -59,20 +59,23 @@ func setup(b *testing.B) (io.ReadWriteCloser, string) {
 }
 
 func runBenchmark(b *testing.B, amount int, kind string) {
-	ff, fifoName := setup(b)
+	fileWriter, fifoName := setup(b)
+	defer func() {
+		if err := fileWriter.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	b.ResetTimer()
 
 	for i := 0; i < amount; i++ {
-		err := loadTest(b, i, ff, kind)
+		err := loadTest(b, i, fileWriter, kind)
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	os.Remove(fifoName)
-
-	ff.Close()
 }
 
 func BenchmarkTracelistenerRealTraces(b *testing.B) {
@@ -83,17 +86,20 @@ func BenchmarkTracelistenerRealTraces(b *testing.B) {
 	}
 	b.Log("finished reading test traces file!")
 
-	ff, fifoName := setup(b)
+	fileWriter, fifoName := setup(b)
+	defer func() {
+		if err := fileWriter.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	b.ResetTimer()
 
 	for _, line := range lines {
-		fmt.Fprintf(ff, line+"\n")
+		fmt.Fprintf(fileWriter, line+"\n")
 	}
 
 	os.Remove(fifoName)
-
-	ff.Close()
 }
 
 func BenchmarkTraceListenerKindWrite(b *testing.B) {
