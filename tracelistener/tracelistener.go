@@ -335,9 +335,11 @@ func (tr *TraceWatcher) ParseOperation(data *TraceOperation) error {
 		return nil
 	}
 
-	go func() {
-		tr.DataChan <- data.Copy()
-	}()
+	// Happy path has been taken, locally copy data contents and pass
+	// them to the database writing goroutine.
+	go func(op TraceOperation) {
+		tr.DataChan <- op
+	}(data.Copy())
 
 	return nil
 }
