@@ -59,7 +59,7 @@ var SupportedSDKModuleList = map[SDKModuleName]struct{}{
 // Info: https://github.com/cockroachdb/cockroach/issues/49256
 const dbPlaceholderLimit = 65535
 
-// Operation is a kind of operations a TraceWatcher observes.
+// Operation represents the kind of Cosmos SDK store operation a TraceWatcher observes.
 type Operation string
 
 // String implements fmt.Stringer on Operation.
