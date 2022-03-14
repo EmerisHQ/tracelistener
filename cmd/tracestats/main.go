@@ -55,14 +55,18 @@ func main() {
 		panic(err)
 	}
 
+	defer func() {
+		if err := o.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
 	w := csv.NewWriter(o)
 	for _, record := range ti.CSV() {
 		if err := w.Write(record); err != nil {
 			panic(err)
 		}
 	}
-
-	o.Close()
 }
 
 func getTraceInfo(traces []string) (traceInfos, error) {
