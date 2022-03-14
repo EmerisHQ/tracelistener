@@ -5,8 +5,7 @@ import (
 )
 
 func (to *TraceOperation) Copy() TraceOperation {
-	ret := TraceOperation{}
-	ret = *to
+	ret := *to
 	return ret
 }
 
@@ -19,7 +18,7 @@ func (to *TraceOperation) Reset() {
 	to.SuggestedProcessor = ""
 }
 
-func (t TraceOperation) String() string {
+func (to TraceOperation) String() string {
 	return fmt.Sprintf(`[%s] "%v" -> "%v"`, t.Operation, string(t.Key), string(t.Value))
 }
 
