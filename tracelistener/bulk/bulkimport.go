@@ -155,14 +155,16 @@ func (i *Importer) Do() error {
 
 			for ; ii.Valid(); ii.Next() {
 				to := tracelistener.TraceOperation{
-					Operation:          tracelistener.WriteOp.String(),
-					Key:                ii.Key(),
-					Value:              ii.Value(),
-					BlockHeight:        uint64(latestBlockHeight),
+					Operation: tracelistener.WriteOp.String(),
+					Key:       ii.Key(),
+					Value:     ii.Value(),
+					Metadata: tracelistener.TraceMetadata{
+						BlockHeight: uint64(latestBlockHeight),
+					},
 					SuggestedProcessor: tracelistener.SDKModuleName(key.Name()),
 				}
 
-				if err := i.TraceWatcher.ParseOperation(to); err != nil {
+				if err := i.TraceWatcher.ParseOperation(&to); err != nil {
 					return fmt.Errorf("cannot parse operation %v, %w", to, err)
 				}
 
