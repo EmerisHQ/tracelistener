@@ -19,7 +19,7 @@ func (to *TraceOperation) Reset() {
 }
 
 func (to TraceOperation) String() string {
-	return fmt.Sprintf(`[%s] "%v" -> "%v"`, t.Operation, string(t.Key), string(t.Value))
+	return fmt.Sprintf(`[%s] "%v" -> "%v"`, to.Operation, string(to.Key), string(to.Value))
 }
 
 type TraceMetadata struct {
