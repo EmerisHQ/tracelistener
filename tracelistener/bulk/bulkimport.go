@@ -25,7 +25,7 @@ import (
 
 type Importer struct {
 	Path         string
-	TraceWatcher tracelistener.TraceWatcher
+	TraceWatcher *tracelistener.TraceWatcher
 	Processor    tracelistener.DataProcessor
 	Logger       *zap.SugaredLogger
 	Database     *database.Instance
@@ -41,7 +41,7 @@ func ImportableModulesList() []string {
 	return ml
 }
 
-func (i Importer) validateModulesList() error {
+func (i *Importer) validateModulesList() error {
 	for _, m := range i.Modules {
 		if _, ok := tracelistener.SupportedSDKModuleList[tracelistener.SDKModuleName(m)]; !ok {
 			return fmt.Errorf("unknown bulk import module %s", m)

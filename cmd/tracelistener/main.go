@@ -82,7 +82,7 @@ func main() {
 	if ca.existingDatabasePath != "" {
 		importer := bulk.Importer{
 			Path:         ca.existingDatabasePath,
-			TraceWatcher: watcher,
+			TraceWatcher: &watcher,
 			Processor:    dpi,
 			Logger:       logger,
 			Database:     di,
