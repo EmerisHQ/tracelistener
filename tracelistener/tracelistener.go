@@ -9,8 +9,6 @@ import (
 	"time"
 	"unsafe"
 
-	//"github.com/goccy/go-json"
-
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
