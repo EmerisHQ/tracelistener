@@ -29,6 +29,13 @@ $(BUILD_VERSIONS_DEBUG):
 	 -ldflags "-X main.Version=${BRANCH}-${COMMIT} -X main.SupportedSDKVersion=$(shell echo $@ | sed -e 's/build-//g' -e 's/-/_/g')" \
 	 ${BASEPKG}/cmd/tracelistener	 
 
+resetchain:
+	go build -o build/resetchain -v \
+	 -gcflags=all="-N -l" \
+	 -tags muslc \
+	 -ldflags "-X main.Version=${BRANCH}-${COMMIT}" \
+	 ${BASEPKG}/cmd/resetchain
+
 clean:
 	rm -rf build
 	rm go.mod go.sum | true
