@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgconn"
+
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
@@ -69,6 +71,10 @@ func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chun
 	err := row.Scan(&lastID)
 	if err == sql.ErrNoRows {
 		l.Warn("no rows matched", table)
+		return nil
+	}
+	if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == "42P01" {
+		l.Warn("table doesn't exist")
 		return nil
 	}
 	if err != nil {
