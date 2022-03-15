@@ -36,6 +36,8 @@ func (r Resetter) Reset() error {
 		"auth",
 		"clients",
 		"validators",
+		"liquidity_swaps",
+		"liquidity_pools",
 	}
 
 	for _, t := range tables {
