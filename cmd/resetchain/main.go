@@ -21,8 +21,11 @@ func main() {
 
 	db, err := database.New(flags.db)
 	if err != nil {
-		logger.Panicw("connecting to DB: %v", err)
+		logger.Panic("connecting to DB", err)
 	}
+
+	db.DB.SetMaxOpenConns(10)
+	db.DB.SetMaxIdleConns(10)
 
 	resetter := Resetter{
 		Logger:    logger,
@@ -33,7 +36,7 @@ func main() {
 
 	err = resetter.Reset()
 	if err != nil {
-		logger.Panicw("error: %v", err)
+		logger.Panic("error", err)
 	}
 }
 
@@ -61,9 +64,9 @@ func (f Flags) Validate() {
 }
 
 func setupFlag() Flags {
-	db := flag.String("db", "", "DB connection string, e.g. postgres://root@localhost:27567/tracelistener")
+	db := flag.String("db", "", "DB connection string, e.g. postgres://root@localhost:26257/tracelistener")
 	chain := flag.String("chain", "", "Name of the chain to reset, e.g. cosmos-hub")
-	chunkSize := flag.Int("chunk", 10000, "Delete chunk size (default: 10000)")
+	chunkSize := flag.Int("chunk", 5000, "Delete chunk size (default: 5000)")
 	flag.Parse()
 
 	return Flags{

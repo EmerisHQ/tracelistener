@@ -110,6 +110,11 @@ func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chun
 			return fmt.Errorf("cannot scan row at lastID=%d: %w", lastID, err)
 		}
 
+		err = rows.Close()
+		if err != nil {
+			return fmt.Errorf("closing rows object: %w", err)
+		}
+
 		l.Infow("deleted chunk", "lastId", strconv.Itoa(lastID))
 	}
 
