@@ -52,10 +52,11 @@ func (i Importer) validateModulesList() error {
 	return nil
 }
 
-func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex) {
+func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex, previousDbWritebackAmt int) int {
 	i.Logger.Info("requesting database lock for writing...")
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
+	previousDbWritebackAmt++
 	i.Logger.Info("lock acquired, proceeding with database write!")
 	for _, p := range data {
 		if len(p.Data) == 0 {
@@ -86,6 +87,8 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 
 	i.Logger.Debugw("finished processing writeback data")
 	i.Logger.Info("releasing database lock now!")
+
+	return previousDbWritebackAmt
 }
 
 func (i *Importer) Do() error {
@@ -114,8 +117,7 @@ func (i *Importer) Do() error {
 			case b := <-i.Processor.WritebackChan():
 				i.Logger.Debugw("wbchan called", "idx", dbWritebackCallAmt)
 				i.Logger.Info("requesting database lock for writing...")
-				i.processWritebackData(b, &dbMutex)
-				dbWritebackCallAmt++
+				dbWritebackCallAmt = i.processWritebackData(b, &dbMutex, dbWritebackCallAmt)
 			}
 		}
 	}()
