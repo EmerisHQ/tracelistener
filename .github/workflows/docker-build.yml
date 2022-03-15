@@ -84,7 +84,7 @@ jobs:
         with:
           push: true
           context: .
-          file: Dockerfile
+          file: Dockerfile.resetchain
           tags: gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
