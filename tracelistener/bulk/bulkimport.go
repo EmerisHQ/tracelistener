@@ -52,6 +52,42 @@ func (i Importer) validateModulesList() error {
 	return nil
 }
 
+func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex) {
+	i.Logger.Info("requesting database lock for writing...")
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+	i.Logger.Info("lock acquired, proceeding with database write!")
+	for _, p := range data {
+		if len(p.Data) == 0 {
+			continue
+		}
+
+		totalUnitsAmt := uint64(0)
+
+		wbUnits := p.SplitStatementToDBLimit()
+		for _, wbUnit := range wbUnits {
+			is := wbUnit.InterfaceSlice()
+
+			i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
+
+			totalUnitsAmt += uint64(len(wbUnit.Data))
+
+			if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
+				i.Logger.Error("database error ", err)
+			}
+		}
+
+		i.Logger.Infow("total database rows to be written",
+			"amount", len(p.Data),
+			"chunked amount written", totalUnitsAmt,
+			"equal", uint64(len(p.Data)) == totalUnitsAmt,
+		)
+	}
+
+	i.Logger.Debugw("finished processing writeback data")
+	i.Logger.Info("releasing database lock now!")
+}
+
 func (i *Importer) Do() error {
 	if err := i.validateModulesList(); err != nil {
 		return err
@@ -78,39 +114,8 @@ func (i *Importer) Do() error {
 			case b := <-i.Processor.WritebackChan():
 				i.Logger.Debugw("wbchan called", "idx", dbWritebackCallAmt)
 				i.Logger.Info("requesting database lock for writing...")
-				dbMutex.Lock()
-				defer dbMutex.Unlock()
+				i.processWritebackData(b, &dbMutex)
 				dbWritebackCallAmt++
-				i.Logger.Info("lock acquired, proceeding with database write!")
-				for _, p := range b {
-					if len(p.Data) == 0 {
-						continue
-					}
-
-					totalUnitsAmt := uint64(0)
-
-					wbUnits := p.SplitStatementToDBLimit()
-					for _, wbUnit := range wbUnits {
-						is := wbUnit.InterfaceSlice()
-
-						i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
-
-						totalUnitsAmt += uint64(len(wbUnit.Data))
-
-						if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
-							i.Logger.Error("database error ", err)
-						}
-					}
-
-					i.Logger.Infow("total database rows to be written",
-						"amount", len(p.Data),
-						"chunked amount written", totalUnitsAmt,
-						"equal", uint64(len(p.Data)) == totalUnitsAmt,
-					)
-				}
-
-				i.Logger.Debugw("finished processing writeback data")
-				i.Logger.Info("releasing database lock now!")
 			}
 		}
 	}()
