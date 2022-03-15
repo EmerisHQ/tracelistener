@@ -76,6 +76,11 @@ func TestInValidKeys(t *testing.T) {
 		errMsg string
 	}{
 		{
+			name:   "empty data slice",
+			key:    []byte{},
+			errMsg: "malformed key: length 0 not in range",
+		},
+		{
 			name:   "not enough bytes",
 			key:    []byte{1, 0},
 			errMsg: "malformed key: length 2 not in range",
@@ -95,11 +100,20 @@ func TestInValidKeys(t *testing.T) {
 			key:    []byte{1, 5, 3, 45, 21, 34, 90, 4, 0, 42, 5, 51, 6},
 			errMsg: "length prefix signals 4 bytes, but total data is 5 bytes long",
 		},
+		{
+			name:   "wrong len prefix for val address, it has none",
+			key:    []byte{1, 5, 3, 45, 21, 34, 90},
+			errMsg: "cannot parse validator address, data is nil",
+		},
+		{
+			name:   "delegator address has size but not enough bytes",
+			key:    []byte{1, 3, 3},
+			errMsg: "delegator address should be 3 bytes long, but it only has 2",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			_, _, err := SplitDelegationKey(tt.key)
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.errMsg)

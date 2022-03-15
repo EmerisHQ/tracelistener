@@ -26,27 +26,26 @@ func SplitDelegationKey(key []byte) (string, string, error) {
 	}
 	_, addresses := key[0], key[1:] // Strip the prefix byte.
 	delAddrLen := addresses[0]      // Gets delegator address length
-	if delAddrLen > 255 {
-		return "", "", fmt.Errorf("malformed key: delegator address length out of range %d", delAddrLen)
+
+	// We have to keep this check here because this function must split the two addresses,
+	// FromLengthPrefix only does parsing of a well-formed length-prefix byte slice.
+	if len(addresses) < int(delAddrLen) {
+		return "", "", fmt.Errorf("delegator address should be %d bytes long, but it only has %d", delAddrLen, len(addresses))
 	}
 
 	totalPrefixedFirstAddressSz := delAddrLen + 1 // we are subslicing including the length-prefix, since FromLengthPrefix uses it
 	delAddrBytes, err := FromLengthPrefix(addresses[:totalPrefixedFirstAddressSz])
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("cannot parse delegator address, %w", err)
 	}
 
 	delAddr := hex.EncodeToString(delAddrBytes)
 
 	addresses = addresses[totalPrefixedFirstAddressSz:] // Subslice past the delegator address
-	valAddrLen := addresses[0]                          // Get validator address length
-	if valAddrLen > 255 {
-		return "", "", fmt.Errorf("malformed key: validator address length out of range %d", valAddrLen)
-	}
 
 	valAddrBytes, err := FromLengthPrefix(addresses) // We don't do any subslicing here because FromLengthPrefix will take care of parsing errors
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("cannot parse validator address, %w", err)
 	}
 
 	valAddr := hex.EncodeToString(valAddrBytes)
@@ -55,7 +54,7 @@ func SplitDelegationKey(key []byte) (string, string, error) {
 
 // FromLengthPrefix returns the amount of data signaled by the single-byte length prefix in rawData.
 func FromLengthPrefix(rawData []byte) ([]byte, error) {
-	if rawData == nil {
+	if len(rawData) == 0 {
 		return nil, fmt.Errorf("data is nil")
 	}
 
