@@ -3,20 +3,26 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 type Resetter struct {
+	Logger    *zap.SugaredLogger
 	DB        *sqlx.DB
 	ChainName string
 	ChunkSize int
 }
 
 func (r Resetter) Reset() error {
-	log.Printf("starting resetter (chain=%s, chunkSize=%d)", r.ChainName, r.ChunkSize)
+	r.Logger.Infow(
+		"starting resetter",
+		"chainName", r.ChainName,
+		"chunkSize", strconv.Itoa(r.ChunkSize),
+	)
 
 	tables := []string{
 		"balances",
@@ -31,13 +37,15 @@ func (r Resetter) Reset() error {
 	}
 
 	for _, t := range tables {
+		l := r.Logger.With("table", t)
 		startTime := time.Now()
-		log.Printf("[%s] start", t)
-		if err := r.ResetTable(t); err != nil {
+		l.Info("start")
+		err := ResetTable(l, r.DB, t, r.ChainName, r.ChunkSize)
+		if err != nil {
 			return fmt.Errorf("resetting %s: %w", t, err)
 		}
 		endTime := time.Now()
-		log.Printf("[%s] completed (took %s)", t, endTime.Sub(startTime))
+		l.Infow("completed", "took", endTime.Sub(startTime).String())
 	}
 
 	return nil
@@ -49,18 +57,18 @@ type baseQueryParams struct {
 	Limit     int    `db:"limit"`
 }
 
-func (r Resetter) ResetTable(table string) error {
+func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chunkSize int) error {
 	// get last id, we'll use it as a cursor
-	row := r.DB.QueryRowx(fmt.Sprintf(`
+	row := db.QueryRowx(fmt.Sprintf(`
 		SELECT id FROM %s
 		WHERE chain_name = $1
 		ORDER BY id DESC
 		LIMIT 1
-	`, table), r.ChainName)
+	`, table), chainName)
 	var lastID int
 	err := row.Scan(&lastID)
 	if err == sql.ErrNoRows {
-		log.Printf("[%s] no rows matched", table)
+		l.Warn("no rows matched", table)
 		return nil
 	}
 	if err != nil {
@@ -69,7 +77,7 @@ func (r Resetter) ResetTable(table string) error {
 
 	// loop until all rows are deleted
 	for {
-		rows, err := r.DB.NamedQuery(fmt.Sprintf(`
+		rows, err := db.NamedQuery(fmt.Sprintf(`
 			DELETE FROM %s
 			WHERE id <= :last_id AND chain_name = :chain_name
 			ORDER BY id DESC
@@ -77,8 +85,8 @@ func (r Resetter) ResetTable(table string) error {
 			RETURNING id
 		`, table), baseQueryParams{
 			LastId:    lastID,
-			ChainName: r.ChainName,
-			Limit:     r.ChunkSize,
+			ChainName: chainName,
+			Limit:     chunkSize,
 		})
 		if err != nil {
 			return err
@@ -91,10 +99,10 @@ func (r Resetter) ResetTable(table string) error {
 
 		err = rows.Scan(&lastID)
 		if err != nil {
-			return fmt.Errorf("deleting data: %w", err)
+			return fmt.Errorf("cannot scan row at lastID=%d: %w", lastID, err)
 		}
 
-		log.Printf("[%s] deleted chunk (lastID=%d)", table, lastID)
+		l.Infow("deleted chunk", "lastId", strconv.Itoa(lastID))
 	}
 
 	return nil

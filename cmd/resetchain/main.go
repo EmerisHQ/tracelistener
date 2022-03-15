@@ -6,19 +6,26 @@ import (
 	"flag"
 	"log"
 
+	"github.com/allinbits/emeris-utils/logging"
+
 	"github.com/allinbits/emeris-utils/database"
 )
 
 func main() {
+	logger := logging.New(logging.LoggingConfig{
+		JSON: true,
+	})
+
 	flags := setupFlag()
 	flags.Validate()
 
 	db, err := database.New(flags.db)
 	if err != nil {
-		log.Fatalf("connecting to DB: %v\n", err)
+		logger.Panicw("connecting to DB: %v", err)
 	}
 
 	resetter := Resetter{
+		Logger:    logger,
 		DB:        db.DB,
 		ChainName: flags.chain,
 		ChunkSize: flags.chunkSize,
@@ -26,7 +33,7 @@ func main() {
 
 	err = resetter.Reset()
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		logger.Panicw("error: %v", err)
 	}
 }
 
