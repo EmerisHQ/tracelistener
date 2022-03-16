@@ -90,7 +90,7 @@ func TestResetTable_ChunkSize(t *testing.T) {
 			assert.Equal(13, count)
 
 			// act
-			err := ResetTable(l, db.DB, tableName, "chain-a", 1)
+			err := ResetTable(l, db.DB, tableName, "chain-a", tt.chunkSize)
 			assert.NoError(err)
 
 			// assert
