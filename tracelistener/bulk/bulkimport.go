@@ -35,12 +35,6 @@ func (c *counter) increment() {
 	c.ctr++
 }
 
-func (c *counter) add(amt int) {
-	c.m.Lock()
-	defer c.m.Unlock()
-	c.ctr += amt
-}
-
 func (c *counter) value() int {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -80,6 +74,7 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 	dbMutex.Lock()
 	defer func() {
 		ctr.increment()
+		i.Logger.Info("releasing database lock now!")
 		dbMutex.Unlock()
 	}()
 
@@ -92,10 +87,14 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 		totalUnitsAmt := uint64(0)
 
 		wbUnits := p.SplitStatementToDBLimit()
-		for _, wbUnit := range wbUnits {
+		for idx, wbUnit := range wbUnits {
 			is := wbUnit.InterfaceSlice()
 
-			i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
+			i.Logger.Infow("writing chunks to database",
+				"total chunks", len(wbUnits),
+				"current chunk", idx,
+				"total writeback units data", len(wbUnit.Data),
+			)
 
 			totalUnitsAmt += uint64(len(wbUnit.Data))
 
@@ -107,12 +106,12 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 		i.Logger.Infow("total database rows to be written",
 			"amount", len(p.Data),
 			"chunked amount written", totalUnitsAmt,
+			"remains", uint64(len(p.Data))-totalUnitsAmt,
 			"equal", uint64(len(p.Data)) == totalUnitsAmt,
 		)
 	}
 
 	i.Logger.Debugw("finished processing writeback data")
-	i.Logger.Info("releasing database lock now!")
 }
 
 func (i *Importer) Do() error {
