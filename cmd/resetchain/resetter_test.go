@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 
 	"github.com/allinbits/emeris-utils/database"
@@ -13,24 +14,40 @@ import (
 
 var l = zap.NewExample().Sugar()
 
-func getTestInstance(t *testing.T) *database.Instance {
-	require := require.New(t)
+var DB *database.Instance
 
+func TestMain(m *testing.M) {
+	// tear up a database instance that will be shared across tests
+	db, teardown, err := getTestInstance()
+	if err != nil {
+		l.Panicw("can't setup db for testing", "error", err)
+	}
+	DB = db
+
+	// run tests
+	code := m.Run()
+
+	// tear down the database instance
+	teardown()
+	os.Exit(code)
+}
+
+func getTestInstance() (*database.Instance, func(), error) {
 	ts, err := testserver.NewTestServer()
-	require.NoError(err)
-	t.Cleanup(ts.Stop)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	url := ts.PGURL()
-	require.NotEmpty(url)
-
 	db, err := database.New(url.String())
-	require.NoError(err)
-	t.Cleanup(func() {
-		err := db.Close()
-		require.NoError(err)
-	})
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return db
+	return db, func() {
+		db.Close()
+		ts.Stop()
+	}, nil
 }
 
 func createTables(t *testing.T, db *database.Instance, tableNames ...string) {
@@ -57,8 +74,6 @@ func countRows(t *testing.T, db *database.Instance, tableName, chainName string)
 }
 
 func TestResetTable_ChunkSize(t *testing.T) {
-	db := getTestInstance(t)
-
 	tests := []struct {
 		name      string
 		chunkSize int
@@ -82,35 +97,33 @@ func TestResetTable_ChunkSize(t *testing.T) {
 			tableName := fmt.Sprintf("test_table_%d", rand.Int())
 			t.Log("created table", tableName)
 
-			createTables(t, db, tableName)
-			addRows(t, db, tableName, "chain-a", 13)
-			addRows(t, db, tableName, "chain-b", 7)
+			createTables(t, DB, tableName)
+			addRows(t, DB, tableName, "chain-a", 13)
+			addRows(t, DB, tableName, "chain-b", 7)
 
-			count := countRows(t, db, tableName, "chain-a")
+			count := countRows(t, DB, tableName, "chain-a")
 			require.Equal(13, count)
 
 			// act
-			err := ResetTable(l, db.DB, tableName, "chain-a", tt.chunkSize)
+			err := ResetTable(l, DB.DB, tableName, "chain-a", tt.chunkSize)
 			require.NoError(err)
 
 			// require
-			count = countRows(t, db, tableName, "chain-a")
+			count = countRows(t, DB, tableName, "chain-a")
 			require.Equal(0, count, "chain-a row not deleted")
-			countB := countRows(t, db, tableName, "chain-b")
+			countB := countRows(t, DB, tableName, "chain-b")
 			require.Equal(7, countB, "chain-b rows deleted but they were not supposed to")
 		})
 	}
 }
 
 func TestResetTable_IgnoreNonExistentTables(t *testing.T) {
-	db := getTestInstance(t)
-	err := ResetTable(l, db.DB, "something_non_existent", "chain-a", 1)
+	err := ResetTable(l, DB.DB, "something_non_existent", "chain-a", 1)
 	require.NoError(t, err)
 }
 
 func TestResetTable_AlreadyEmptyTable(t *testing.T) {
-	db := getTestInstance(t)
-	createTables(t, db, "empty_table")
-	err := ResetTable(l, db.DB, "empty_table", "chain-a", 1)
+	createTables(t, DB, "empty_table")
+	err := ResetTable(l, DB.DB, "empty_table", "chain-a", 1)
 	require.NoError(t, err)
 }
