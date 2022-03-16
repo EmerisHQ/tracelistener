@@ -126,10 +126,13 @@ func (i *Importer) Do() error {
 	dbMutex := sync.Mutex{}
 	ctr := &counter{}
 	t0 := time.Now()
+	done := make(chan struct{})
 	// spawn a goroutine that logs errors from processor's error chan
 	go func() {
 		for {
 			select {
+			case <-done:
+				return
 			case e := <-i.Processor.ErrorsChan():
 				te := e.(tracelistener.TracingError)
 				i.Logger.Errorw(
@@ -253,6 +256,8 @@ func (i *Importer) Do() error {
 	for ctr.value() != keysLen {
 		runtime.Gosched()
 	}
+
+	done <- struct{}{}
 
 	dbMutex.Lock()
 	i.Logger.Info("database lock acquired, finalizing")

@@ -2,6 +2,7 @@ package bulk_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
@@ -23,6 +24,20 @@ func TestImporterDo(t *testing.T) {
 	logger := loggerRaw.Sugar()
 
 	processorFunc = processor.New
+
+	expectedBalances := []string{
+		"4fea76427b8345861e80a3540a8a9d936fd39391",
+		"93354845030274cd4bf1686abd60ab28ec52e1a7",
+		"28830cb550d76d286c72c1d91782fdca52cbd539",
+	}
+
+	expectedDelegations := []string{
+		"28830cb550d76d286c72c1d91782fdca52cbd539",
+	}
+
+	expectedValidators := []string{
+		"cosmosvaloper19zpsed2s6akjsmrjc8v30qhaeffvh4fec7lfcg",
+	}
 
 	tests := []struct {
 		name          string
@@ -90,7 +105,6 @@ func TestImporterDo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			dpi, err := processorFunc(logger, &tt.cfg)
 			require.NoError(t, err)
 
@@ -129,7 +143,10 @@ func TestImporterDo(t *testing.T) {
 
 				require.NoError(t, err)
 
+				time.Sleep(2 * time.Second)
+
 				if tt.checkInsert {
+					// we are expecting data to be there
 					// check auth rows
 					var auth []models.AuthRow
 					require.NoError(t,
@@ -142,68 +159,62 @@ func TestImporterDo(t *testing.T) {
 					require.NotZero(t, len(auth))
 					require.NotNil(t, auth[0].Address)
 
-					addr := "69e2e6218dc4e610453afdb802c0e54cbadf6b49"
-					// check balances
-					var bal []models.BalanceRow
-					q, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.balances where address=:address`)
-					require.NoError(t, err)
-					defer q.Close()
+					for _, address := range expectedBalances {
+						// check balances
+						var bal []models.BalanceRow
+						q, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.balances where address=:address`)
+						require.NoError(t, err)
+						defer q.Close()
 
-					require.NoError(t,
-						q.Select(
-							&bal,
-							map[string]interface{}{
-								"address": addr,
-							},
-						),
-					)
-					require.NotZero(t, len(bal))
-					require.NotNil(t, bal)
+						require.NoError(t,
+							q.Select(
+								&bal,
+								map[string]interface{}{
+									"address": address,
+								},
+							),
+						)
+						require.NotZero(t, len(bal))
+						require.NotNil(t, bal)
+					}
 
-					// check delegations
-					var del []models.DelegationRow
-					d, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.delegations where delegator_address=:delegator_address`)
-					require.NoError(t, err)
-					defer d.Close()
-					require.NoError(t,
-						d.Select(
-							&del,
-							map[string]interface{}{
-								"delegator_address": addr,
-							},
-						),
-					)
-					require.NotZero(t, len(del))
-					require.NotNil(t, del[0].Delegator)
-					require.NotZero(t, del[0].Amount)
+					for _, delegation := range expectedDelegations {
+						// check delegations
+						var del []models.DelegationRow
+						d, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.delegations where delegator_address=:delegator_address`)
+						require.NoError(t, err)
+						defer d.Close()
+						require.NoError(t,
+							d.Select(
+								&del,
+								map[string]interface{}{
+									"delegator_address": delegation,
+								},
+							),
+						)
+						require.NotZero(t, len(del))
+						require.NotNil(t, del[0].Delegator)
+						require.NotZero(t, del[0].Amount)
+					}
 
-					// check unbonding_delegations
-					var unDel []models.UnbondingDelegationRow
-					ud, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.unbonding_delegations where delegator_address=:delegator_address`)
-					require.NoError(t, err)
-					defer ud.Close()
-					require.NoError(t,
-						ud.Select(
-							&unDel,
-							map[string]interface{}{
-								"delegator_address": addr,
-							},
-						),
-					)
-					require.NotZero(t, len(unDel))
-					require.NotNil(t, unDel)
+					for _, validator := range expectedValidators {
+						// check validtaors
+						var val []models.ValidatorRow
+						d, err := di.Instance.DB.PrepareNamed(`select * from tracelistener.validators where operator_address=:validator_address`)
+						require.NoError(t, err)
+						defer d.Close()
+						require.NoError(t,
+							d.Select(
+								&val,
+								map[string]interface{}{
+									"validator_address": validator,
+								},
+							),
+						)
 
-					// check validtaors
-					var val []models.ValidatorRow
-					require.NoError(t,
-						di.Instance.Exec(
-							`select * from tracelistener.validators where operator_address='cosmosvaloper1fkgp476xp2rhv8jjsyspl577v5emmz0ycftwez'`,
-							nil,
-							&val,
-						),
-					)
-					require.NotZero(t, len(val))
-					require.NotNil(t, val)
+						require.NotZero(t, len(val))
+						require.NotNil(t, val)
+					}
 
 					// PSA:
 					// This code is commented because our current test store snapshot doesn't
