@@ -24,6 +24,29 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
+type counter struct {
+	ctr int
+	m   sync.Mutex
+}
+
+func (c *counter) increment() {
+	c.m.Lock()
+	defer c.m.Unlock()
+	c.ctr++
+}
+
+func (c *counter) add(amt int) {
+	c.m.Lock()
+	defer c.m.Unlock()
+	c.ctr += amt
+}
+
+func (c *counter) value() int {
+	c.m.Lock()
+	defer c.m.Unlock()
+	return c.ctr
+}
+
 type Importer struct {
 	Path         string
 	TraceWatcher tracelistener.TraceWatcher
@@ -52,11 +75,14 @@ func (i Importer) validateModulesList() error {
 	return nil
 }
 
-func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex, previousDbWritebackAmt int) int {
+func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex, ctr *counter) {
 	i.Logger.Info("requesting database lock for writing...")
 	dbMutex.Lock()
-	defer dbMutex.Unlock()
-	previousDbWritebackAmt++
+	defer func() {
+		ctr.increment()
+		dbMutex.Unlock()
+	}()
+
 	i.Logger.Info("lock acquired, proceeding with database write!")
 	for _, p := range data {
 		if len(p.Data) == 0 {
@@ -87,8 +113,6 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 
 	i.Logger.Debugw("finished processing writeback data")
 	i.Logger.Info("releasing database lock now!")
-
-	return previousDbWritebackAmt
 }
 
 func (i *Importer) Do() error {
@@ -101,7 +125,7 @@ func (i *Importer) Do() error {
 	}
 
 	dbMutex := sync.Mutex{}
-	dbWritebackCallAmt := 0
+	ctr := &counter{}
 	t0 := time.Now()
 	// spawn a goroutine that logs errors from processor's error chan
 	go func() {
@@ -115,9 +139,8 @@ func (i *Importer) Do() error {
 					"data", te.Data,
 					"moduleName", te.Module)
 			case b := <-i.Processor.WritebackChan():
-				i.Logger.Debugw("wbchan called", "idx", dbWritebackCallAmt)
-				i.Logger.Info("requesting database lock for writing...")
-				dbWritebackCallAmt = i.processWritebackData(b, &dbMutex, dbWritebackCallAmt)
+				i.Logger.Debugw("wbchan called", "idx", ctr.value())
+				i.processWritebackData(b, &dbMutex, ctr)
 			}
 		}
 	}()
@@ -228,9 +251,10 @@ func (i *Importer) Do() error {
 		finished writing.
 		After that, we acquire the lock and continue with our own way.
 	*/
-	for dbWritebackCallAmt != len(keys) {
+	for ctr.value() != keysLen {
 		runtime.Gosched()
 	}
+
 	dbMutex.Lock()
 	i.Logger.Info("database lock acquired, finalizing")
 	tn := time.Now()
