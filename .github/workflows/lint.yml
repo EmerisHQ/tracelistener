@@ -4,7 +4,7 @@ on:
 permissions:
   contents: read
 env:
-  GOPRIVATE: "github.com/allinbits/*"
+  GOPRIVATE: "github.com/emerishq/*"
 
 jobs:
   setup-matrix:
