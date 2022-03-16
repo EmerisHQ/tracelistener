@@ -80,7 +80,8 @@ func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chun
 		l.Warn("no rows matched")
 		return nil
 	}
-	if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == relationshipNotFoundErrorCode {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == relationshipNotFoundErrorCode {
 		l.Warn("table doesn't exist")
 		return nil
 	}
