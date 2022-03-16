@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var l *zap.SugaredLogger = zap.NewExample().Sugar()
+var l = zap.NewExample().Sugar()
 
 func getTestInstance(t *testing.T) *database.Instance {
 	require := require.New(t)
