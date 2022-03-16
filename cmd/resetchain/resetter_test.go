@@ -107,3 +107,10 @@ func TestResetTable_IgnoreNonExistentTables(t *testing.T) {
 	err := ResetTable(l, db.DB, "something_non_existent", "chain-a", 1)
 	require.NoError(t, err)
 }
+
+func TestResetTable_AlreadyEmptyTable(t *testing.T) {
+	db := getTestInstance(t)
+	createTables(t, db, "empty_table")
+	err := ResetTable(l, db.DB, "empty_table", "chain-a", 1)
+	require.NoError(t, err)
+}

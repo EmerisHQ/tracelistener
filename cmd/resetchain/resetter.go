@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -74,8 +75,8 @@ func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chun
 	`, table), chainName)
 	var lastID int
 	err := row.Scan(&lastID)
-	if err == sql.ErrNoRows {
-		l.Warn("no rows matched", table)
+	if errors.Is(err, sql.ErrNoRows) {
+		l.Warn("no rows matched")
 		return nil
 	}
 	if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == relationshipNotFoundErrorCode {
