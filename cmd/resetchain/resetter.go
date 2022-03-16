@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgconn"
@@ -41,6 +42,8 @@ func (r Resetter) Reset() error {
 		"liquidity_pools",
 	}
 
+	var errs []string
+
 	for _, t := range tables {
 		l := r.Logger.With("table", t)
 		startTime := time.Now()
@@ -48,9 +51,15 @@ func (r Resetter) Reset() error {
 		err := ResetTable(l, r.DB, t, r.ChainName, r.ChunkSize)
 		if err != nil {
 			l.Errorw("completed with errors", "error", err, "took", time.Since(startTime))
+			errs = append(errs, fmt.Sprintf("resetting table %s: %s", t, err))
 		} else {
 			l.Infow("completed", "took", time.Since(startTime).String())
 		}
+	}
+
+	if len(errs) > 0 {
+		err := strings.Join(errs, ";")
+		return fmt.Errorf("completed with errors: %s", err)
 	}
 
 	return nil
