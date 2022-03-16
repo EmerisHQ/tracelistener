@@ -24,6 +24,23 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
+type counter struct {
+	ctr int
+	m   sync.Mutex
+}
+
+func (c *counter) increment() {
+	c.m.Lock()
+	defer c.m.Unlock()
+	c.ctr++
+}
+
+func (c *counter) value() int {
+	c.m.Lock()
+	defer c.m.Unlock()
+	return c.ctr
+}
+
 type Importer struct {
 	Path         string
 	TraceWatcher tracelistener.TraceWatcher
@@ -52,6 +69,51 @@ func (i Importer) validateModulesList() error {
 	return nil
 }
 
+func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex, ctr *counter) {
+	i.Logger.Info("requesting database lock for writing...")
+	dbMutex.Lock()
+	defer func() {
+		ctr.increment()
+		i.Logger.Info("releasing database lock now!")
+		dbMutex.Unlock()
+	}()
+
+	i.Logger.Info("lock acquired, proceeding with database write!")
+	for _, p := range data {
+		if len(p.Data) == 0 {
+			continue
+		}
+
+		totalUnitsAmt := uint64(0)
+
+		wbUnits := p.SplitStatementToDBLimit()
+		for idx, wbUnit := range wbUnits {
+			is := wbUnit.InterfaceSlice()
+
+			i.Logger.Infow("writing chunks to database",
+				"total chunks", len(wbUnits),
+				"current chunk", idx,
+				"total writeback units data", len(wbUnit.Data),
+			)
+
+			totalUnitsAmt += uint64(len(wbUnit.Data))
+
+			if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
+				i.Logger.Error("database error ", err)
+			}
+		}
+
+		i.Logger.Infow("total database rows to be written",
+			"amount", len(p.Data),
+			"chunked amount written", totalUnitsAmt,
+			"remains", uint64(len(p.Data))-totalUnitsAmt,
+			"equal", uint64(len(p.Data)) == totalUnitsAmt,
+		)
+	}
+
+	i.Logger.Debugw("finished processing writeback data")
+}
+
 func (i *Importer) Do() error {
 	if err := i.validateModulesList(); err != nil {
 		return err
@@ -62,12 +124,15 @@ func (i *Importer) Do() error {
 	}
 
 	dbMutex := sync.Mutex{}
-	dbWritebackCallAmt := 0
+	ctr := &counter{}
 	t0 := time.Now()
+	done := make(chan struct{})
 	// spawn a goroutine that logs errors from processor's error chan
 	go func() {
 		for {
 			select {
+			case <-done:
+				return
 			case e := <-i.Processor.ErrorsChan():
 				te := e.(tracelistener.TracingError)
 				i.Logger.Errorw(
@@ -76,41 +141,8 @@ func (i *Importer) Do() error {
 					"data", te.Data,
 					"moduleName", te.Module)
 			case b := <-i.Processor.WritebackChan():
-				i.Logger.Debugw("wbchan called", "idx", dbWritebackCallAmt)
-				i.Logger.Info("requesting database lock for writing...")
-				dbMutex.Lock()
-				defer dbMutex.Unlock()
-				dbWritebackCallAmt++
-				i.Logger.Info("lock acquired, proceeding with database write!")
-				for _, p := range b {
-					if len(p.Data) == 0 {
-						continue
-					}
-
-					totalUnitsAmt := uint64(0)
-
-					wbUnits := p.SplitStatementToDBLimit()
-					for _, wbUnit := range wbUnits {
-						is := wbUnit.InterfaceSlice()
-
-						i.Logger.Infow("writing chunks to database", "chunks", len(wbUnits), "total writeback units data", len(wbUnit.Data))
-
-						totalUnitsAmt += uint64(len(wbUnit.Data))
-
-						if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
-							i.Logger.Error("database error ", err)
-						}
-					}
-
-					i.Logger.Infow("total database rows to be written",
-						"amount", len(p.Data),
-						"chunked amount written", totalUnitsAmt,
-						"equal", uint64(len(p.Data)) == totalUnitsAmt,
-					)
-				}
-
-				i.Logger.Debugw("finished processing writeback data")
-				i.Logger.Info("releasing database lock now!")
+				i.Logger.Debugw("wbchan called", "idx", ctr.value())
+				i.processWritebackData(b, &dbMutex, ctr)
 			}
 		}
 	}()
@@ -221,9 +253,12 @@ func (i *Importer) Do() error {
 		finished writing.
 		After that, we acquire the lock and continue with our own way.
 	*/
-	for dbWritebackCallAmt != len(keys) {
+	for ctr.value() != keysLen {
 		runtime.Gosched()
 	}
+
+	done <- struct{}{}
+
 	dbMutex.Lock()
 	i.Logger.Info("database lock acquired, finalizing")
 	tn := time.Now()

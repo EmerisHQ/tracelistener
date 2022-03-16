@@ -2,6 +2,7 @@ package processor
 
 import (
 	"fmt"
+	"sync"
 
 	models "github.com/allinbits/demeris-backend-models/tracelistener"
 
@@ -41,6 +42,8 @@ type Processor struct {
 	chainName        string
 	moduleProcessors []Module
 	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
+
+	processingData sync.Mutex
 }
 
 func (p *Processor) OpsChan() chan tracelistener.TraceOperation {
@@ -169,6 +172,8 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 }
 
 func (p *Processor) Flush() error {
+	p.processingData.Lock()
+	defer p.processingData.Unlock()
 	wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
 
 	for _, mp := range p.moduleProcessors {
@@ -219,25 +224,31 @@ func (p *Processor) lifecycle() {
 			}
 		}
 
-		for _, mp := range processorList {
-			if !mp.OwnsKey(data.Key) {
-				continue
-			}
+		p.processData(processorList, data)
+	}
+}
 
-			mn := mp.ModuleName()
-			// Log line used to trigger Grafana alerts.
-			// Do not modify or remove without changing the corresponding dashboards
-			if data.SuggestedProcessor == "" {
-				// log this only when running non in bulk import mode
-				p.l.Infow("Probe", "c", "gaia", "n", mn)
-			}
+func (p *Processor) processData(processorList []Module, data tracelistener.TraceOperation) {
+	p.processingData.Lock()
+	defer p.processingData.Unlock()
+	for _, mp := range processorList {
+		if !mp.OwnsKey(data.Key) {
+			continue
+		}
 
-			if err := mp.Process(data); err != nil {
-				p.errorsChan <- tracelistener.TracingError{
-					InnerError: err,
-					Module:     mp.ModuleName(),
-					Data:       data,
-				}
+		mn := mp.ModuleName()
+		// Log line used to trigger Grafana alerts.
+		// Do not modify or remove without changing the corresponding dashboards
+		if data.SuggestedProcessor == "" {
+			// log this only when running non in bulk import mode
+			p.l.Infow("Probe", "c", "gaia", "n", mn)
+		}
+
+		if err := mp.Process(data); err != nil {
+			p.errorsChan <- tracelistener.TracingError{
+				InnerError: err,
+				Module:     mp.ModuleName(),
+				Data:       data,
 			}
 		}
 	}
