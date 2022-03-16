@@ -47,9 +47,10 @@ func (r Resetter) Reset() error {
 		l.Info("start")
 		err := ResetTable(l, r.DB, t, r.ChainName, r.ChunkSize)
 		if err != nil {
-			return fmt.Errorf("resetting %s: %w", t, err)
+			l.Errorw("completed with errors", "error", err, "took", time.Since(startTime))
+		} else {
+			l.Infow("completed", "took", time.Since(startTime).String())
 		}
-		l.Infow("completed", "took", time.Since(startTime).String())
 	}
 
 	return nil
