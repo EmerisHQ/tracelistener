@@ -48,8 +48,7 @@ func (r Resetter) Reset() error {
 		if err != nil {
 			return fmt.Errorf("resetting %s: %w", t, err)
 		}
-		endTime := time.Now()
-		l.Infow("completed", "took", endTime.Sub(startTime).String())
+		l.Infow("completed", "took", time.Since(startTime).String())
 	}
 
 	return nil
@@ -60,6 +59,10 @@ type baseQueryParams struct {
 	ChainName string `db:"chain_name"`
 	Limit     int    `db:"limit"`
 }
+
+const (
+	relationshipNotFoundErrorCode = "42P01"
+)
 
 func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chunkSize int) error {
 	// get last id, we'll use it as a cursor
@@ -75,7 +78,7 @@ func ResetTable(l *zap.SugaredLogger, db *sqlx.DB, table, chainName string, chun
 		l.Warn("no rows matched", table)
 		return nil
 	}
-	if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == "42P01" {
+	if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == relationshipNotFoundErrorCode {
 		l.Warn("table doesn't exist")
 		return nil
 	}
