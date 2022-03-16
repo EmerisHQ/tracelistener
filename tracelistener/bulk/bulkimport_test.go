@@ -2,7 +2,6 @@ package bulk_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
@@ -142,8 +141,6 @@ func TestImporterDo(t *testing.T) {
 				}
 
 				require.NoError(t, err)
-
-				time.Sleep(2 * time.Second)
 
 				if tt.checkInsert {
 					// we are expecting data to be there
