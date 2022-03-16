@@ -19,7 +19,8 @@ import (
 
 func TestImporterDo(t *testing.T) {
 	var processorFunc tracelistener.DataProcessorFunc
-	logger := zap.NewNop().Sugar()
+	loggerRaw, _ := zap.NewProduction()
+	logger := loggerRaw.Sugar()
 
 	processorFunc = processor.New
 
@@ -49,9 +50,9 @@ func TestImporterDo(t *testing.T) {
 						tracelistener.DeleteOp,
 					},
 					ErrorChan: make(chan error),
-					Logger:    zap.NewNop().Sugar(),
+					Logger:    logger,
 				},
-				Logger: zap.NewNop().Sugar(),
+				Logger: logger,
 			},
 			"",
 			false,
@@ -75,9 +76,9 @@ func TestImporterDo(t *testing.T) {
 						tracelistener.DeleteOp,
 					},
 					ErrorChan: make(chan error),
-					Logger:    zap.NewNop().Sugar(),
+					Logger:    logger,
 				},
-				Logger: zap.NewNop().Sugar(),
+				Logger: logger,
 			},
 			"invalid connection",
 			true,
