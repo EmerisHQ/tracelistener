@@ -1,4 +1,11 @@
+//go:build sdk_v44
+
 package bulk_test
+
+/*
+	TODO: this test needs to be multi-sdk enabled
+	We're running it on v44 only for now.
+*/
 
 import (
 	"testing"
