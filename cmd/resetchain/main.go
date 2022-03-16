@@ -4,11 +4,10 @@ package main
 
 import (
 	"flag"
-	"log"
-
-	"github.com/allinbits/emeris-utils/logging"
+	"fmt"
 
 	"github.com/allinbits/emeris-utils/database"
+	"github.com/allinbits/emeris-utils/logging"
 )
 
 func main() {
@@ -17,7 +16,11 @@ func main() {
 	})
 
 	flags := setupFlag()
-	flags.Validate()
+	err := flags.Validate()
+	if err != nil {
+		flag.Usage()
+		logger.Panic("invalid flags", err)
+	}
 
 	db, err := database.New(flags.db)
 	if err != nil {
@@ -46,21 +49,20 @@ type Flags struct {
 	chunkSize int
 }
 
-func (f Flags) Validate() {
+func (f Flags) Validate() error {
 	if len(f.db) == 0 {
-		flag.Usage()
-		log.Fatalf("missing database connection string")
+		return fmt.Errorf("missing database connection string")
 	}
 
 	if len(f.chain) == 0 {
-		flag.Usage()
-		log.Fatalf("missing chain name")
+		return fmt.Errorf("missing chain name")
 	}
 
 	if f.chunkSize <= 0 {
-		flag.Usage()
-		log.Fatalf("chunk size must be greater than 0")
+		return fmt.Errorf("chunk size must be greater than 0")
 	}
+
+	return nil
 }
 
 func setupFlag() Flags {
