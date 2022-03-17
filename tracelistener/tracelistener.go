@@ -225,6 +225,8 @@ type DataProcessor interface {
 	ErrorsChan() chan error
 	DatabaseMigrations() []string
 	Flush() error
+	StartBackgroundProcessing()
+	StopBackgroundProcessing()
 }
 
 type TracingError struct {

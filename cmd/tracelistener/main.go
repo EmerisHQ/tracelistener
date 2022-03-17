@@ -57,6 +57,8 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	dpi.StartBackgroundProcessing()
+
 	database.RegisterMigration(dpi.DatabaseMigrations()...)
 	database.RegisterMigration(blocktime.CreateTable)
 
