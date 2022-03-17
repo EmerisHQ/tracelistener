@@ -137,7 +137,11 @@ func main() {
 					}
 
 					if err := di.Add(wbUnit.DatabaseExec, is); err != nil {
-						logger.Error("database error ", err, "statement", wbUnit.DatabaseExec, "data", wbUnit.Data)
+						logger.Errorw("database error",
+							"error", err,
+							"statement", wbUnit.DatabaseExec,
+							"data", fmt.Sprint(wbUnit.Data),
+						)
 					}
 				}
 			}
