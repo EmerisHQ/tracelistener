@@ -10,6 +10,7 @@ import (
 
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/emerishq/tracelistener/tracelistener/database"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"
@@ -205,8 +206,13 @@ func (i *Importer) Do() error {
 					SuggestedProcessor: tracelistener.SDKModuleName(key.Name()),
 				}
 
-				if err := i.TraceWatcher.ParseOperation(to); err != nil {
+				if err := i.TraceWatcher.ParseOperationBlocking(to); err != nil {
 					return fmt.Errorf("cannot parse operation %v, %w", to, err)
+				}
+
+				pp := i.Processor.(*processor.Processor)
+				if err := pp.ProcessData(to); err != nil {
+					i.Logger.Errorw("processing error", "error", err)
 				}
 
 				i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
@@ -220,8 +226,6 @@ func (i *Importer) Do() error {
 			if err := ii.Close(); err != nil {
 				return fmt.Errorf("cannot close iterator, %w", err)
 			}
-
-			time.Sleep(1 * time.Second)
 
 			if err := i.Processor.Flush(); err != nil {
 				return fmt.Errorf("cannot flush processor cache, %w", err)
