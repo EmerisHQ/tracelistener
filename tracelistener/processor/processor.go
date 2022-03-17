@@ -42,6 +42,7 @@ type Processor struct {
 	chainName        string
 	moduleProcessors []Module
 	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
+	lifecycleStop    chan struct{}
 
 	processingData sync.Mutex
 }
@@ -96,11 +97,18 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		moduleProcessors: mp,
 		migrations:       tableSchemas,
 		sdkModuleMapping: sdkModuleMapping,
+		lifecycleStop:    make(chan struct{}),
 	}
 
-	go p.lifecycle()
-
 	return &p, nil
+}
+
+func (p *Processor) StartBackgroundProcessing() {
+	go p.lifecycle()
+}
+
+func (p *Processor) StopBackgroundProcessing() {
+	p.lifecycleStop <- struct{}{}
 }
 
 func (p *Processor) AddModule(m Module) error {
@@ -200,34 +208,49 @@ func (p *Processor) Flush() error {
 }
 
 func (p *Processor) lifecycle() {
-	for data := range p.writeChan {
-		if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
-			if err := p.Flush(); err != nil {
+	for {
+		select {
+		case <-p.lifecycleStop:
+			return
+		case data := <-p.writeChan:
+			if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
+				if err := p.Flush(); err != nil {
+					p.errorsChan <- fmt.Errorf("error while flushing caches, %w", err)
+					continue
+				}
+
+				p.l.Infow("processed new block", "height", p.lastHeight)
+
+				p.lastHeight = data.BlockHeight
+			}
+
+			if err := p.ProcessData(data); err != nil {
 				p.errorsChan <- fmt.Errorf("error while flushing caches, %w", err)
 				continue
 			}
-
-			p.l.Infow("processed new block", "height", p.lastHeight)
-
-			p.lastHeight = data.BlockHeight
 		}
-
-		processorList := p.moduleProcessors
-
-		if data.SuggestedProcessor != "" {
-			p.l.Debugw("suggested processor", "name", data.SuggestedProcessor)
-			// only consider the associated processors
-			plist, ok := p.sdkModuleMapping[data.SuggestedProcessor]
-			if ok {
-				p.l.Debugw("found processor matching against sdk module mapping", "requested module", data.SuggestedProcessor)
-				processorList = plist
-			}
-		}
-
-		p.processData(processorList, data)
 	}
 }
 
+func (p *Processor) ProcessData(data tracelistener.TraceOperation) error {
+	processorList := p.moduleProcessors
+
+	if data.SuggestedProcessor != "" {
+		p.l.Debugw("suggested processor", "name", data.SuggestedProcessor)
+		// only consider the associated processors
+		plist, ok := p.sdkModuleMapping[data.SuggestedProcessor]
+		if ok {
+			p.l.Debugw("found processor matching against sdk module mapping", "requested module", data.SuggestedProcessor)
+			processorList = plist
+		}
+	}
+
+	p.processData(processorList, data)
+
+	return nil
+}
+
+// TODO: error group?
 func (p *Processor) processData(processorList []Module, data tracelistener.TraceOperation) {
 	p.processingData.Lock()
 	defer p.processingData.Unlock()
