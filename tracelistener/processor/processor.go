@@ -194,6 +194,9 @@ func (p *Processor) Flush() error {
 			for i := 0; i < len(entry.Data); i++ {
 				entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
 			}
+
+			entry.SourceModule = mp.SDKModuleName().String()
+
 			wb = append(wb, entry)
 		}
 	}
