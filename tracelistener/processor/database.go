@@ -199,6 +199,8 @@ WHERE
 	delegator_address=:delegator_address
 AND
 	validator_address=:validator_address
+AND
+	chain_name=:chain_name
 `
 
 	// Account unbonding delegations-related queries
@@ -230,6 +232,8 @@ WHERE
 	delegator_address=:delegator_address
 AND
 	validator_address=:validator_address
+AND
+	chain_name=:chain_name
 `
 
 	// Denom traces-related queries
