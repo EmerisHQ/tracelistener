@@ -329,19 +329,6 @@ func (tr *TraceWatcher) ParseOperation(data TraceOperation) error {
 	return nil
 }
 
-func (tr *TraceWatcher) ParseOperationBlocking(data TraceOperation) error {
-	if !tr.mustConsiderOperation(data) {
-		return nil
-	}
-
-	if data.Operation == WriteOp.String() && len(data.Value) == 0 {
-		tr.Logger.Debugw("not considering data", "operation", data.Operation)
-		return nil
-	}
-
-	return nil
-}
-
 func (tr *TraceWatcher) mustConsiderData(b []byte) bool {
 	if tr.WatchedOps == nil || len(tr.WatchedOps) == 0 {
 		return true
