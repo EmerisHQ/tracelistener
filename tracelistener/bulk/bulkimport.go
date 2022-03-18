@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
@@ -24,23 +23,6 @@ import (
 	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
-
-type counter struct {
-	ctr int
-	m   sync.Mutex
-}
-
-func (c *counter) increment() {
-	c.m.Lock()
-	defer c.m.Unlock()
-	c.ctr++
-}
-
-func (c *counter) value() int {
-	c.m.Lock()
-	defer c.m.Unlock()
-	return c.ctr
-}
 
 type Importer struct {
 	Path         string
