@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/database"
-	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -504,7 +504,7 @@ func TestWritebackOp_SplitStatementToDBLimit(t *testing.T) {
 	}
 
 	out := wu.SplitStatementToDBLimit()
-	require.Len(t, out, 3)
+	require.Len(t, out, 12, "expected len=12, got %d", len(out))
 }
 
 type InsertType struct {
