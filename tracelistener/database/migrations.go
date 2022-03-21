@@ -1,6 +1,6 @@
 package database
 
-import dbutils "github.com/allinbits/emeris-utils/database"
+import dbutils "github.com/emerishq/emeris-utils/database"
 
 const createDatabase = `
 CREATE DATABASE IF NOT EXISTS tracelistener;

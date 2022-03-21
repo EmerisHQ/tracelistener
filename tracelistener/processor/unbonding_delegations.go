@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 )
 
 type unbondingDelegationCacheEntry struct {

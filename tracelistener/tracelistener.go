@@ -8,10 +8,10 @@ import (
 	"reflect"
 	"time"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 
 	"go.uber.org/zap"
 )
@@ -55,8 +55,14 @@ var SupportedSDKModuleList = map[SDKModuleName]struct{}{
 	Acc:          {},
 }
 
-// Info: https://github.com/cockroachdb/cockroach/issues/49256
-const dbPlaceholderLimit = 65535
+const (
+	// Info: https://github.com/cockroachdb/cockroach/issues/49256
+	dbPlaceholderTotalLimit = 65535
+
+	// we divide crdb placeholders 10x the maximum size to avoid
+	// database retry congestion
+	dbPlaceholderLimit = dbPlaceholderTotalLimit / 10
+)
 
 // Operation is a kind of operations a TraceWatcher observes.
 type Operation []byte

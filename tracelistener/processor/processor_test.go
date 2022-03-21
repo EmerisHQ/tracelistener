@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/allinbits/tracelistener/tracelistener/processor"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 )
 
 type dumbModule struct {

@@ -7,7 +7,7 @@ RUN set -eux; apk add --no-cache ca-certificates build-base;
 
 RUN apk add git jq bash findutils
 
-RUN go env -w GOPRIVATE=github.com/allinbits/*
+RUN go env -w GOPRIVATE=github.com/emerishq,github.com/allinbits
 RUN git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
 
 WORKDIR /app

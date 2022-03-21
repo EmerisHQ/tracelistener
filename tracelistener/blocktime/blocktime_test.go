@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/gorilla/websocket"
 
 	"github.com/tendermint/tendermint/types"
 
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/allinbits/tracelistener/tracelistener/blocktime"
+	"github.com/emerishq/tracelistener/tracelistener/blocktime"
 
-	"github.com/allinbits/emeris-utils/database"
+	"github.com/emerishq/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 

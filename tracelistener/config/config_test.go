@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 
 	"github.com/stretchr/testify/require"
 )

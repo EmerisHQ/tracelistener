@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener/database"
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/emerishq/tracelistener/tracelistener/database"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"
@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
@@ -99,7 +99,11 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 			totalUnitsAmt += uint64(len(wbUnit.Data))
 
 			if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
-				i.Logger.Error("database error ", err)
+				i.Logger.Errorw("database error",
+					"error", err,
+					"statement", wbUnit.DatabaseExec,
+					"data", fmt.Sprint(wbUnit.Data),
+				)
 			}
 		}
 
