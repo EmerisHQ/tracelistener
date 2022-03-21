@@ -40,7 +40,11 @@ func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 	defer b.m.Unlock()
 
 	insert := make([]models.DatabaseEntrier, 0, len(b.insertHeightCache))
-	deleteEntries := make([]models.DatabaseEntrier, 0, len(b.deleteHeightCache))
+
+	// pre-allocate wbOp as follows:
+	// - 1 capacity unit for an eventual insert op
+	// - n capacity units for each element in deleteHeightCache
+	writebackOp := make([]tracelistener.WritebackOp, 0, 1+len(b.deleteHeightCache))
 
 	if len(b.insertHeightCache) != 0 {
 		for _, v := range b.insertHeightCache {
@@ -50,26 +54,25 @@ func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 		b.insertHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 	}
 
-	if len(b.deleteHeightCache) == 0 && insert == nil {
+	writebackOp = append(writebackOp, tracelistener.WritebackOp{
+		DatabaseExec: insertDelegation,
+		Data:         insert,
+	})
+
+	if len(b.deleteHeightCache) == 0 && len(insert) == 0 {
 		return nil
 	}
 
 	for _, v := range b.deleteHeightCache {
-		deleteEntries = append(deleteEntries, v)
+		writebackOp = append(writebackOp, tracelistener.WritebackOp{
+			DatabaseExec: deleteDelegation,
+			Data:         []models.DatabaseEntrier{v},
+		})
 	}
 
 	b.deleteHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 
-	return []tracelistener.WritebackOp{
-		{
-			DatabaseExec: insertDelegation,
-			Data:         insert,
-		},
-		{
-			DatabaseExec: deleteDelegation,
-			Data:         deleteEntries,
-		},
-	}
+	return writebackOp
 }
 
 func (b *delegationsProcessor) OwnsKey(key []byte) bool {

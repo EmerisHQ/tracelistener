@@ -66,17 +66,37 @@ func TestDelegationProcess(t *testing.T) {
 	tests := []struct {
 		name        string
 		delegation  testDelegation
-		newMessage  tracelistener.TraceOperation
+		newMessages []tracelistener.TraceOperation
 		expectedErr bool
 		expectedLen int
 	}{
 		{
 			"Delete operation of delegation - no error",
 			testDelegation{},
-			tracelistener.TraceOperation{
-				Operation: string(tracelistener.DeleteOp),
-				// <prefix><9><"delegator"><9><"validator">
-				Key: []byte{49, 9, 100, 101, 108, 101, 103, 97, 116, 111, 114, 9, 118, 97, 108, 105, 100, 97, 116, 111, 114},
+			[]tracelistener.TraceOperation{
+				{
+					Operation: string(tracelistener.DeleteOp),
+					// <prefix><9><"delegator"><9><"validator">
+					Key: []byte{49, 9, 100, 101, 108, 101, 103, 97, 116, 111, 114, 9, 118, 97, 108, 105, 100, 97, 116, 111, 114},
+				},
+			},
+			false,
+			1,
+		},
+		{
+			"Multiple delete operation of delegation - no error",
+			testDelegation{},
+			[]tracelistener.TraceOperation{
+				{
+					Operation: string(tracelistener.DeleteOp),
+					// <prefix><9><"delegator"><9><"validator">
+					Key: []byte{49, 9, 100, 101, 108, 101, 103, 97, 116, 111, 114, 9, 118, 97, 108, 105, 100, 97, 116, 111, 114},
+				},
+				{
+					Operation: string(tracelistener.DeleteOp),
+					// <prefix><9><"delegator"><9><"validator">
+					Key: []byte{49, 9, 101, 101, 108, 101, 103, 97, 116, 111, 114, 9, 119, 97, 108, 105, 100, 97, 116, 111, 114},
+				},
 			},
 			false,
 			1,
@@ -88,11 +108,13 @@ func TestDelegationProcess(t *testing.T) {
 				Validator: "cosmosvaloper19xawgvgn887e9gef5vkzkemwh33mtgwa6haa7s",
 				Shares:    100,
 			},
-			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
-				BlockHeight: 1,
-				TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+			[]tracelistener.TraceOperation{
+				{
+					Operation:   string(tracelistener.WriteOp),
+					Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
+					BlockHeight: 1,
+					TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+				},
 			},
 			false,
 			1,
@@ -102,11 +124,13 @@ func TestDelegationProcess(t *testing.T) {
 			testDelegation{
 				Shares: 100,
 			},
-			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
-				BlockHeight: 1,
-				TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+			[]tracelistener.TraceOperation{
+				{
+					Operation:   string(tracelistener.WriteOp),
+					Key:         []byte("AtdlV8qD6o6J2shsj9acpI+9Opd/e5uTqZIi7NK5i3y9"),
+					BlockHeight: 1,
+					TxHash:      "A5CF62609D62ADDE56816681B6191F5F0252D2800FC2C312EB91D962AB7A97CB",
+				},
 			},
 			true,
 			0,
@@ -119,41 +143,43 @@ func TestDelegationProcess(t *testing.T) {
 			d.deleteHeightCache = map[delegationCacheEntry]models.DelegationRow{}
 			d.l = zap.NewNop().Sugar()
 
-			tt.newMessage.Value = datamarshaler.NewTestDataMarshaler().Delegation(
-				tt.delegation.Validator,
-				tt.delegation.Delegator,
-				tt.delegation.Shares,
-			)
+			for _, message := range tt.newMessages {
+				message.Value = datamarshaler.NewTestDataMarshaler().Delegation(
+					tt.delegation.Validator,
+					tt.delegation.Delegator,
+					tt.delegation.Shares,
+				)
 
-			err = d.Process(tt.newMessage)
-			if tt.expectedErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
-
-			if tt.newMessage.Operation == tracelistener.DeleteOp.String() {
-				require.Len(t, d.deleteHeightCache, tt.expectedLen)
-
-				for k := range d.deleteHeightCache {
-					row := d.deleteHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
-					require.NotNil(t, row)
-
-					return
-				}
-			} else {
-				require.Len(t, d.insertHeightCache, tt.expectedLen)
-
-				for k := range d.insertHeightCache {
-					row := d.insertHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
-					require.NotNil(t, row)
-
-					amount := row.Amount
-					amtfloat, err := strconv.ParseFloat(amount, 64)
+				err = d.Process(message)
+				if tt.expectedErr {
+					require.Error(t, err)
+				} else {
 					require.NoError(t, err)
-					require.EqualValues(t, tt.delegation.Shares, amtfloat)
+				}
 
-					return
+				if message.Operation == tracelistener.DeleteOp.String() {
+					require.Len(t, d.deleteHeightCache, tt.expectedLen)
+
+					for k := range d.deleteHeightCache {
+						row := d.deleteHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
+						require.NotNil(t, row)
+
+						return
+					}
+				} else {
+					require.Len(t, d.insertHeightCache, tt.expectedLen)
+
+					for k := range d.insertHeightCache {
+						row := d.insertHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
+						require.NotNil(t, row)
+
+						amount := row.Amount
+						amtfloat, err := strconv.ParseFloat(amount, 64)
+						require.NoError(t, err)
+						require.EqualValues(t, tt.delegation.Shares, amtfloat)
+
+						return
+					}
 				}
 			}
 		})
