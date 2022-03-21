@@ -104,7 +104,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		Delegator:   res.Delegator,
 		Validator:   res.Validator,
 		Amount:      res.Amount,
-		BlockHeight: data.BlockHeight,
+		BlockHeight: data.Metadata.BlockHeight,
 	}
 
 	return nil

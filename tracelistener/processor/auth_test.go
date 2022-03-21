@@ -77,9 +77,11 @@ func TestAuthProcess(t *testing.T) {
 				Sequence:      11,
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("cosmos1xrnner9s783446"),
-				BlockHeight: 1,
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("cosmos1xrnner9s783446"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 1,
+				},
 			},
 			false,
 			1,
@@ -92,9 +94,11 @@ func TestAuthProcess(t *testing.T) {
 				Sequence:      11,
 			},
 			tracelistener.TraceOperation{
-				Operation:   string(tracelistener.WriteOp),
-				Key:         []byte("cosmos1xrnner9s783446"),
-				BlockHeight: 1,
+				Operation: string(tracelistener.WriteOp),
+				Key:       []byte("cosmos1xrnner9s783446"),
+				Metadata: tracelistener.TraceMetadata{
+					BlockHeight: 1,
+				},
 			},
 			true,
 			0,

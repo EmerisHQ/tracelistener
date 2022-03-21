@@ -1,12 +1,13 @@
 package tracelistener
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
+	"sync"
 	"time"
+	"unsafe"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
@@ -64,8 +65,8 @@ const (
 	dbPlaceholderLimit = dbPlaceholderTotalLimit / 10
 )
 
-// Operation is a kind of operations a TraceWatcher observes.
-type Operation []byte
+// Operation represents the kind of Cosmos SDK store operation a TraceWatcher observes.
+type Operation string
 
 // String implements fmt.Stringer on Operation.
 func (o Operation) String() string {
@@ -74,16 +75,21 @@ func (o Operation) String() string {
 
 var (
 	// WriteOp is a write trace operation
-	WriteOp Operation = []byte("write")
+	WriteOp Operation = Operation(writeOpStr)
 
 	// DeleteOp is a write trace operation
-	DeleteOp Operation = []byte("delete")
+	DeleteOp Operation = Operation(deleteOpStr)
 
 	// ReadOp is a write trace operation
-	ReadOp Operation = []byte("read")
+	ReadOp Operation = Operation(readOpStr)
 
 	// IterRangeOp is a write trace operation
-	IterRangeOp Operation = []byte("iterRange")
+	IterRangeOp Operation = Operation(iterRangeOp)
+
+	writeOpStr  = "write"
+	deleteOpStr = "delete"
+	readOpStr   = "read"
+	iterRangeOp = "iterRange"
 )
 
 // WritebackOp represents a unit of database writeback operated by a processor.
@@ -249,9 +255,17 @@ type TraceWatcher struct {
 	DataChan       chan<- TraceOperation
 	ErrorChan      chan<- error
 	Logger         *zap.SugaredLogger
+
+	toPool sync.Pool
 }
 
 func (tr *TraceWatcher) Watch() {
+	tr.toPool = sync.Pool{
+		New: func() interface{} {
+			return &TraceOperation{}
+		},
+	}
+
 	errorHappened := false
 	for { // infinite cycle, if something goes wrong in reading the fifo we restart the cycle
 		if errorHappened {
@@ -269,44 +283,55 @@ func (tr *TraceWatcher) Watch() {
 		}
 
 		for line := range t.Lines {
-			if line.Err != nil {
-				tr.ErrorChan <- fmt.Errorf("line reading error, line %v, error %w", line, err)
-				break // restart the reading loop
-			}
-
-			tr.Logger.Debugw("new line read from reader", "line", line.Text)
-
-			lineBytes := []byte(line.Text)
-
-			// Log line used to trigger Grafana alerts.
-			// Do not modify or remove without changing the corresponding dashboards
-			tr.Logger.Infow("Probe", "c", "trace", "s", len(lineBytes))
-
-			if !tr.mustConsiderData(lineBytes) {
-				continue
-			}
-
-			to := TraceOperation{}
-			if err := json.Unmarshal(lineBytes, &to); err != nil {
-				tr.ErrorChan <- fmt.Errorf("failed unmarshaling, %w, data: %s", err, line.Text)
-				continue
-			}
-
-			if err := tr.ParseOperation(to); err != nil {
-				tr.ErrorChan <- fmt.Errorf("failed parsing operation, %w, data: %s", err, line.Text)
-				continue
-			}
-
-			tr.Logger.Infow("trace processed",
-				"kind", to.Operation,
-				"block_height", to.BlockHeight,
-				"tx_hash", to.TxHash,
-			)
+			tr.handleLine(line)
 		}
 	}
 }
 
-func (tr *TraceWatcher) ParseOperation(data TraceOperation) error {
+func unsafeGetBytes(s string) []byte {
+	return (*[0x7fff0000]byte)(unsafe.Pointer(
+		(*reflect.StringHeader)(unsafe.Pointer(&s)).Data),
+	)[:len(s):len(s)]
+}
+
+func (tr *TraceWatcher) handleLine(line *tail.Line) {
+	if line.Err != nil {
+		tr.ErrorChan <- fmt.Errorf("line reading error, line %v, error %w", line, line.Err)
+		return
+	}
+
+	tr.Logger.Debugw("new line read from reader", "line", line.Text)
+
+	lineBytes := unsafeGetBytes(line.Text)
+
+	// Log line used to trigger Grafana alerts.
+	// Do not modify or remove without changing the corresponding dashboards
+	tr.Logger.Infow("Probe", "c", "trace", "s", len(lineBytes))
+
+	to := tr.toPool.Get().(*TraceOperation)
+	to.Reset()
+	defer func() {
+		tr.toPool.Put(to)
+	}()
+
+	if err := json.Unmarshal(lineBytes, &to); err != nil {
+		tr.ErrorChan <- fmt.Errorf("failed unmarshaling, %w, data: %s", err, line.Text)
+		return
+	}
+
+	if err := tr.ParseOperation(to); err != nil {
+		tr.ErrorChan <- fmt.Errorf("failed parsing operation, %w, data: %s", err, line.Text)
+		return
+	}
+
+	tr.Logger.Infow("trace processed",
+		"kind", to.Operation,
+		"block_height", to.Metadata.BlockHeight,
+		"tx_hash", to.Metadata.TxHash,
+	)
+}
+
+func (tr *TraceWatcher) ParseOperation(data *TraceOperation) error {
 	if !tr.mustConsiderOperation(data) {
 		return nil
 	}
@@ -316,28 +341,16 @@ func (tr *TraceWatcher) ParseOperation(data TraceOperation) error {
 		return nil
 	}
 
-	go func() {
-		tr.DataChan <- data
-	}()
+	// Happy path has been taken, locally copy data contents and pass
+	// them to the database writing goroutine.
+	go func(op TraceOperation) {
+		tr.DataChan <- op
+	}(data.Copy())
 
 	return nil
 }
 
-func (tr *TraceWatcher) mustConsiderData(b []byte) bool {
-	if tr.WatchedOps == nil || len(tr.WatchedOps) == 0 {
-		return true
-	}
-
-	for _, op := range tr.WatchedOps {
-		if bytes.Contains(b, op) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (tr *TraceWatcher) mustConsiderOperation(op TraceOperation) bool {
+func (tr *TraceWatcher) mustConsiderOperation(op *TraceOperation) bool {
 	if tr.WatchedOps == nil || len(tr.WatchedOps) == 0 {
 		return true
 	}

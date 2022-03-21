@@ -43,7 +43,7 @@ func (c *counter) value() int {
 
 type Importer struct {
 	Path         string
-	TraceWatcher tracelistener.TraceWatcher
+	TraceWatcher *tracelistener.TraceWatcher
 	Processor    tracelistener.DataProcessor
 	Logger       *zap.SugaredLogger
 	Database     *database.Instance
@@ -59,7 +59,7 @@ func ImportableModulesList() []string {
 	return ml
 }
 
-func (i Importer) validateModulesList() error {
+func (i *Importer) validateModulesList() error {
 	for _, m := range i.Modules {
 		if _, ok := tracelistener.SupportedSDKModuleList[tracelistener.SDKModuleName(m)]; !ok {
 			return fmt.Errorf("unknown bulk import module %s", m)
@@ -198,14 +198,16 @@ func (i *Importer) Do() error {
 
 			for ; ii.Valid(); ii.Next() {
 				to := tracelistener.TraceOperation{
-					Operation:          tracelistener.WriteOp.String(),
-					Key:                ii.Key(),
-					Value:              ii.Value(),
-					BlockHeight:        uint64(latestBlockHeight),
+					Operation: tracelistener.WriteOp.String(),
+					Key:       ii.Key(),
+					Value:     ii.Value(),
+					Metadata: tracelistener.TraceMetadata{
+						BlockHeight: uint64(latestBlockHeight),
+					},
 					SuggestedProcessor: tracelistener.SDKModuleName(key.Name()),
 				}
 
-				if err := i.TraceWatcher.ParseOperation(to); err != nil {
+				if err := i.TraceWatcher.ParseOperation(&to); err != nil {
 					return fmt.Errorf("cannot parse operation %v, %w", to, err)
 				}
 

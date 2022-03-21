@@ -1,60 +1,49 @@
 package tracelistener
 
-import (
-	"encoding/json"
-	"fmt"
-)
+// Copy deep-copies to to a new instances of TraceOperation,
+// useful when sending over data down the processing pipeline.
+func (to *TraceOperation) Copy() TraceOperation {
+	ret := *to
 
-const (
-	metadataBlockHeight = "blockHeight"
-	metadataTxHash      = "txHash"
-)
+	// Explicitly copy key and value slices to new
+	// slice instances to avoid aliasing.
+	ret.Key = make([]byte, len(to.Key))
+	copy(ret.Key, to.Key)
 
+	ret.Value = make([]byte, len(to.Value))
+	copy(ret.Value, to.Value)
+
+	return ret
+}
+
+// Reset resets to to an empty state.
+// Useful when storing it in a sync.Pool.
+func (to *TraceOperation) Reset() {
+	to.Operation = ""
+	to.Key = to.Key[:0]
+	to.Value = to.Value[:0]
+	to.Metadata.BlockHeight = 0
+	to.Metadata.TxHash = ""
+	to.SuggestedProcessor = ""
+}
+
+// TraceMetadata holds circumstantial information about a trace,
+// like the block height at which it was generated, and optionally a
+// the block hash that generated it.
+type TraceMetadata struct {
+	BlockHeight uint64 `json:"blockHeight"`
+	TxHash      string `json:"txHash"`
+}
+
+// TraceOperation represents a Cosmos SDK store operation, parsed from
+// JSON lines produced by the SDK's "--trace-store" CLI flag.
 type TraceOperation struct {
-	Operation   string `json:"operation"`
-	Key         []byte `json:"key"`
-	Value       []byte `json:"value"`
-	BlockHeight uint64 `json:"block_height"`
-	TxHash      string `json:"tx_hash"`
+	Operation string        `json:"operation"`
+	Key       []byte        `json:"key"`
+	Value     []byte        `json:"value"`
+	Metadata  TraceMetadata `json:"metadata"`
 
 	// SuggestedProcessor signals to the trace processor that
 	// what SDK module this trace comes from.
 	SuggestedProcessor SDKModuleName
-}
-
-func (t TraceOperation) String() string {
-	return fmt.Sprintf(`[%s] "%v" -> "%v"`, t.Operation, string(t.Key), string(t.Value))
-}
-
-type traceOperationInter struct {
-	Operation string                 `json:"operation"`
-	Key       []byte                 `json:"key"`
-	Value     []byte                 `json:"value"`
-	Metadata  map[string]interface{} `json:"metadata"`
-}
-
-func (t *TraceOperation) UnmarshalJSON(bytes []byte) error {
-	toi := traceOperationInter{}
-
-	if err := json.Unmarshal(bytes, &toi); err != nil {
-		return err
-	}
-
-	if toi.Metadata == nil {
-		t.BlockHeight = 0
-	} else {
-		if data, ok := toi.Metadata[metadataBlockHeight]; ok {
-			t.BlockHeight = uint64(data.(float64))
-		}
-
-		if data, ok := toi.Metadata[metadataTxHash]; ok {
-			t.TxHash = data.(string)
-		}
-	}
-
-	t.Operation = toi.Operation
-	t.Key = toi.Key
-	t.Value = toi.Value
-
-	return nil
 }
