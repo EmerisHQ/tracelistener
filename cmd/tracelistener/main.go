@@ -8,19 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/emerishq/tracelistener/tracelistener/bulk"
-	"github.com/emerishq/tracelistener/tracelistener/processor"
+	"github.com/containerd/fifo"
 	"github.com/pkg/profile"
-
-	"github.com/emerishq/tracelistener/tracelistener/blocktime"
+	"go.uber.org/zap"
 
 	"github.com/emerishq/emeris-utils/logging"
-
 	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/blocktime"
+	"github.com/emerishq/tracelistener/tracelistener/bulk"
 	"github.com/emerishq/tracelistener/tracelistener/config"
 	"github.com/emerishq/tracelistener/tracelistener/database"
-	"github.com/containerd/fifo"
-	"go.uber.org/zap"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 )
 
 var (

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/emerishq/tracelistener/tracelistener/database"
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/emerishq/tracelistener/tracelistener/database"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"

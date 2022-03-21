@@ -336,6 +336,8 @@ github.com/cosmos/cosmos-sdk v0.42.2/go.mod h1:xiLp1G8mumj82S5KLJGCAyeAlD+7VNomg
 github.com/cosmos/cosmos-sdk v0.42.4/go.mod h1:I1Zw1zmU4rA/NITaakTb71pXQnQrWyFBhqo3WSeg0vA=
 github.com/cosmos/cosmos-sdk v0.42.6/go.mod h1:kh37gwYQoWdgR7N/9zeqW2rJ7cnP2W4A7nqIaf6m3zg=
 github.com/cosmos/cosmos-sdk v0.42.8/go.mod h1:SrclJP9lMXxz2fCbngxb0brsPNuZXqoQQ9VHuQ3Tpf4=
+github.com/cosmos/cosmos-sdk v0.42.10 h1:CO+V3RqeFVu6TkqDlQj1992BYK0a7p0eekQ2KsH7SZo=
+github.com/cosmos/cosmos-sdk v0.42.10/go.mod h1:uRfvOMODP3ltiDN3GMDTKCZnGxG1NSFdoOEKtizoCtc=
 github.com/cosmos/cosmos-sdk v0.44.3/go.mod h1:bA3+VenaR/l/vDiYzaiwbWvRPWHMBX2jG0ygiFtiBp0=
 github.com/cosmos/cosmos-sdk v0.44.5/go.mod h1:maUA6m2TBxOJZkbwl0eRtEBgTX37kcaiOWU5t1HEGaY=
 github.com/cosmos/cosmos-sdk v0.44.6/go.mod h1:XXS/asyCqWNWkx2rW6pSuen+EVcpAFxq6khrhnZgHaQ=
@@ -446,6 +448,7 @@ github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb
 github.com/emicklei/go-restful v2.9.5+incompatible/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
 github.com/emicklei/proto v1.9.0/go.mod h1:rn1FgRS/FANiZdD2djyH7TMA9jdRDcYQ9IEN9yvjX0A=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
+github.com/enigmampc/btcutil v1.0.3-0.20200723161021-e2fb6adb2a25 h1:2vLKys4RBU4pn2T/hjXMbvwTr1Cvy5THHrQkbeY9HRk=
 github.com/enigmampc/btcutil v1.0.3-0.20200723161021-e2fb6adb2a25/go.mod h1:hTr8+TLQmkUkgcuh3mcr5fjrT9c64ZzsBCdCEC6UppY=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/go-control-plane v0.10.1/go.mod h1:AY7fTTXNdv/aJ2O5jwpxAPOWUZ7hQAEvzN5Pf27BkQQ=
@@ -776,6 +779,7 @@ github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/ad
 github.com/gotestyourself/gotestyourself v2.2.0+incompatible/go.mod h1:zZKM6oeNM8k+FRljX1mnzVYeS8wiGgQyvST1/GafPbY=
 github.com/graph-gophers/graphql-go v0.0.0-20191115155744-f33e81362277/go.mod h1:9CQHMSxwO4MprSdzoIEobiHpoLtHm77vfxsvsIN5Vuc=
 github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29/go.mod h1:9CQHMSxwO4MprSdzoIEobiHpoLtHm77vfxsvsIN5Vuc=
+github.com/gravity-devs/liquidity v1.2.9 h1:s7hUL25q2DutBT9kOfm7GlHbo/sN9J5SAgpEmOnt3AM=
 github.com/gravity-devs/liquidity v1.2.9/go.mod h1:UpfrpdGgeoLcpeJaMej/WuwLW5YyCC5hxEPnJbQOTN8=
 github.com/gravity-devs/liquidity v1.4.6 h1:JIshxDtZG7mmqF/m9nj5HBj58md97J6IPFUdHU5cWhU=
 github.com/gravity-devs/liquidity v1.4.6/go.mod h1:RcE8hMHhY+0bnKVEShiLi+zbboAxNRKTtPgleeJjM5I=
