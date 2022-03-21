@@ -182,6 +182,7 @@ func TestLifecycle(t *testing.T) {
 
 			// we know p is of type processor.Processor
 			gp := p.(*processor.Processor)
+			gp.StartBackgroundProcessing()
 			require.NotNil(t, gp)
 
 			// let's add something we can actually control
