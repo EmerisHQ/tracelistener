@@ -99,7 +99,11 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 			totalUnitsAmt += uint64(len(wbUnit.Data))
 
 			if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
-				i.Logger.Error("database error ", err)
+				i.Logger.Errorw("database error",
+					"error", err,
+					"statement", wbUnit.DatabaseExec,
+					"data", fmt.Sprint(wbUnit.Data),
+				)
 			}
 		}
 
