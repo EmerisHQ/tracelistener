@@ -9,8 +9,8 @@ import (
 	"github.com/tendermint/tendermint/types"
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/emeris-utils/database"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/emeris-utils/database"
 )
 
 const (

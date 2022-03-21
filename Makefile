@@ -13,7 +13,7 @@ COVERAGE_VERSIONS = $(shell jq -r '.versions|map("coverage-\(.)")[]' ${TARGETS})
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 
-BASEPKG = github.com/allinbits/tracelistener
+BASEPKG = github.com/emerishq/tracelistener
 .PHONY: clean $(SETUP_VERSIONS) $(BUILD_VERSIONS)
 
 $(BUILD_VERSIONS):

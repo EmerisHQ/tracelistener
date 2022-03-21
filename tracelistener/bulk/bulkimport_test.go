@@ -14,14 +14,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 
-	"github.com/allinbits/tracelistener/tracelistener/blocktime"
-	bulk "github.com/allinbits/tracelistener/tracelistener/bulk"
-	"github.com/allinbits/tracelistener/tracelistener/config"
-	"github.com/allinbits/tracelistener/tracelistener/database"
-	"github.com/allinbits/tracelistener/tracelistener/processor"
+	"github.com/emerishq/tracelistener/tracelistener/blocktime"
+	bulk "github.com/emerishq/tracelistener/tracelistener/bulk"
+	"github.com/emerishq/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/database"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 )
 
 func TestImporterDo(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 )
 
 const (

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 	"go.uber.org/zap"
 )
 

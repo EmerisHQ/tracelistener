@@ -3,8 +3,8 @@
 package processor
 
 import (
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 // This file contains some unbonding delegations test cases which are v44-specific.

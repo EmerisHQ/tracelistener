@@ -8,10 +8,10 @@ import (
 	"reflect"
 	"time"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 
 	"go.uber.org/zap"
 )

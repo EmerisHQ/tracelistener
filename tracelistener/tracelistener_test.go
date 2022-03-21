@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/database"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"

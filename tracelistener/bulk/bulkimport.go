@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener/database"
+	"github.com/emerishq/tracelistener/tracelistener/database"
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
 	"golang.org/x/sync/errgroup"
 
@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )

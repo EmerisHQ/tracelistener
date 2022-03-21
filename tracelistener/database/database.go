@@ -1,7 +1,7 @@
 package database
 
 import (
-	dbutils "github.com/allinbits/emeris-utils/database"
+	dbutils "github.com/emerishq/emeris-utils/database"
 )
 
 type Instance struct {

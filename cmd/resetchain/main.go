@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/allinbits/emeris-utils/database"
-	"github.com/allinbits/emeris-utils/logging"
+	"github.com/emerishq/emeris-utils/database"
+	"github.com/emerishq/emeris-utils/logging"
 )
 
 func main() {

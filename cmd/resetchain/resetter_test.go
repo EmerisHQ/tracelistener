@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/allinbits/emeris-utils/database"
+	"github.com/emerishq/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"

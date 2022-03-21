@@ -1,8 +1,8 @@
 package datamarshaler
 
 import (
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 	"go.uber.org/zap"
 )
 
