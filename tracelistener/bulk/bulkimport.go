@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/emerishq/tracelistener/tracelistener/database"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"
@@ -23,23 +23,6 @@ import (
 	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
-
-type counter struct {
-	ctr int
-	m   sync.Mutex
-}
-
-func (c *counter) increment() {
-	c.m.Lock()
-	defer c.m.Unlock()
-	c.ctr++
-}
-
-func (c *counter) value() int {
-	c.m.Lock()
-	defer c.m.Unlock()
-	return c.ctr
-}
 
 type Importer struct {
 	Path         string
@@ -69,16 +52,7 @@ func (i Importer) validateModulesList() error {
 	return nil
 }
 
-func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMutex *sync.Mutex, ctr *counter) {
-	i.Logger.Info("requesting database lock for writing...")
-	dbMutex.Lock()
-	defer func() {
-		ctr.increment()
-		i.Logger.Info("releasing database lock now!")
-		dbMutex.Unlock()
-	}()
-
-	i.Logger.Info("lock acquired, proceeding with database write!")
+func (i *Importer) processWritebackData(data []tracelistener.WritebackOp) {
 	for _, p := range data {
 		if len(p.Data) == 0 {
 			continue
@@ -91,6 +65,7 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 			is := wbUnit.InterfaceSlice()
 
 			i.Logger.Infow("writing chunks to database",
+				"module", p.SourceModule,
 				"total chunks", len(wbUnits),
 				"current chunk", idx,
 				"total writeback units data", len(wbUnit.Data),
@@ -107,7 +82,8 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp, dbMute
 			}
 		}
 
-		i.Logger.Infow("total database rows to be written",
+		i.Logger.Infow("total database rows written",
+			"module", p.SourceModule,
 			"amount", len(p.Data),
 			"chunked amount written", totalUnitsAmt,
 			"remains", uint64(len(p.Data))-totalUnitsAmt,
@@ -126,30 +102,6 @@ func (i *Importer) Do() error {
 	if i.Modules == nil {
 		i.Modules = ImportableModulesList()
 	}
-
-	dbMutex := sync.Mutex{}
-	ctr := &counter{}
-	t0 := time.Now()
-	done := make(chan struct{})
-	// spawn a goroutine that logs errors from processor's error chan
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case e := <-i.Processor.ErrorsChan():
-				te := e.(tracelistener.TracingError)
-				i.Logger.Errorw(
-					"error while processing data",
-					"error", te.InnerError,
-					"data", te.Data,
-					"moduleName", te.Module)
-			case b := <-i.Processor.WritebackChan():
-				i.Logger.Debugw("wbchan called", "idx", ctr.value())
-				i.processWritebackData(b, &dbMutex, ctr)
-			}
-		}
-	}()
 
 	i.Path = strings.TrimSuffix(i.Path, ".db")
 
@@ -180,9 +132,32 @@ func (i *Importer) Do() error {
 		panic(err)
 	}
 
-	processingTime := time.Now()
-
 	keysLen := len(keys)
+
+	wbChan := make(chan []tracelistener.WritebackOp, keysLen)
+
+	t0 := time.Now()
+	done := make(chan struct{})
+	// spawn a goroutine that logs errors from processor's error chan
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case e := <-i.Processor.ErrorsChan():
+				te := e.(tracelistener.TracingError)
+				i.Logger.Errorw(
+					"error while processing data",
+					"error", te.InnerError,
+					"data", te.Data,
+					"moduleName", te.Module)
+			case b := <-i.Processor.WritebackChan():
+				wbChan <- b
+			}
+		}
+	}()
+
+	processingTime := time.Now()
 
 	eg := errgroup.Group{}
 	for idx, key := range keys {
@@ -205,8 +180,9 @@ func (i *Importer) Do() error {
 					SuggestedProcessor: tracelistener.SDKModuleName(key.Name()),
 				}
 
-				if err := i.TraceWatcher.ParseOperation(to); err != nil {
-					return fmt.Errorf("cannot parse operation %v, %w", to, err)
+				pp := i.Processor.(*processor.Processor)
+				if err := pp.ProcessData(to); err != nil {
+					i.Logger.Errorw("processing error", "error", err)
 				}
 
 				i.Logger.Debugw("parsed data", "key", string(to.Key), "value", string(to.Value))
@@ -220,8 +196,6 @@ func (i *Importer) Do() error {
 			if err := ii.Close(); err != nil {
 				return fmt.Errorf("cannot close iterator, %w", err)
 			}
-
-			time.Sleep(1 * time.Second)
 
 			if err := i.Processor.Flush(); err != nil {
 				return fmt.Errorf("cannot flush processor cache, %w", err)
@@ -240,8 +214,6 @@ func (i *Importer) Do() error {
 		return fmt.Errorf("database closing error, %w", err)
 	}
 
-	i.Logger.Info("requesting database lock before finalizing bulk import...")
-
 	/*
 		This is dumb but it works.
 
@@ -251,20 +223,21 @@ func (i *Importer) Do() error {
 		    case b := <-i.Processor.WritebackChan():
 		in the processor's select will happen: exactly len(keys) times.
 
-		To make sure we wait until this is true, we wait forever until dbWritebackCallAmt is equal to len(keys).
-		To further strengthen our logic here we only increment dbWritebackCallAmt when the WritebackChan acquires a lock
-		on dbMutex, so that when this infinite for cycle will actually break, we block again until the database func call has
-		finished writing.
-		After that, we acquire the lock and continue with our own way.
+		To make sure we wait until this is true, we wait forever until len(wbChan) is equal to len(keys).
+		Since wbChan is a buffered channel with len(keys) elements, the Go runtime gives us synchronization for free.
+		After that, we write back data to the database.
 	*/
-	for ctr.value() != keysLen {
+	for len(wbChan) != keysLen {
 		runtime.Gosched()
 	}
 
 	done <- struct{}{}
+	close(wbChan)
 
-	dbMutex.Lock()
-	i.Logger.Info("database lock acquired, finalizing")
+	for data := range wbChan {
+		i.processWritebackData(data)
+	}
+
 	tn := time.Now()
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
 

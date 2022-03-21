@@ -91,6 +91,10 @@ var (
 type WritebackOp struct {
 	DatabaseExec string
 	Data         []models.DatabaseEntrier
+
+	// SourceModule indicates the SDK module which initiated a WritebackOp.
+	// It is used in bulk importing only.
+	SourceModule string
 }
 
 // InterfaceSlice returns Data as a slice of interface{}.
@@ -225,6 +229,8 @@ type DataProcessor interface {
 	ErrorsChan() chan error
 	DatabaseMigrations() []string
 	Flush() error
+	StartBackgroundProcessing()
+	StopBackgroundProcessing()
 }
 
 type TracingError struct {
