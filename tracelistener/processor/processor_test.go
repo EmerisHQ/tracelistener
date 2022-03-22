@@ -29,7 +29,7 @@ type dumbModule struct {
 	moduleName    string
 }
 
-func (d dumbModule) FlushCache(upsert bool) []tracelistener.WritebackOp {
+func (d dumbModule) FlushCache() []tracelistener.WritebackOp {
 	return d.wbOp
 }
 
@@ -58,6 +58,18 @@ func (d dumbModule) ModuleName() string {
 
 func (d dumbModule) TableSchema() string {
 	return d.tableSchema
+}
+
+func (d dumbModule) UpsertStatement() string {
+	return ""
+}
+
+func (d dumbModule) InsertStatement() string {
+	return ""
+}
+
+func (d dumbModule) DeleteStatement() string {
+	return ""
 }
 
 func TestNew(t *testing.T) {

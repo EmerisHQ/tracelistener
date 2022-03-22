@@ -195,7 +195,7 @@ func TestWritebackOp_SplitStatements(t *testing.T) {
 		{
 			"limit equal to (fieldsAmount*4 - 1), returns 2 elements",
 			tracelistener.WritebackOp{
-				Type: "",
+				Type: tracelistener.Write,
 				Data: []models.DatabaseEntrier{
 					models.AuthRow{
 						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -238,7 +238,7 @@ func TestWritebackOp_SplitStatements(t *testing.T) {
 		{
 			"limit of fieldsAmount returns exactly len(needle.Data)",
 			tracelistener.WritebackOp{
-				Type: "statement",
+				Type: tracelistener.Write,
 				Data: []models.DatabaseEntrier{
 					models.AuthRow{
 						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -281,7 +281,7 @@ func TestWritebackOp_SplitStatements(t *testing.T) {
 		{
 			"limit greater than fieldsAmount*4 returns exactly 1 element",
 			tracelistener.WritebackOp{
-				Type: "statement",
+				Type: tracelistener.Write,
 				Data: []models.DatabaseEntrier{
 					models.AuthRow{
 						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -402,7 +402,7 @@ func TestWritebackOp_DBPlaceholderAmount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wo := tracelistener.WritebackOp{
-				Type: "statement",
+				Type: tracelistener.Write,
 				Data: tt.data,
 			}
 
@@ -473,7 +473,7 @@ func TestWritebackOp_DBSinglePlaceholderAmount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wo := tracelistener.WritebackOp{
-				Type: "statement",
+				Type: tracelistener.Write,
 				Data: tt.data,
 			}
 
@@ -493,7 +493,7 @@ func TestWritebackOp_SplitStatementToDBLimit(t *testing.T) {
 	}
 
 	wu := tracelistener.WritebackOp{
-		Type: "statement",
+		Type: tracelistener.Write,
 		Data: make([]models.DatabaseEntrier, 16385),
 	}
 
@@ -548,7 +548,7 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 	)
 
 	dbe := tracelistener.WritebackOp{
-		Type: insert,
+		Type: tracelistener.Write,
 		Data: insertData,
 	}
 
