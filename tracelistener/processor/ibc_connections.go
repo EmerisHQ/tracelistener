@@ -39,6 +39,18 @@ func (b *ibcConnectionsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.IBC
 }
 
+func (b *ibcConnectionsProcessor) UpsertStatement() string {
+	return upsertConnection
+}
+
+func (b *ibcConnectionsProcessor) InsertStatement() string {
+	return insertConnection
+}
+
+func (b *ibcConnectionsProcessor) DeleteStatement() string {
+	panic("ibc connections processor never deletes")
+}
+
 func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -57,8 +69,8 @@ func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertConnection,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

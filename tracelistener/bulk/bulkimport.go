@@ -73,10 +73,10 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp) {
 
 			totalUnitsAmt += uint64(len(wbUnit.Data))
 
-			if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
+			if err := i.Database.Add(wbUnit.Type, is); err != nil {
 				i.Logger.Errorw("database error",
 					"error", err,
-					"statement", wbUnit.DatabaseExec,
+					"statement", wbUnit.Type,
 					"data", fmt.Sprint(wbUnit.Data),
 				)
 			}

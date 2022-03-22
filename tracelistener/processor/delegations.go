@@ -35,6 +35,18 @@ func (b *delegationsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Staking
 }
 
+func (b *delegationsProcessor) UpsertStatement() string {
+	return upsertDelegation
+}
+
+func (b *delegationsProcessor) InsertStatement() string {
+	return insertDelegation
+}
+
+func (b *delegationsProcessor) DeleteStatement() string {
+	return deleteDelegation
+}
+
 func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -55,8 +67,8 @@ func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 	}
 
 	writebackOp = append(writebackOp, tracelistener.WritebackOp{
-		DatabaseExec: insertDelegation,
-		Data:         insert,
+		Type: tracelistener.Write,
+		Data: insert,
 	})
 
 	if len(b.deleteHeightCache) == 0 && len(insert) == 0 {
@@ -65,8 +77,8 @@ func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	for _, v := range b.deleteHeightCache {
 		writebackOp = append(writebackOp, tracelistener.WritebackOp{
-			DatabaseExec: deleteDelegation,
-			Data:         []models.DatabaseEntrier{v},
+			Type: tracelistener.Delete,
+			Data: []models.DatabaseEntrier{v},
 		})
 	}
 

@@ -86,11 +86,18 @@ var (
 	IterRangeOp Operation = []byte("iterRange")
 )
 
+type WritebackStatementTypes uint
+
+const (
+	Delete WritebackStatementTypes = iota
+	Write
+)
+
 // WritebackOp represents a unit of database writeback operated by a processor.
 // It contains the database query to be executed along with a slice of DatabaseEntrier data.
 type WritebackOp struct {
-	DatabaseExec string
-	Data         []models.DatabaseEntrier
+	Type WritebackStatementTypes
+	Data []models.DatabaseEntrier
 
 	// SourceModule indicates the SDK module which initiated a WritebackOp.
 	// It is used in bulk importing only.
@@ -195,8 +202,8 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 	ret := make([]WritebackOp, 0, splitAmount)
 	for _, chunk := range buildEntrierChunks(wo.Data, splitAmount) {
 		ret = append(ret, WritebackOp{
-			DatabaseExec: wo.DatabaseExec,
-			Data:         chunk,
+			Type: wo.Type,
+			Data: chunk,
 		})
 	}
 
@@ -229,6 +236,7 @@ type DataProcessor interface {
 	ErrorsChan() chan error
 	DatabaseMigrations() []string
 	Flush() error
+	SetDBUpsertEnabled(enabled bool)
 	StartBackgroundProcessing()
 	StopBackgroundProcessing()
 }

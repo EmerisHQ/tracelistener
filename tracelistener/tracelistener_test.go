@@ -195,7 +195,7 @@ func TestWritebackOp_SplitStatements(t *testing.T) {
 		{
 			"limit equal to (fieldsAmount*4 - 1), returns 2 elements",
 			tracelistener.WritebackOp{
-				DatabaseExec: "",
+				Type: "",
 				Data: []models.DatabaseEntrier{
 					models.AuthRow{
 						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -238,7 +238,7 @@ func TestWritebackOp_SplitStatements(t *testing.T) {
 		{
 			"limit of fieldsAmount returns exactly len(needle.Data)",
 			tracelistener.WritebackOp{
-				DatabaseExec: "statement",
+				Type: "statement",
 				Data: []models.DatabaseEntrier{
 					models.AuthRow{
 						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -281,7 +281,7 @@ func TestWritebackOp_SplitStatements(t *testing.T) {
 		{
 			"limit greater than fieldsAmount*4 returns exactly 1 element",
 			tracelistener.WritebackOp{
-				DatabaseExec: "statement",
+				Type: "statement",
 				Data: []models.DatabaseEntrier{
 					models.AuthRow{
 						TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -402,8 +402,8 @@ func TestWritebackOp_DBPlaceholderAmount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wo := tracelistener.WritebackOp{
-				DatabaseExec: "statement",
-				Data:         tt.data,
+				Type: "statement",
+				Data: tt.data,
 			}
 
 			require.Equal(t, tt.want, wo.DBPlaceholderAmount())
@@ -473,8 +473,8 @@ func TestWritebackOp_DBSinglePlaceholderAmount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wo := tracelistener.WritebackOp{
-				DatabaseExec: "statement",
-				Data:         tt.data,
+				Type: "statement",
+				Data: tt.data,
 			}
 
 			require.Equal(t, tt.want, wo.DBSinglePlaceholderAmount())
@@ -493,8 +493,8 @@ func TestWritebackOp_SplitStatementToDBLimit(t *testing.T) {
 	}
 
 	wu := tracelistener.WritebackOp{
-		DatabaseExec: "statement",
-		Data:         make([]models.DatabaseEntrier, 16385),
+		Type: "statement",
+		Data: make([]models.DatabaseEntrier, 16385),
 	}
 
 	// building a writebackop with data which goes past the postgresql placeholder amount
@@ -548,8 +548,8 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 	)
 
 	dbe := tracelistener.WritebackOp{
-		DatabaseExec: insert,
-		Data:         insertData,
+		Type: insert,
+		Data: insertData,
 	}
 
 	insertErr := i.Add(insert, dbe.InterfaceSlice())

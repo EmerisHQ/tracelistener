@@ -29,7 +29,7 @@ func (b *ibcDenomTracesProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Transfer
 }
 
-func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
+func (b *ibcDenomTracesProcessor) FlushCache(upsert bool) []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 
@@ -47,8 +47,8 @@ func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertDenomTrace,
-			Data:         l,
+			Type: insertDenomTrace,
+			Data: l,
 		},
 	}
 }

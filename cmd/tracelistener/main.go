@@ -4,11 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math/rand"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/containerd/fifo"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/profile"
 	"go.uber.org/zap"
 
@@ -25,6 +27,17 @@ var (
 	Version             = "not specified"
 	SupportedSDKVersion = ""
 )
+
+// TODO: remove
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
 
 func main() {
 	if SupportedSDKVersion == "" {
@@ -43,6 +56,10 @@ func main() {
 		panic(err)
 	}
 
+	rand.Seed(time.Now().UnixNano())
+
+	cfg.ChainName = fmt.Sprintf("%s%s", cfg.ChainName, randSeq(5))
+
 	logger := buildLogger(cfg)
 
 	if cfg.EnableCpuProfiling {
@@ -56,6 +73,8 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	dpi.SetDBUpsertEnabled(true)
 
 	dpi.StartBackgroundProcessing()
 
@@ -136,17 +155,36 @@ func main() {
 						continue
 					}
 
-					if err := di.Add(wbUnit.DatabaseExec, is); err != nil {
+					if err := insertDB(di.Instance.DB, wbUnit.Type, is); err != nil {
 						logger.Errorw("database error",
 							"error", err,
-							"statement", wbUnit.DatabaseExec,
+							"statement", wbUnit.Type,
 							"data", fmt.Sprint(wbUnit.Data),
 						)
 					}
+
 				}
 			}
 		}
 	}
+}
+
+func insertDB(db *sqlx.DB, query string, params interface{}) error {
+	res, err := db.NamedExec(query, params)
+	if err != nil {
+		return fmt.Errorf("transaction named exec error, %w", err)
+	}
+
+	re, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("transaction named exec error, %w", err)
+	}
+
+	if re == 0 {
+		return fmt.Errorf("affected rows are zero")
+	}
+
+	return nil
 }
 
 func buildLogger(c *config.Config) *zap.SugaredLogger {

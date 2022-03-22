@@ -35,7 +35,7 @@ func (b *ibcClientsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.IBC
 }
 
-func (b *ibcClientsProcessor) FlushCache() []tracelistener.WritebackOp {
+func (b *ibcClientsProcessor) FlushCache(upsert bool) []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 
@@ -53,8 +53,8 @@ func (b *ibcClientsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertClient,
-			Data:         l,
+			Type: insertClient,
+			Data: l,
 		},
 	}
 }

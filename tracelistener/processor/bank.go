@@ -30,6 +30,18 @@ func (b *bankProcessor) ModuleName() string {
 	return "bank"
 }
 
+func (b *bankProcessor) UpsertStatement() string {
+	return upsertBalance
+}
+
+func (b *bankProcessor) InsertStatement() string {
+	return insertBalance
+}
+
+func (b *bankProcessor) DeleteStatement() string {
+	panic("bank processor never deletes")
+}
+
 func (b *bankProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Bank
 }
@@ -52,8 +64,8 @@ func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertBalance,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

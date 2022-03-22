@@ -29,7 +29,7 @@ type dumbModule struct {
 	moduleName    string
 }
 
-func (d dumbModule) FlushCache() []tracelistener.WritebackOp {
+func (d dumbModule) FlushCache(upsert bool) []tracelistener.WritebackOp {
 	return d.wbOp
 }
 

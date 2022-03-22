@@ -18,6 +18,9 @@ type Module interface {
 	ModuleName() string
 	SDKModuleName() tracelistener.SDKModuleName
 	TableSchema() string
+	UpsertStatement() string
+	InsertStatement() string
+	DeleteStatement() string
 }
 
 var defaultProcessors = []string{
@@ -43,6 +46,7 @@ type Processor struct {
 	moduleProcessors []Module
 	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
 	lifecycleStop    chan struct{}
+	useDBUpsert      bool
 
 	processingData sync.Mutex
 }
@@ -101,6 +105,10 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	}
 
 	return &p, nil
+}
+
+func (p *Processor) SetDBUpsertEnabled(enabled bool) {
+	p.useDBUpsert = enabled
 }
 
 func (p *Processor) StartBackgroundProcessing() {
@@ -185,7 +193,7 @@ func (p *Processor) Flush() error {
 	wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
 
 	for _, mp := range p.moduleProcessors {
-		cd := mp.FlushCache()
+		cd := mp.FlushCache(p.useDBUpsert)
 		for _, entry := range cd {
 			if len(entry.Data) == 0 {
 				continue
