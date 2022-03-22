@@ -45,7 +45,7 @@ func (b *validatorsProcessor) DeleteStatement() string {
 	return deleteValidator
 }
 
-func (b *validatorsProcessor) FlushCache(upsert bool) []tracelistener.WritebackOp {
+func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 

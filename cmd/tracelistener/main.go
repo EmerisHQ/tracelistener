@@ -4,13 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math/rand"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/containerd/fifo"
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/profile"
 	"go.uber.org/zap"
 
@@ -28,17 +26,6 @@ var (
 	SupportedSDKVersion = ""
 )
 
-// TODO: remove
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randSeq(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
 func main() {
 	if SupportedSDKVersion == "" {
 		panic("missing sdk version at compile time, panic!")
@@ -55,10 +42,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	rand.Seed(time.Now().UnixNano())
-
-	cfg.ChainName = fmt.Sprintf("%s%s", cfg.ChainName, randSeq(5))
 
 	logger := buildLogger(cfg)
 
@@ -155,10 +138,11 @@ func main() {
 						continue
 					}
 
-					if err := insertDB(di.Instance.DB, wbUnit.Type, is); err != nil {
+					if err := di.Add(wbUnit.Statement, is); err != nil {
 						logger.Errorw("database error",
 							"error", err,
-							"statement", wbUnit.Type,
+							"statement", wbUnit.Statement,
+							"type", wbUnit.Type,
 							"data", fmt.Sprint(wbUnit.Data),
 						)
 					}
@@ -167,24 +151,6 @@ func main() {
 			}
 		}
 	}
-}
-
-func insertDB(db *sqlx.DB, query string, params interface{}) error {
-	res, err := db.NamedExec(query, params)
-	if err != nil {
-		return fmt.Errorf("transaction named exec error, %w", err)
-	}
-
-	re, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("transaction named exec error, %w", err)
-	}
-
-	if re == 0 {
-		return fmt.Errorf("affected rows are zero")
-	}
-
-	return nil
 }
 
 func buildLogger(c *config.Config) *zap.SugaredLogger {

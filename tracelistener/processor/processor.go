@@ -193,7 +193,7 @@ func (p *Processor) Flush() error {
 	wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
 
 	for _, mp := range p.moduleProcessors {
-		cd := mp.FlushCache(p.useDBUpsert)
+		cd := mp.FlushCache()
 		for _, entry := range cd {
 			if len(entry.Data) == 0 {
 				continue
@@ -201,6 +201,19 @@ func (p *Processor) Flush() error {
 
 			for i := 0; i < len(entry.Data); i++ {
 				entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
+			}
+
+			switch entry.Type {
+			case tracelistener.Delete:
+				entry.Statement = mp.DeleteStatement()
+			case tracelistener.Write:
+				if p.useDBUpsert {
+					entry.Statement = mp.UpsertStatement()
+				} else {
+					entry.Statement = mp.InsertStatement()
+				}
+			default:
+				panic(fmt.Sprint("found unknown wbop type", entry.Type))
 			}
 
 			entry.SourceModule = mp.SDKModuleName().String()

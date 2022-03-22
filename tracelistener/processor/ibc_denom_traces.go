@@ -29,7 +29,19 @@ func (b *ibcDenomTracesProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Transfer
 }
 
-func (b *ibcDenomTracesProcessor) FlushCache(upsert bool) []tracelistener.WritebackOp {
+func (b *ibcDenomTracesProcessor) UpsertStatement() string {
+	return upsertDenomTrace
+}
+
+func (b *ibcDenomTracesProcessor) InsertStatement() string {
+	return insertDenomTrace
+}
+
+func (b *ibcDenomTracesProcessor) DeleteStatement() string {
+	panic("ibc denom trace processor never deletes")
+}
+
+func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 
@@ -47,7 +59,7 @@ func (b *ibcDenomTracesProcessor) FlushCache(upsert bool) []tracelistener.Writeb
 
 	return []tracelistener.WritebackOp{
 		{
-			Type: insertDenomTrace,
+			Type: tracelistener.Write,
 			Data: l,
 		},
 	}

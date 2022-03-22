@@ -35,7 +35,19 @@ func (b *ibcClientsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.IBC
 }
 
-func (b *ibcClientsProcessor) FlushCache(upsert bool) []tracelistener.WritebackOp {
+func (b *ibcClientsProcessor) UpsertStatement() string {
+	return insertClient
+}
+
+func (b *ibcClientsProcessor) InsertStatement() string {
+	return upsertClient
+}
+
+func (b *ibcClientsProcessor) DeleteStatement() string {
+	panic("ibc clients processor never deletes")
+}
+
+func (b *ibcClientsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 
@@ -53,7 +65,7 @@ func (b *ibcClientsProcessor) FlushCache(upsert bool) []tracelistener.WritebackO
 
 	return []tracelistener.WritebackOp{
 		{
-			Type: insertClient,
+			Type: tracelistener.Write,
 			Data: l,
 		},
 	}

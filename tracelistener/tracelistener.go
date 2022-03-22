@@ -86,6 +86,7 @@ var (
 	IterRangeOp Operation = []byte("iterRange")
 )
 
+//go:generate stringer -type WritebackStatementTypes
 type WritebackStatementTypes uint
 
 const (
@@ -96,8 +97,9 @@ const (
 // WritebackOp represents a unit of database writeback operated by a processor.
 // It contains the database query to be executed along with a slice of DatabaseEntrier data.
 type WritebackOp struct {
-	Type WritebackStatementTypes
-	Data []models.DatabaseEntrier
+	Type      WritebackStatementTypes
+	Data      []models.DatabaseEntrier
+	Statement string
 
 	// SourceModule indicates the SDK module which initiated a WritebackOp.
 	// It is used in bulk importing only.
@@ -202,8 +204,9 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 	ret := make([]WritebackOp, 0, splitAmount)
 	for _, chunk := range buildEntrierChunks(wo.Data, splitAmount) {
 		ret = append(ret, WritebackOp{
-			Type: wo.Type,
-			Data: chunk,
+			Type:      wo.Type,
+			Statement: wo.Statement,
+			Data:      chunk,
 		})
 	}
 
