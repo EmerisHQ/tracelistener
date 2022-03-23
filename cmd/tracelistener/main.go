@@ -131,7 +131,7 @@ func main() {
 				"moduleName", te.Module)
 		case b := <-dpi.WritebackChan():
 			for _, p := range b {
-				wbUnits := p.Split(1000)
+				wbUnits := p.SplitStatementToDBLimit()
 				for _, wbUnit := range wbUnits {
 					is := wbUnit.InterfaceSlice()
 					if len(is) == 0 {
