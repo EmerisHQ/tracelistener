@@ -123,6 +123,7 @@ func (i *Importer) Do() error {
 		i.Modules = ImportableModulesList()
 	}
 
+	i.Processor.StopBackgroundProcessing()
 	i.Processor.SetDBUpsertEnabled(false)
 
 	i.Path = strings.TrimSuffix(i.Path, ".db")
