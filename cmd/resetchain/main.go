@@ -5,6 +5,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/emerishq/emeris-utils/database"
 	"github.com/emerishq/emeris-utils/logging"
@@ -35,7 +36,7 @@ func main() {
 		DB:        db.DB,
 		ChainName: flags.chain,
 		ChunkSize: flags.chunkSize,
-		Tables:    GetTables(),
+		Tables:    GetTables(flags.forceIndexes),
 	}
 
 	err = resetter.Reset()
@@ -44,8 +45,9 @@ func main() {
 	}
 }
 
-func GetTables() []string {
-	return defaultTables
+func GetTables(forceIndexesFlag string) []string {
+	overrides := getOverrideTableMap(forceIndexesFlag)
+	return applyOverride(defaultTables, overrides)
 }
 
 var defaultTables = []string{
@@ -62,10 +64,38 @@ var defaultTables = []string{
 	"liquidity_pools",
 }
 
+func getOverrideTableMap(forceIndexesFlag string) map[string]string {
+	overrides := make(map[string]string)
+	if len(forceIndexesFlag) > 0 {
+		forceIndexes := strings.Split(forceIndexesFlag, ",")
+		for _, forceIndex := range forceIndexes {
+			tableIndex := strings.Split(forceIndex, "@")
+			overrides[tableIndex[0]] = forceIndex
+		}
+	}
+	return overrides
+}
+
+func applyOverride(base []string, overrides map[string]string) []string {
+	res := make([]string, 0, len(base))
+
+	// apply overrides
+	for _, t := range base {
+		if override, ok := overrides[t]; ok {
+			res = append(res, override)
+		} else {
+			res = append(res, t)
+		}
+	}
+
+	return res
+}
+
 type Flags struct {
-	db        string
-	chain     string
-	chunkSize int
+	db           string
+	chain        string
+	chunkSize    int
+	forceIndexes string
 }
 
 func (f Flags) Validate() error {
@@ -88,11 +118,13 @@ func setupFlag() Flags {
 	db := flag.String("db", "", "DB connection string, e.g. postgres://root@localhost:26257/tracelistener")
 	chain := flag.String("chain", "", "Name of the chain to reset, e.g. cosmos-hub")
 	chunkSize := flag.Int("chunk", 5000, "Delete chunk size (default: 5000)")
+	forceIndexes := flag.String("force-indexes", "", "Comma separated list of \"table@index\" elements to force the use of a certain database index. E.g. auth@some_idx,balances@other_idx")
 	flag.Parse()
 
 	return Flags{
-		db:        *db,
-		chain:     *chain,
-		chunkSize: *chunkSize,
+		db:           *db,
+		chain:        *chain,
+		chunkSize:    *chunkSize,
+		forceIndexes: *forceIndexes,
 	}
 }
