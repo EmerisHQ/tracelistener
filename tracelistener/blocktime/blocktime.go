@@ -25,7 +25,7 @@ const (
 	)`
 
 	insertBlocktime = `
-	INSERT INTO tracelistener.blocktime 
+	INSERT INTO tracelistener.blocktime as tb
 		(chain_name, block_time) 
 	VALUES 
 		(:chain_name, :block_time) 
@@ -34,7 +34,7 @@ const (
 	DO UPDATE SET 
 		chain_name=EXCLUDED.chain_name,
 		block_time=EXCLUDED.block_time
-		where EXCLUDED.block_time > tracelistener.public.blocktime.block_time;
+		where EXCLUDED.block_time > tb.block_time;
 	`
 )
 
