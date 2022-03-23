@@ -61,7 +61,7 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp) {
 
 		totalUnitsAmt := uint64(0)
 
-		wbUnits := p.SplitStatementToDBLimit()
+		wbUnits := p.Split(1000)
 		for idx, wbUnit := range wbUnits {
 			is := wbUnit.InterfaceSlice()
 
