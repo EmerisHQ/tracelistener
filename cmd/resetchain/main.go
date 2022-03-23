@@ -35,12 +35,31 @@ func main() {
 		DB:        db.DB,
 		ChainName: flags.chain,
 		ChunkSize: flags.chunkSize,
+		Tables:    GetTables(),
 	}
 
 	err = resetter.Reset()
 	if err != nil {
 		logger.Panic("error", err)
 	}
+}
+
+func GetTables() []string {
+	return defaultTables
+}
+
+var defaultTables = []string{
+	"balances",
+	"connections",
+	"delegations",
+	"unbonding_delegations",
+	"denom_traces",
+	"channels",
+	"auth",
+	"clients",
+	"validators",
+	"liquidity_swaps",
+	"liquidity_pools",
 }
 
 type Flags struct {
