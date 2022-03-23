@@ -33,7 +33,8 @@ const (
 		(chain_name)
 	DO UPDATE SET 
 		chain_name=EXCLUDED.chain_name,
-		block_time=EXCLUDED.block_time;
+		block_time=EXCLUDED.block_time
+		where EXCLUDED.block_time > tracelistener.public.blocktime.block_time;
 	`
 )
 
@@ -95,7 +96,7 @@ func (w *Watcher) ParseBlockData(data coretypes.ResultEvent) error {
 			ChainName: w.chainName,
 		},
 		BlockTime: block.Block.Time,
-	}); err != nil {
+	}); err != nil && err.Error() != "affected rows are zero" {
 		return fmt.Errorf("cannot insert block time, %w", err)
 	}
 

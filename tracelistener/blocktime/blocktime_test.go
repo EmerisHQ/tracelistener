@@ -20,8 +20,8 @@ import (
 
 	"github.com/emerishq/tracelistener/tracelistener/blocktime"
 
-	"github.com/emerishq/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/emerishq/emeris-utils/database"
 	"github.com/stretchr/testify/require"
 
 	"go.uber.org/zap"
@@ -120,6 +120,114 @@ func TestWatcher_ParseBlockData(t *testing.T) {
 				require.Len(t, blo, 1)
 				require.NotZero(t, blo[0].BlockTime.Unix())
 			}
+		})
+	}
+}
+
+func TestWatcher_InsertBlockTime(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Millisecond)
+	tests := []struct {
+		name      string
+		blockData coretypes.ResultEvent
+		blockTime time.Time
+	}{
+		{
+			"old blocktime",
+			coretypes.ResultEvent{
+				Query: "query",
+				Data: types.EventDataNewBlock{
+					Block: &types.Block{
+						Header: types.Header{
+							Time: now.Add(time.Hour * -1),
+						},
+					},
+				},
+				Events: nil,
+			},
+			now,
+		},
+		{
+			"same blocktime",
+			coretypes.ResultEvent{
+				Query: "query",
+				Data: types.EventDataNewBlock{
+					Block: &types.Block{
+						Header: types.Header{
+							Time: now,
+						},
+					},
+				},
+				Events: nil,
+			},
+			now,
+		},
+		{
+			"later blocktime",
+			coretypes.ResultEvent{
+				Query: "query",
+				Data: types.EventDataNewBlock{
+					Block: &types.Block{
+						Header: types.Header{
+							Time: now.Add(time.Hour),
+						},
+					},
+				},
+				Events: nil,
+			},
+			now.Add(time.Hour),
+		},
+	}
+
+	ts, err := testserver.NewTestServer()
+	require.NoError(t, err)
+	require.NoError(t, ts.WaitForInit())
+	defer func() {
+		ts.Stop()
+	}()
+
+	connString := ts.PGURL().String()
+
+	I, err := database.New(connString)
+
+	require.NoError(t, database.RunMigrations(connString, []string{
+		"CREATE DATABASE tracelistener;",
+		blocktime.CreateTable,
+	}))
+
+	w := blocktime.New(
+		I,
+		"test",
+		zap.NewNop().Sugar(),
+	)
+
+	// Insert inital data
+	err = w.ParseBlockData(coretypes.ResultEvent{
+		Query: "query",
+		Data: types.EventDataNewBlock{
+			Block: &types.Block{
+				Header: types.Header{
+					Time: now,
+				},
+			},
+		},
+		Events: nil,
+	})
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, w.ParseBlockData(tt.blockData))
+			var blo []models.BlockTimeRow
+			require.NoError(t,
+				I.Exec(
+					`select * from tracelistener.blocktime where chain_name='test'`,
+					nil,
+					&blo,
+				),
+			)
+
+			require.Len(t, blo, 1)
+			require.Equal(t, tt.blockTime, blo[0].BlockTime)
 		})
 	}
 }
