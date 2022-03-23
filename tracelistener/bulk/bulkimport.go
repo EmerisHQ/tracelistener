@@ -3,7 +3,6 @@ package bulk
 import (
 	"fmt"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -157,7 +156,7 @@ func (i *Importer) Do() error {
 
 	keysLen := len(keys)
 
-	wbChan := make(chan []tracelistener.WritebackOp, keysLen)
+	wbChan := make(chan []tracelistener.WritebackOp)
 
 	t0 := time.Now()
 	done := make(chan struct{})
@@ -220,10 +219,6 @@ func (i *Importer) Do() error {
 				return fmt.Errorf("cannot close iterator, %w", err)
 			}
 
-			if err := i.Processor.Flush(); err != nil {
-				return fmt.Errorf("cannot flush processor cache, %w", err)
-			}
-
 			i.Logger.Infow("processing done", "module", key.Name(), "total_rows", processedRows, "index", idx+1, "total", keysLen)
 			return nil
 		})
@@ -250,16 +245,17 @@ func (i *Importer) Do() error {
 		Since wbChan is a buffered channel with len(keys) elements, the Go runtime gives us synchronization for free.
 		After that, we write back data to the database.
 	*/
-	for len(wbChan) != keysLen {
-		runtime.Gosched()
+
+	if err := i.Processor.Flush(); err != nil {
+		return fmt.Errorf("cannot flush processor cache, %w", err)
 	}
+
+	data := <-wbChan
 
 	done <- struct{}{}
-	close(wbChan)
 
-	for data := range wbChan {
-		i.processWritebackData(data)
-	}
+	i.processWritebackData(data)
+	close(wbChan)
 
 	tn := time.Now()
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))
