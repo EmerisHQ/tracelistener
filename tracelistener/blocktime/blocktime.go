@@ -34,7 +34,7 @@ const (
 	DO UPDATE SET 
 		chain_name=EXCLUDED.chain_name,
 		block_time=EXCLUDED.block_time
-		where EXCLUDED.block_time > tb.block_time;
+		WHERE EXCLUDED.block_time > tb.block_time;
 	`
 )
 
