@@ -1,4 +1,4 @@
-name: Build and push Docker images (latest commit)
+name: Build and push Docker images
 on:
   workflow_dispatch:
   workflow_run:
