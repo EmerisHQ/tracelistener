@@ -1,0 +1,13 @@
+pull_request_rules:
+  - name: automatic merge for main when CI passes and 2 reviews
+    conditions:
+      - draft=false
+      - "#approved-reviews-by>=2"
+      - check-success=lint (v42)
+      - check-success=code_cov (v42)
+      - check-success=lint (v44)
+      - check-success=code_cov (v44)
+      - base=main
+    actions:
+      merge:
+        method: squash
