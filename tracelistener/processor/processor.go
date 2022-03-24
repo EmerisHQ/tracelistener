@@ -18,6 +18,9 @@ type Module interface {
 	ModuleName() string
 	SDKModuleName() tracelistener.SDKModuleName
 	TableSchema() string
+	UpsertStatement() string
+	InsertStatement() string
+	DeleteStatement() string
 }
 
 var defaultProcessors = []string{
@@ -43,6 +46,7 @@ type Processor struct {
 	moduleProcessors []Module
 	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
 	lifecycleStop    chan struct{}
+	useDBUpsert      bool
 
 	processingData sync.Mutex
 }
@@ -101,6 +105,10 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	}
 
 	return &p, nil
+}
+
+func (p *Processor) SetDBUpsertEnabled(enabled bool) {
+	p.useDBUpsert = enabled
 }
 
 func (p *Processor) StartBackgroundProcessing() {
@@ -193,6 +201,19 @@ func (p *Processor) Flush() error {
 
 			for i := 0; i < len(entry.Data); i++ {
 				entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
+			}
+
+			switch entry.Type {
+			case tracelistener.Delete:
+				entry.Statement = mp.DeleteStatement()
+			case tracelistener.Write:
+				if p.useDBUpsert {
+					entry.Statement = mp.UpsertStatement()
+				} else {
+					entry.Statement = mp.InsertStatement()
+				}
+			default:
+				panic(fmt.Sprint("found unknown wbop type", entry.Type))
 			}
 
 			entry.SourceModule = mp.SDKModuleName().String()

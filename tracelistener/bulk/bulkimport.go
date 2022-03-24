@@ -3,13 +3,13 @@ package bulk
 import (
 	"fmt"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
 	types2 "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/emerishq/tracelistener/tracelistener/database"
 	"github.com/emerishq/tracelistener/tracelistener/processor"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/cosmos/cosmos-sdk/types"
@@ -73,10 +73,11 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp) {
 
 			totalUnitsAmt += uint64(len(wbUnit.Data))
 
-			if err := i.Database.Add(wbUnit.DatabaseExec, is); err != nil {
+			if err := insertDB(i.Database.Instance.DB, wbUnit.Statement, is); err != nil {
 				i.Logger.Errorw("database error",
 					"error", err,
-					"statement", wbUnit.DatabaseExec,
+					"statement", wbUnit.Statement,
+					"type", wbUnit.Type,
 					"data", fmt.Sprint(wbUnit.Data),
 				)
 			}
@@ -94,6 +95,24 @@ func (i *Importer) processWritebackData(data []tracelistener.WritebackOp) {
 	i.Logger.Debugw("finished processing writeback data")
 }
 
+func insertDB(db *sqlx.DB, query string, params interface{}) error {
+	res, err := db.NamedExec(query, params)
+	if err != nil {
+		return fmt.Errorf("transaction named exec error, %w", err)
+	}
+
+	re, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("transaction named exec error, %w", err)
+	}
+
+	if re == 0 {
+		return fmt.Errorf("affected rows are zero")
+	}
+
+	return nil
+}
+
 func (i *Importer) Do() error {
 	if err := i.validateModulesList(); err != nil {
 		return err
@@ -102,6 +121,9 @@ func (i *Importer) Do() error {
 	if i.Modules == nil {
 		i.Modules = ImportableModulesList()
 	}
+
+	i.Processor.StopBackgroundProcessing()
+	i.Processor.SetDBUpsertEnabled(false)
 
 	i.Path = strings.TrimSuffix(i.Path, ".db")
 
@@ -134,7 +156,7 @@ func (i *Importer) Do() error {
 
 	keysLen := len(keys)
 
-	wbChan := make(chan []tracelistener.WritebackOp, keysLen)
+	wbChan := make(chan []tracelistener.WritebackOp)
 
 	t0 := time.Now()
 	done := make(chan struct{})
@@ -197,10 +219,6 @@ func (i *Importer) Do() error {
 				return fmt.Errorf("cannot close iterator, %w", err)
 			}
 
-			if err := i.Processor.Flush(); err != nil {
-				return fmt.Errorf("cannot flush processor cache, %w", err)
-			}
-
 			i.Logger.Infow("processing done", "module", key.Name(), "total_rows", processedRows, "index", idx+1, "total", keysLen)
 			return nil
 		})
@@ -227,16 +245,17 @@ func (i *Importer) Do() error {
 		Since wbChan is a buffered channel with len(keys) elements, the Go runtime gives us synchronization for free.
 		After that, we write back data to the database.
 	*/
-	for len(wbChan) != keysLen {
-		runtime.Gosched()
+
+	if err := i.Processor.Flush(); err != nil {
+		return fmt.Errorf("cannot flush processor cache, %w", err)
 	}
+
+	data := <-wbChan
 
 	done <- struct{}{}
-	close(wbChan)
 
-	for data := range wbChan {
-		i.processWritebackData(data)
-	}
+	i.processWritebackData(data)
+	close(wbChan)
 
 	tn := time.Now()
 	i.Logger.Infow("import done", "total time", tn.Sub(t0), "processing time", tn.Sub(processingTime))

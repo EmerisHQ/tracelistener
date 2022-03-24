@@ -33,6 +33,18 @@ func (b *validatorsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Staking
 }
 
+func (b *validatorsProcessor) InsertStatement() string {
+	return insertValidator
+}
+
+func (b *validatorsProcessor) UpsertStatement() string {
+	return upsertValidator
+}
+
+func (b *validatorsProcessor) DeleteStatement() string {
+	return deleteValidator
+}
+
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -53,8 +65,8 @@ func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 	}
 
 	writebackOp = append(writebackOp, tracelistener.WritebackOp{
-		DatabaseExec: insertValidator,
-		Data:         insert,
+		Type: tracelistener.Write,
+		Data: insert,
 	})
 
 	if len(b.deleteValidatorsCache) == 0 && len(insert) == 0 {
@@ -63,8 +75,8 @@ func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	for _, v := range b.deleteValidatorsCache {
 		writebackOp = append(writebackOp, tracelistener.WritebackOp{
-			DatabaseExec: deleteValidator,
-			Data:         []models.DatabaseEntrier{v},
+			Type: tracelistener.Delete,
+			Data: []models.DatabaseEntrier{v},
 		})
 	}
 

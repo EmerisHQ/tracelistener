@@ -57,6 +57,8 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	dpi.SetDBUpsertEnabled(true)
+
 	dpi.StartBackgroundProcessing()
 
 	database.RegisterMigration(dpi.DatabaseMigrations()...)
@@ -136,13 +138,15 @@ func main() {
 						continue
 					}
 
-					if err := di.Add(wbUnit.DatabaseExec, is); err != nil {
+					if err := di.Add(wbUnit.Statement, is); err != nil {
 						logger.Errorw("database error",
 							"error", err,
-							"statement", wbUnit.DatabaseExec,
+							"statement", wbUnit.Statement,
+							"type", wbUnit.Type,
 							"data", fmt.Sprint(wbUnit.Data),
 						)
 					}
+
 				}
 			}
 		}

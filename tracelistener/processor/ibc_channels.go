@@ -35,6 +35,18 @@ func (b *ibcChannelsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.IBC
 }
 
+func (b *ibcChannelsProcessor) UpsertStatement() string {
+	return upsertChannel
+}
+
+func (b *ibcChannelsProcessor) InsertStatement() string {
+	return insertChannel
+}
+
+func (b *ibcChannelsProcessor) DeleteStatement() string {
+	panic("ibc channel processor never deletes")
+}
+
 func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -53,8 +65,8 @@ func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertChannel,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }
