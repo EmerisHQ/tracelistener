@@ -31,13 +31,13 @@ func main() {
 	db.DB.SetMaxOpenConns(10)
 	db.DB.SetMaxIdleConns(10)
 
-	tables := strings.Split(flags.forceIndexes, ",")
+	tables := strings.Split(flags.tables, ",")
 	resetter := Resetter{
 		Logger:    logger,
 		DB:        db.DB,
 		ChainName: flags.chain,
 		ChunkSize: flags.chunkSize,
-		Tables:    GetTables(tables, flags.forceIndexes),
+		Tables:    tables,
 	}
 
 	err = resetter.Reset()
@@ -46,47 +46,11 @@ func main() {
 	}
 }
 
-func GetTables(tables []string, forceIndexesFlag string) []string {
-	overrides := getOverrideTableMap(forceIndexesFlag)
-	return applyOverride(tables, overrides)
-}
-
-func getOverrideTableMap(forceIndexesFlag string) map[string]string {
-	if len(forceIndexesFlag) == 0 {
-		return nil
-	}
-
-	overrides := make(map[string]string)
-	forceIndexes := strings.Split(forceIndexesFlag, ",")
-	for _, forceIndex := range forceIndexes {
-		tableIndex := strings.Split(forceIndex, "@")
-		overrides[tableIndex[0]] = forceIndex
-	}
-
-	return overrides
-}
-
-func applyOverride(base []string, overrides map[string]string) []string {
-	res := make([]string, 0, len(base))
-
-	// apply overrides
-	for _, t := range base {
-		if override, ok := overrides[t]; ok {
-			res = append(res, override)
-			continue
-		}
-		res = append(res, t)
-	}
-
-	return res
-}
-
 type Flags struct {
-	db           string
-	chain        string
-	chunkSize    int
-	forceIndexes string
-	tables       string
+	db        string
+	chain     string
+	chunkSize int
+	tables    string
 }
 
 func (f Flags) Validate() error {
@@ -110,32 +74,30 @@ func (f Flags) Validate() error {
 }
 
 var defaultTables = []string{
-	"balances",
-	"connections",
-	"delegations",
-	"unbonding_delegations",
-	"denom_traces",
-	"channels",
-	"auth",
-	"clients",
-	"validators",
-	"liquidity_swaps",
-	"liquidity_pools",
+	"balances@balances_chain_name_id_idx",
+	"connections@connections_chain_name_id_idx",
+	"delegations@delegations_chain_name_id_idx",
+	"unbonding_delegations@unbonding_delegations_chain_name_id_idx",
+	"denom_traces@denom_traces_chain_name_id_idx",
+	"channels@channels_chain_name_id_idx",
+	"auth@auth_chain_name_id_idx",
+	"clients@clients_chain_name_id_idx",
+	"validators@validators_chain_name_id_idx",
+	"liquidity_swaps@liquidity_swaps_chain_name_id_idx",
+	"liquidity_pools@liquidity_pools_chain_name_id_idx",
 }
 
 func setupFlag() Flags {
 	db := flag.String("db", "", "DB connection string, e.g. postgres://root@localhost:26257/tracelistener")
 	chain := flag.String("chain", "", "Name of the chain to reset, e.g. cosmos-hub")
 	chunkSize := flag.Int("chunk", 5000, "Delete chunk size (default: 5000)")
-	forceIndexes := flag.String("force-indexes", "", "Comma separated list of \"table@index\" elements to force the use of a certain database index. E.g. auth@some_idx,balances@other_idx")
 	tables := flag.String("tables", strings.Join(defaultTables, ","), "Comma separated list of tables to reset. If not specified, all tables will be reset.")
 	flag.Parse()
 
 	return Flags{
-		db:           *db,
-		chain:        *chain,
-		chunkSize:    *chunkSize,
-		forceIndexes: *forceIndexes,
-		tables:       *tables,
+		db:        *db,
+		chain:     *chain,
+		chunkSize: *chunkSize,
+		tables:    *tables,
 	}
 }
