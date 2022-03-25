@@ -297,6 +297,10 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 }
 
 func parseIBCChainID(fullChainID string, height clientTypes.Height) string {
+	if height.RevisionHeight == 0 {
+		return fullChainID
+	}
+
 	suffix := "-" + strconv.FormatUint(height.RevisionHeight, 10)
 	return strings.Replace(fullChainID, suffix, "", 1)
 }

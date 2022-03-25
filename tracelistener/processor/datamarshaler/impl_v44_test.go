@@ -52,6 +52,12 @@ func Test_ParseIBCChainID(t *testing.T) {
 			height:      clientTypes.NewHeight(4, 999999),
 			expected:    "desmos-mainnet",
 		},
+		{
+			name:        "ignore revision height 0",
+			fullChainID: "chain-0",
+			height:      clientTypes.NewHeight(4, 0),
+			expected:    "chain-0",
+		},
 	}
 
 	for _, test := range tt {
