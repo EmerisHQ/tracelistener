@@ -128,7 +128,6 @@ func TestTraceWatcher_Watch(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			f, err := os.CreateTemp("", "test_data")
 			require.NoError(t, err)
 
@@ -171,14 +170,14 @@ func TestTraceWatcher_Watch(t *testing.T) {
 					require.Eventually(t, func() bool {
 						d := <-dataChan
 						return d.Key != nil
-					}, 10*time.Second, 10*time.Millisecond)
+					}, 1*time.Second, 10*time.Millisecond)
 					return
 				}
 
 				require.Never(t, func() bool {
 					d := <-dataChan
 					return d.Key != nil
-				}, 10*time.Second, 10*time.Millisecond)
+				}, 1*time.Second, 10*time.Millisecond)
 			}
 		})
 	}

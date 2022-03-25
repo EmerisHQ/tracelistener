@@ -141,6 +141,7 @@ func TestImporterDo(t *testing.T) {
 
 				tt.im.Database = di
 
+				tt.im.Processor.StartBackgroundProcessing()
 				err = tt.im.Do()
 				if tt.wantErr {
 					require.Error(t, err)
