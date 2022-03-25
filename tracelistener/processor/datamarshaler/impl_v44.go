@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -285,14 +286,7 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 	keySplit := strings.Split(string(data.Key), "/")
 	clientID := keySplit[1]
 
-	if clientTypes.IsRevisionFormat(dest.ChainId) {
-		// the following code has been taken from ibc-go/v2 directly
-		// blame them, not us
-		splitStr := strings.Split(dest.ChainId, "-")
-		if len(splitStr) != 1 {
-			dest.ChainId = splitStr[0]
-		}
-	}
+	dest.ChainId = parseIBCChainID(dest.ChainId, dest.LatestHeight)
 
 	return models.IBCClientStateRow{
 		ChainID:        dest.ChainId,
@@ -300,6 +294,11 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 		LatestHeight:   dest.LatestHeight.RevisionHeight,
 		TrustingPeriod: int64(dest.TrustingPeriod),
 	}, nil
+}
+
+func parseIBCChainID(fullChainID string, height clientTypes.Height) string {
+	suffix := "-" + strconv.FormatUint(height.RevisionHeight, 10)
+	return strings.Replace(fullChainID, suffix, "", 1)
 }
 
 func (d DataMarshaler) IBCConnections(data tracelistener.TraceOperation) (models.IBCConnectionRow, error) {
