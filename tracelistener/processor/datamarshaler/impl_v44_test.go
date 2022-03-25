@@ -58,6 +58,12 @@ func Test_ParseIBCChainID(t *testing.T) {
 			height:      clientTypes.NewHeight(4, 0),
 			expected:    "chain-0",
 		},
+		{
+			name:        "revision number equals revision height",
+			fullChainID: "cosmoshub-4-4",
+			height:      clientTypes.NewHeight(4, 4),
+			expected:    "cosmoshub-4",
+		},
 	}
 
 	for _, test := range tt {
