@@ -267,15 +267,13 @@ func (d DataMarshaler) IBCChannels(data tracelistener.TraceOperation) (models.IB
 func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBCClientStateRow, error) {
 	d.l.Debugw("ibc client key", "key", string(data.Key), "raw value", string(data.Value))
 	var result exported.ClientState
-	var dest *tmIBCTypes.ClientState
 	if err := getCodec().UnmarshalInterface(data.Value, &result); err != nil {
 		return models.IBCClientStateRow{}, err
 	}
 
-	if res, ok := result.(*tmIBCTypes.ClientState); !ok {
+	dest, ok := result.(*tmIBCTypes.ClientState)
+	if !ok {
 		return models.IBCClientStateRow{}, nil
-	} else {
-		dest = res
 	}
 
 	if err := result.Validate(); err != nil {
