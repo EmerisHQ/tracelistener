@@ -31,12 +31,13 @@ func main() {
 	db.DB.SetMaxOpenConns(10)
 	db.DB.SetMaxIdleConns(10)
 
+	tables := strings.Split(flags.forceIndexes, ",")
 	resetter := Resetter{
 		Logger:    logger,
 		DB:        db.DB,
 		ChainName: flags.chain,
 		ChunkSize: flags.chunkSize,
-		Tables:    GetTables(flags.forceIndexes),
+		Tables:    GetTables(tables, flags.forceIndexes),
 	}
 
 	err = resetter.Reset()
@@ -45,23 +46,9 @@ func main() {
 	}
 }
 
-func GetTables(forceIndexesFlag string) []string {
+func GetTables(tables []string, forceIndexesFlag string) []string {
 	overrides := getOverrideTableMap(forceIndexesFlag)
-	return applyOverride(defaultTables, overrides)
-}
-
-var defaultTables = []string{
-	"balances",
-	"connections",
-	"delegations",
-	"unbonding_delegations",
-	"denom_traces",
-	"channels",
-	"auth",
-	"clients",
-	"validators",
-	"liquidity_swaps",
-	"liquidity_pools",
+	return applyOverride(tables, overrides)
 }
 
 func getOverrideTableMap(forceIndexesFlag string) map[string]string {
@@ -96,6 +83,7 @@ type Flags struct {
 	chain        string
 	chunkSize    int
 	forceIndexes string
+	tables       string
 }
 
 func (f Flags) Validate() error {
@@ -111,7 +99,25 @@ func (f Flags) Validate() error {
 		return fmt.Errorf("chunk size must be greater than 0")
 	}
 
+	if len(f.tables) == 0 {
+		return fmt.Errorf("missing tables to reset")
+	}
+
 	return nil
+}
+
+var defaultTables = []string{
+	"balances",
+	"connections",
+	"delegations",
+	"unbonding_delegations",
+	"denom_traces",
+	"channels",
+	"auth",
+	"clients",
+	"validators",
+	"liquidity_swaps",
+	"liquidity_pools",
 }
 
 func setupFlag() Flags {
@@ -119,6 +125,7 @@ func setupFlag() Flags {
 	chain := flag.String("chain", "", "Name of the chain to reset, e.g. cosmos-hub")
 	chunkSize := flag.Int("chunk", 5000, "Delete chunk size (default: 5000)")
 	forceIndexes := flag.String("force-indexes", "", "Comma separated list of \"table@index\" elements to force the use of a certain database index. E.g. auth@some_idx,balances@other_idx")
+	tables := flag.String("tables", strings.Join(defaultTables, ","), "Comma separated list of tables to reset. If not specified, all tables will be reset.")
 	flag.Parse()
 
 	return Flags{
@@ -126,5 +133,6 @@ func setupFlag() Flags {
 		chain:        *chain,
 		chunkSize:    *chunkSize,
 		forceIndexes: *forceIndexes,
+		tables:       *tables,
 	}
 }
