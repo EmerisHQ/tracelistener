@@ -52,14 +52,17 @@ func GetTables(tables []string, forceIndexesFlag string) []string {
 }
 
 func getOverrideTableMap(forceIndexesFlag string) map[string]string {
-	overrides := make(map[string]string)
-	if len(forceIndexesFlag) > 0 {
-		forceIndexes := strings.Split(forceIndexesFlag, ",")
-		for _, forceIndex := range forceIndexes {
-			tableIndex := strings.Split(forceIndex, "@")
-			overrides[tableIndex[0]] = forceIndex
-		}
+	if len(forceIndexesFlag) == 0 {
+		return nil
 	}
+
+	overrides := make(map[string]string)
+	forceIndexes := strings.Split(forceIndexesFlag, ",")
+	for _, forceIndex := range forceIndexes {
+		tableIndex := strings.Split(forceIndex, "@")
+		overrides[tableIndex[0]] = forceIndex
+	}
+
 	return overrides
 }
 
@@ -70,9 +73,9 @@ func applyOverride(base []string, overrides map[string]string) []string {
 	for _, t := range base {
 		if override, ok := overrides[t]; ok {
 			res = append(res, override)
-		} else {
-			res = append(res, t)
+			continue
 		}
+		res = append(res, t)
 	}
 
 	return res
