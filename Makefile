@@ -65,7 +65,7 @@ $(TEST_VERSIONS):
 		./...
 
 $(COVERAGE_VERSIONS):
-	go test -v -failfast -coverprofile=coverage.out -covermode=atomic -count=1\
+	go test -v -failfast -race -coverprofile=coverage.out -covermode=atomic -count=1 \
 		-tags $(shell echo $@ | sed -e 's/coverage-/sdk_/g' -e 's/-/_/g'),muslc \
 		./...
 
