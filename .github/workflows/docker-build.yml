@@ -5,6 +5,9 @@ on:
     workflows: [Tests]
     branches: [main]
     types: [completed]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   setup-matrix:
@@ -51,7 +54,7 @@ jobs:
           push: true
           context: .
           file: Dockerfile
-          tags: gcr.io/tendermint-dev/emeris-tracelistener-${{ matrix.versions }}:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener-${{ matrix.versions }}:${{ github.sha }}
+          tags: gcr.io/tendermint-dev/emeris-tracelistener-${{ matrix.versions }}:${{ steps.get_version.outputs.version }},gcr.io/tendermint-dev/emeris-tracelistener-${{ matrix.versions }}:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
             SDK_TARGET=${{ matrix.versions }}
@@ -85,6 +88,6 @@ jobs:
           push: true
           context: .
           file: Dockerfile.resetchain
-          tags: gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ steps.get_version.outputs.version-without-v }},gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ github.sha }}
+          tags: gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ steps.get_version.outputs.version }},gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
