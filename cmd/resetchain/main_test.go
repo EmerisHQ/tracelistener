@@ -19,6 +19,7 @@ func TestFlags_Validate(t *testing.T) {
 				db:        "postgres://localhost",
 				chain:     "cosmos-hub",
 				chunkSize: 1,
+				tables:    "auth,clients,validators",
 			},
 		},
 		{
@@ -28,6 +29,7 @@ func TestFlags_Validate(t *testing.T) {
 				db:        "postgres://localhost",
 				chain:     "cosmos-hub",
 				chunkSize: -2,
+				tables:    "auth,clients,validators",
 			},
 		},
 		{
@@ -37,6 +39,7 @@ func TestFlags_Validate(t *testing.T) {
 				db:        "postgres://localhost",
 				chain:     "cosmos-hub",
 				chunkSize: 0,
+				tables:    "auth,clients,validators",
 			},
 		},
 		{
@@ -46,6 +49,7 @@ func TestFlags_Validate(t *testing.T) {
 				db:        "",
 				chain:     "cosmos-hub",
 				chunkSize: 2,
+				tables:    "auth,clients,validators",
 			},
 		},
 		{
@@ -55,6 +59,7 @@ func TestFlags_Validate(t *testing.T) {
 				db:        "postgres://localhost",
 				chain:     "",
 				chunkSize: 2,
+				tables:    "auth,clients,validators",
 			},
 		},
 	}
