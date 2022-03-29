@@ -64,11 +64,12 @@ func TestDelegationProcess(t *testing.T) {
 	require.NotNil(t, gp)
 
 	tests := []struct {
-		name        string
-		delegation  testDelegation
-		newMessages []tracelistener.TraceOperation
-		expectedErr bool
-		expectedLen int
+		name              string
+		delegation        testDelegation
+		newMessages       []tracelistener.TraceOperation
+		expectedErr       bool
+		expectedInsertLen int
+		expectedDeleteLen int
 	}{
 		{
 			"Delete operation of delegation - no error",
@@ -81,6 +82,7 @@ func TestDelegationProcess(t *testing.T) {
 				},
 			},
 			false,
+			0,
 			1,
 		},
 		{
@@ -99,7 +101,8 @@ func TestDelegationProcess(t *testing.T) {
 				},
 			},
 			false,
-			1,
+			0,
+			2,
 		},
 		{
 			"Write new delegation - no error",
@@ -118,6 +121,7 @@ func TestDelegationProcess(t *testing.T) {
 			},
 			false,
 			1,
+			0,
 		},
 		{
 			"Invalid addresses - error",
@@ -133,6 +137,7 @@ func TestDelegationProcess(t *testing.T) {
 				},
 			},
 			true,
+			0,
 			0,
 		},
 	}
@@ -156,31 +161,27 @@ func TestDelegationProcess(t *testing.T) {
 				} else {
 					require.NoError(t, err)
 				}
+			}
 
-				if message.Operation == tracelistener.DeleteOp.String() {
-					require.Len(t, d.deleteHeightCache, tt.expectedLen)
+			// asserts on delete height cache
+			require.Len(t, d.deleteHeightCache, tt.expectedDeleteLen)
 
-					for k := range d.deleteHeightCache {
-						row := d.deleteHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
-						require.NotNil(t, row)
+			for k := range d.deleteHeightCache {
+				row := d.deleteHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
+				require.NotNil(t, row)
+			}
 
-						return
-					}
-				} else {
-					require.Len(t, d.insertHeightCache, tt.expectedLen)
+			// asserts on insert height cache
+			require.Len(t, d.insertHeightCache, tt.expectedInsertLen)
 
-					for k := range d.insertHeightCache {
-						row := d.insertHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
-						require.NotNil(t, row)
+			for k := range d.insertHeightCache {
+				row := d.insertHeightCache[delegationCacheEntry{delegator: k.delegator, validator: k.validator}]
+				require.NotNil(t, row)
 
-						amount := row.Amount
-						amtfloat, err := strconv.ParseFloat(amount, 64)
-						require.NoError(t, err)
-						require.EqualValues(t, tt.delegation.Shares, amtfloat)
-
-						return
-					}
-				}
+				amount := row.Amount
+				amtfloat, err := strconv.ParseFloat(amount, 64)
+				require.NoError(t, err)
+				require.EqualValues(t, tt.delegation.Shares, amtfloat)
 			}
 		})
 	}
