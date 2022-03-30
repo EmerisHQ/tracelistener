@@ -1,13 +1,13 @@
 # tracelistener
 
-[![codecov](https://codecov.io/gh/allinbits/tracelistener/branch/main/graph/badge.svg?token=7A8OJVUQYJ)](https://codecov.io/gh/allinbits/tracelistener)
-[![Build status](https://github.com/allinbits/tracelistener/workflows/Build/badge.svg)](https://github.com/allinbits/tracelistener/commits/main)
-[![Tests status](https://github.com/allinbits/tracelistener/workflows/Tests/badge.svg)](https://github.com/allinbits/tracelistener/commits/main)
-[![Lint](https://github.com/allinbits/tracelistener/workflows/Lint/badge.svg?token)](https://github.com/allinbits/tracelistener/commits/main)
+[![codecov](https://codecov.io/gh/emerishq/tracelistener/branch/main/graph/badge.svg?token=7A8OJVUQYJ)](https://codecov.io/gh/emerishq/tracelistener)
+[![Build status](https://github.com/emerishq/tracelistener/workflows/Build/badge.svg)](https://github.com/emerishq/tracelistener/commits/main)
+[![Tests status](https://github.com/emerishq/tracelistener/workflows/Tests/badge.svg)](https://github.com/emerishq/tracelistener/commits/main)
+[![Lint](https://github.com/emerishq/tracelistener/workflows/Lint/badge.svg?token)](https://github.com/emerishq/tracelistener/commits/main)
 
 UNIX named pipes-based real-time state listener for Cosmos SDK blockchains.
 
-See also the [demeris-backend](https://github.com/allinbits/demeris-backend) docs for an overview of the architecture.
+See also the [demeris-backend](https://github.com/emerishq/demeris-backend) docs for an overview of the architecture.
 
 ## Description
 
@@ -153,7 +153,7 @@ The list of processors for **gaia** is the following:
 
 2. build it:
     ```shell
-    go build -v --ldflags="-s -w"  github.com/allinbits/tracelistener/cmd/tracelistener
+    go build -v --ldflags="-s -w"  github.com/emerishq/tracelistener/cmd/tracelistener
     ```
 3. run it:
     ```shell
