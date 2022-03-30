@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +29,18 @@ func (b *ibcDenomTracesProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Transfer
 }
 
+func (b *ibcDenomTracesProcessor) UpsertStatement() string {
+	return upsertDenomTrace
+}
+
+func (b *ibcDenomTracesProcessor) InsertStatement() string {
+	return insertDenomTrace
+}
+
+func (b *ibcDenomTracesProcessor) DeleteStatement() string {
+	panic("ibc denom trace processor never deletes")
+}
+
 func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -47,8 +59,8 @@ func (b *ibcDenomTracesProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertDenomTrace,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

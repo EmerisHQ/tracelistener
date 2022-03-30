@@ -8,10 +8,10 @@ import (
 	"reflect"
 	"time"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 
 	"go.uber.org/zap"
 )
@@ -55,8 +55,14 @@ var SupportedSDKModuleList = map[SDKModuleName]struct{}{
 	Acc:          {},
 }
 
-// Info: https://github.com/cockroachdb/cockroach/issues/49256
-const dbPlaceholderLimit = 65535
+const (
+	// Info: https://github.com/cockroachdb/cockroach/issues/49256
+	dbPlaceholderTotalLimit = 65535
+
+	// we divide crdb placeholders 10x the maximum size to avoid
+	// database retry congestion
+	dbPlaceholderLimit = dbPlaceholderTotalLimit / 10
+)
 
 // Operation is a kind of operations a TraceWatcher observes.
 type Operation []byte
@@ -80,11 +86,24 @@ var (
 	IterRangeOp Operation = []byte("iterRange")
 )
 
+//go:generate stringer -type WritebackStatementTypes
+type WritebackStatementTypes uint
+
+const (
+	Delete WritebackStatementTypes = iota
+	Write
+)
+
 // WritebackOp represents a unit of database writeback operated by a processor.
 // It contains the database query to be executed along with a slice of DatabaseEntrier data.
 type WritebackOp struct {
-	DatabaseExec string
-	Data         []models.DatabaseEntrier
+	Type      WritebackStatementTypes
+	Data      []models.DatabaseEntrier
+	Statement string
+
+	// SourceModule indicates the SDK module which initiated a WritebackOp.
+	// It is used in bulk importing only.
+	SourceModule string
 }
 
 // InterfaceSlice returns Data as a slice of interface{}.
@@ -185,8 +204,9 @@ func (wo WritebackOp) SplitStatements(limit int) []WritebackOp {
 	ret := make([]WritebackOp, 0, splitAmount)
 	for _, chunk := range buildEntrierChunks(wo.Data, splitAmount) {
 		ret = append(ret, WritebackOp{
-			DatabaseExec: wo.DatabaseExec,
-			Data:         chunk,
+			Type:      wo.Type,
+			Statement: wo.Statement,
+			Data:      chunk,
 		})
 	}
 
@@ -219,6 +239,9 @@ type DataProcessor interface {
 	ErrorsChan() chan error
 	DatabaseMigrations() []string
 	Flush() error
+	SetDBUpsertEnabled(enabled bool)
+	StartBackgroundProcessing()
+	StopBackgroundProcessing()
 }
 
 type TracingError struct {

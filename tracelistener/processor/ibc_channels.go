@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 
 	"go.uber.org/zap"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 type channelCacheEntry struct {
@@ -35,6 +35,18 @@ func (b *ibcChannelsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.IBC
 }
 
+func (b *ibcChannelsProcessor) UpsertStatement() string {
+	return upsertChannel
+}
+
+func (b *ibcChannelsProcessor) InsertStatement() string {
+	return insertChannel
+}
+
+func (b *ibcChannelsProcessor) DeleteStatement() string {
+	panic("ibc channel processor never deletes")
+}
+
 func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -53,8 +65,8 @@ func (b *ibcChannelsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertChannel,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

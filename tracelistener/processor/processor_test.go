@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/allinbits/tracelistener/tracelistener/processor"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 )
 
 type dumbModule struct {
@@ -58,6 +58,18 @@ func (d dumbModule) ModuleName() string {
 
 func (d dumbModule) TableSchema() string {
 	return d.tableSchema
+}
+
+func (d dumbModule) UpsertStatement() string {
+	return ""
+}
+
+func (d dumbModule) InsertStatement() string {
+	return ""
+}
+
+func (d dumbModule) DeleteStatement() string {
+	return ""
 }
 
 func TestNew(t *testing.T) {
@@ -182,6 +194,7 @@ func TestLifecycle(t *testing.T) {
 
 			// we know p is of type processor.Processor
 			gp := p.(*processor.Processor)
+			gp.StartBackgroundProcessing()
 			require.NotNil(t, gp)
 
 			// let's add something we can actually control

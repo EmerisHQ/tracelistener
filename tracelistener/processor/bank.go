@@ -6,9 +6,9 @@ import (
 
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 type bankCacheEntry struct {
@@ -28,6 +28,18 @@ func (*bankProcessor) TableSchema() string {
 
 func (b *bankProcessor) ModuleName() string {
 	return "bank"
+}
+
+func (b *bankProcessor) UpsertStatement() string {
+	return upsertBalance
+}
+
+func (b *bankProcessor) InsertStatement() string {
+	return insertBalance
+}
+
+func (b *bankProcessor) DeleteStatement() string {
+	panic("bank processor never deletes")
 }
 
 func (b *bankProcessor) SDKModuleName() tracelistener.SDKModuleName {
@@ -52,8 +64,8 @@ func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertBalance,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
 )
 
@@ -33,6 +33,18 @@ func (b *authProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Acc
 }
 
+func (b *authProcessor) UpsertStatement() string {
+	return upsertAuth
+}
+
+func (b *authProcessor) InsertStatement() string {
+	return insertAuth
+}
+
+func (b *authProcessor) DeleteStatement() string {
+	panic("auth processor never deletes")
+}
+
 func (b *authProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -50,8 +62,8 @@ func (b *authProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertAuth,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

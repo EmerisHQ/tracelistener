@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 )
 
 type validatorCacheEntry struct {
@@ -33,43 +33,56 @@ func (b *validatorsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.Staking
 }
 
+func (b *validatorsProcessor) InsertStatement() string {
+	return insertValidator
+}
+
+func (b *validatorsProcessor) UpsertStatement() string {
+	return upsertValidator
+}
+
+func (b *validatorsProcessor) DeleteStatement() string {
+	return deleteValidator
+}
+
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 
-	if len(b.insertValidatorsCache) == 0 && len(b.deleteValidatorsCache) == 0 {
-		return nil
-	}
+	insert := make([]models.DatabaseEntrier, 0, len(b.insertValidatorsCache))
 
-	insertValidators := make([]models.DatabaseEntrier, 0, len(b.insertValidatorsCache))
-	deleteValidators := make([]models.DatabaseEntrier, 0, len(b.deleteValidatorsCache))
+	// pre-allocate wbOp as follows:
+	// - 1 capacity unit for an eventual insert op
+	// - n capacity units for each element in deleteHeightCache
+	writebackOp := make([]tracelistener.WritebackOp, 0, 1+len(b.deleteValidatorsCache))
 
 	if len(b.insertValidatorsCache) != 0 {
 		for _, v := range b.insertValidatorsCache {
-			insertValidators = append(insertValidators, v)
+			insert = append(insert, v)
 		}
+
+		b.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 	}
 
-	b.insertValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
+	writebackOp = append(writebackOp, tracelistener.WritebackOp{
+		Type: tracelistener.Write,
+		Data: insert,
+	})
 
-	if len(b.deleteValidatorsCache) != 0 {
-		for _, v := range b.deleteValidatorsCache {
-			deleteValidators = append(deleteValidators, v)
-		}
+	if len(b.deleteValidatorsCache) == 0 && len(insert) == 0 {
+		return nil
+	}
+
+	for _, v := range b.deleteValidatorsCache {
+		writebackOp = append(writebackOp, tracelistener.WritebackOp{
+			Type: tracelistener.Delete,
+			Data: []models.DatabaseEntrier{v},
+		})
 	}
 
 	b.deleteValidatorsCache = map[validatorCacheEntry]models.ValidatorRow{}
 
-	return []tracelistener.WritebackOp{
-		{
-			DatabaseExec: insertValidator,
-			Data:         insertValidators,
-		},
-		{
-			DatabaseExec: deleteValidator,
-			Data:         deleteValidators,
-		},
-	}
+	return writebackOp
 }
 func (b *validatorsProcessor) OwnsKey(key []byte) bool {
 	ret := bytes.HasPrefix(key, datamarshaler.ValidatorsKey)

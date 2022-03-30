@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 )
 
 type unbondingDelegationCacheEntry struct {
@@ -35,12 +35,28 @@ func (b *unbondingDelegationsProcessor) SDKModuleName() tracelistener.SDKModuleN
 	return tracelistener.Staking
 }
 
+func (b *unbondingDelegationsProcessor) InsertStatement() string {
+	return insertUnbondingDelegation
+}
+
+func (b *unbondingDelegationsProcessor) UpsertStatement() string {
+	return upsertUnbondingDelegation
+}
+
+func (b *unbondingDelegationsProcessor) DeleteStatement() string {
+	return deleteUnbondingDelegation
+}
+
 func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
 
 	insert := make([]models.DatabaseEntrier, 0, len(b.insertHeightCache))
-	deleteEntries := make([]models.DatabaseEntrier, 0, len(b.deleteHeightCache))
+
+	// pre-allocate wbOp as follows:
+	// - 1 capacity unit for an eventual insert op
+	// - n capacity units for each element in deleteHeightCache
+	writebackOp := make([]tracelistener.WritebackOp, 0, 1+len(b.deleteHeightCache))
 
 	if len(b.insertHeightCache) != 0 {
 		for _, v := range b.insertHeightCache {
@@ -50,26 +66,25 @@ func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp
 		b.insertHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 	}
 
-	if len(b.deleteHeightCache) == 0 && insert == nil {
+	writebackOp = append(writebackOp, tracelistener.WritebackOp{
+		Type: tracelistener.Write,
+		Data: insert,
+	})
+
+	if len(b.deleteHeightCache) == 0 && len(insert) == 0 {
 		return nil
 	}
 
 	for _, v := range b.deleteHeightCache {
-		deleteEntries = append(deleteEntries, v)
+		writebackOp = append(writebackOp, tracelistener.WritebackOp{
+			Type: tracelistener.Delete,
+			Data: []models.DatabaseEntrier{v},
+		})
 	}
 
 	b.deleteHeightCache = map[unbondingDelegationCacheEntry]models.UnbondingDelegationRow{}
 
-	return []tracelistener.WritebackOp{
-		{
-			DatabaseExec: insertUnbondingDelegation,
-			Data:         insert,
-		},
-		{
-			DatabaseExec: deleteUnbondingDelegation,
-			Data:         deleteEntries,
-		},
-	}
+	return writebackOp
 }
 
 func (b *unbondingDelegationsProcessor) OwnsKey(key []byte) bool {

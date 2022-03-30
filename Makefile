@@ -13,7 +13,7 @@ COVERAGE_VERSIONS = $(shell jq -r '.versions|map("coverage-\(.)")[]' ${TARGETS})
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 
-BASEPKG = github.com/allinbits/tracelistener
+BASEPKG = github.com/emerishq/tracelistener
 .PHONY: clean $(SETUP_VERSIONS) $(BUILD_VERSIONS)
 
 $(BUILD_VERSIONS):
@@ -28,6 +28,13 @@ $(BUILD_VERSIONS_DEBUG):
 	 -tags $(shell echo $@ | sed -e 's/build-/sdk_/g' -e 's/-/_/g' -e 's/_debug//g'),muslc \
 	 -ldflags "-X main.Version=${BRANCH}-${COMMIT} -X main.SupportedSDKVersion=$(shell echo $@ | sed -e 's/build-//g' -e 's/-/_/g')" \
 	 ${BASEPKG}/cmd/tracelistener	 
+
+resetchain:
+	go build -o build/resetchain -v \
+	 -gcflags=all="-N -l" \
+	 -tags muslc \
+	 -ldflags "-X main.Version=${BRANCH}-${COMMIT}" \
+	 ${BASEPKG}/cmd/resetchain
 
 clean:
 	rm -rf build
@@ -58,7 +65,7 @@ $(TEST_VERSIONS):
 		./...
 
 $(COVERAGE_VERSIONS):
-	go test -v -failfast -coverprofile=coverage.out -covermode=atomic -count=1\
+	go test -v -failfast -race -coverprofile=coverage.out -covermode=atomic -count=1 \
 		-tags $(shell echo $@ | sed -e 's/coverage-/sdk_/g' -e 's/-/_/g'),muslc \
 		./...
 

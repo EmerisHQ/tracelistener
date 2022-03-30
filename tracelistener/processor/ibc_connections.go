@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 
 	"go.uber.org/zap"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 )
 
 type connectionCacheEntry struct {
@@ -39,6 +39,18 @@ func (b *ibcConnectionsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 	return tracelistener.IBC
 }
 
+func (b *ibcConnectionsProcessor) UpsertStatement() string {
+	return upsertConnection
+}
+
+func (b *ibcConnectionsProcessor) InsertStatement() string {
+	return insertConnection
+}
+
+func (b *ibcConnectionsProcessor) DeleteStatement() string {
+	panic("ibc connections processor never deletes")
+}
+
 func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 	b.m.Lock()
 	defer b.m.Unlock()
@@ -57,8 +69,8 @@ func (b *ibcConnectionsProcessor) FlushCache() []tracelistener.WritebackOp {
 
 	return []tracelistener.WritebackOp{
 		{
-			DatabaseExec: insertConnection,
-			Data:         l,
+			Type: tracelistener.Write,
+			Data: l,
 		},
 	}
 }

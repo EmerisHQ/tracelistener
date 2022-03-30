@@ -2,11 +2,12 @@ package processor
 
 import (
 	"fmt"
+	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
 
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,9 @@ type Module interface {
 	ModuleName() string
 	SDKModuleName() tracelistener.SDKModuleName
 	TableSchema() string
+	UpsertStatement() string
+	InsertStatement() string
+	DeleteStatement() string
 }
 
 var defaultProcessors = []string{
@@ -41,6 +45,10 @@ type Processor struct {
 	chainName        string
 	moduleProcessors []Module
 	sdkModuleMapping map[tracelistener.SDKModuleName][]Module
+	lifecycleStop    chan struct{}
+	useDBUpsert      bool
+
+	processingData sync.Mutex
 }
 
 func (p *Processor) OpsChan() chan tracelistener.TraceOperation {
@@ -93,11 +101,22 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		moduleProcessors: mp,
 		migrations:       tableSchemas,
 		sdkModuleMapping: sdkModuleMapping,
+		lifecycleStop:    make(chan struct{}),
 	}
 
-	go p.lifecycle()
-
 	return &p, nil
+}
+
+func (p *Processor) SetDBUpsertEnabled(enabled bool) {
+	p.useDBUpsert = enabled
+}
+
+func (p *Processor) StartBackgroundProcessing() {
+	go p.lifecycle()
+}
+
+func (p *Processor) StopBackgroundProcessing() {
+	p.lifecycleStop <- struct{}{}
 }
 
 func (p *Processor) AddModule(m Module) error {
@@ -169,6 +188,8 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 }
 
 func (p *Processor) Flush() error {
+	p.processingData.Lock()
+	defer p.processingData.Unlock()
 	wb := make([]tracelistener.WritebackOp, 0, len(p.moduleProcessors))
 
 	for _, mp := range p.moduleProcessors {
@@ -181,6 +202,22 @@ func (p *Processor) Flush() error {
 			for i := 0; i < len(entry.Data); i++ {
 				entry.Data[i] = entry.Data[i].WithChainName(p.chainName)
 			}
+
+			switch entry.Type {
+			case tracelistener.Delete:
+				entry.Statement = mp.DeleteStatement()
+			case tracelistener.Write:
+				if p.useDBUpsert {
+					entry.Statement = mp.UpsertStatement()
+				} else {
+					entry.Statement = mp.InsertStatement()
+				}
+			default:
+				panic(fmt.Sprint("found unknown wbop type", entry.Type))
+			}
+
+			entry.SourceModule = mp.SDKModuleName().String()
+
 			wb = append(wb, entry)
 		}
 	}
@@ -195,49 +232,70 @@ func (p *Processor) Flush() error {
 }
 
 func (p *Processor) lifecycle() {
-	for data := range p.writeChan {
-		if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
-			if err := p.Flush(); err != nil {
+	for {
+		select {
+		case <-p.lifecycleStop:
+			return
+		case data := <-p.writeChan:
+			if data.BlockHeight != p.lastHeight && data.BlockHeight != 0 {
+				if err := p.Flush(); err != nil {
+					p.errorsChan <- fmt.Errorf("error while flushing caches, %w", err)
+					continue
+				}
+
+				p.l.Infow("processed new block", "height", p.lastHeight)
+
+				p.lastHeight = data.BlockHeight
+			}
+
+			if err := p.ProcessData(data); err != nil {
 				p.errorsChan <- fmt.Errorf("error while flushing caches, %w", err)
 				continue
 			}
+		}
+	}
+}
 
-			p.l.Infow("processed new block", "height", p.lastHeight)
+func (p *Processor) ProcessData(data tracelistener.TraceOperation) error {
+	processorList := p.moduleProcessors
 
-			p.lastHeight = data.BlockHeight
+	if data.SuggestedProcessor != "" {
+		p.l.Debugw("suggested processor", "name", data.SuggestedProcessor)
+		// only consider the associated processors
+		plist, ok := p.sdkModuleMapping[data.SuggestedProcessor]
+		if ok {
+			p.l.Debugw("found processor matching against sdk module mapping", "requested module", data.SuggestedProcessor)
+			processorList = plist
+		}
+	}
+
+	p.processData(processorList, data)
+
+	return nil
+}
+
+// TODO: error group?
+func (p *Processor) processData(processorList []Module, data tracelistener.TraceOperation) {
+	p.processingData.Lock()
+	defer p.processingData.Unlock()
+	for _, mp := range processorList {
+		if !mp.OwnsKey(data.Key) {
+			continue
 		}
 
-		processorList := p.moduleProcessors
-
-		if data.SuggestedProcessor != "" {
-			p.l.Debugw("suggested processor", "name", data.SuggestedProcessor)
-			// only consider the associated processors
-			plist, ok := p.sdkModuleMapping[data.SuggestedProcessor]
-			if ok {
-				p.l.Debugw("found processor matching against sdk module mapping", "requested module", data.SuggestedProcessor)
-				processorList = plist
-			}
+		mn := mp.ModuleName()
+		// Log line used to trigger Grafana alerts.
+		// Do not modify or remove without changing the corresponding dashboards
+		if data.SuggestedProcessor == "" {
+			// log this only when running non in bulk import mode
+			p.l.Infow("Probe", "c", "gaia", "n", mn)
 		}
 
-		for _, mp := range processorList {
-			if !mp.OwnsKey(data.Key) {
-				continue
-			}
-
-			mn := mp.ModuleName()
-			// Log line used to trigger Grafana alerts.
-			// Do not modify or remove without changing the corresponding dashboards
-			if data.SuggestedProcessor == "" {
-				// log this only when running non in bulk import mode
-				p.l.Infow("Probe", "c", "gaia", "n", mn)
-			}
-
-			if err := mp.Process(data); err != nil {
-				p.errorsChan <- tracelistener.TracingError{
-					InnerError: err,
-					Module:     mp.ModuleName(),
-					Data:       data,
-				}
+		if err := mp.Process(data); err != nil {
+			p.errorsChan <- tracelistener.TracingError{
+				InnerError: err,
+				Module:     mp.ModuleName(),
+				Data:       data,
 			}
 		}
 	}

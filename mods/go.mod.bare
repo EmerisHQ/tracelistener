@@ -1,4 +1,4 @@
-module github.com/allinbits/tracelistener
+module github.com/emerishq/tracelistener
 
 go 1.17
 
@@ -9,6 +9,6 @@ replace (
 )
 
 require (
-	github.com/allinbits/demeris-backend-models v0.0.0-20211018093214-0546d958f4d9
-	github.com/allinbits/emeris-utils v1.0.0
+	github.com/emerishq/demeris-backend-models v0.0.0-20211018093214-0546d958f4d9
+	github.com/emerishq/emeris-utils v1.0.0
 )

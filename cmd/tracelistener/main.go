@@ -8,19 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/allinbits/tracelistener/tracelistener/bulk"
-	"github.com/allinbits/tracelistener/tracelistener/processor"
-	"github.com/pkg/profile"
-
-	"github.com/allinbits/tracelistener/tracelistener/blocktime"
-
-	"github.com/allinbits/emeris-utils/logging"
-
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/config"
-	"github.com/allinbits/tracelistener/tracelistener/database"
 	"github.com/containerd/fifo"
+	"github.com/pkg/profile"
 	"go.uber.org/zap"
+
+	"github.com/emerishq/emeris-utils/logging"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/blocktime"
+	"github.com/emerishq/tracelistener/tracelistener/bulk"
+	"github.com/emerishq/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/database"
+	"github.com/emerishq/tracelistener/tracelistener/processor"
 )
 
 var (
@@ -58,6 +56,10 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	dpi.SetDBUpsertEnabled(true)
+
+	dpi.StartBackgroundProcessing()
 
 	database.RegisterMigration(dpi.DatabaseMigrations()...)
 	database.RegisterMigration(blocktime.CreateTable)
@@ -136,9 +138,15 @@ func main() {
 						continue
 					}
 
-					if err := di.Add(wbUnit.DatabaseExec, is); err != nil {
-						logger.Error("database error ", err, "statement", wbUnit.DatabaseExec, "data", wbUnit.Data)
+					if err := di.Add(wbUnit.Statement, is); err != nil {
+						logger.Errorw("database error",
+							"error", err,
+							"statement", wbUnit.Statement,
+							"type", wbUnit.Type,
+							"data", fmt.Sprint(wbUnit.Data),
+						)
 					}
+
 				}
 			}
 		}

@@ -7,11 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -27,6 +26,8 @@ import (
 	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v2/modules/core/exported"
 	tmIBCTypes "github.com/cosmos/ibc-go/v2/modules/light-clients/07-tendermint/types"
+	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener"
 )
 
 var (
@@ -266,15 +267,13 @@ func (d DataMarshaler) IBCChannels(data tracelistener.TraceOperation) (models.IB
 func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBCClientStateRow, error) {
 	d.l.Debugw("ibc client key", "key", string(data.Key), "raw value", string(data.Value))
 	var result exported.ClientState
-	var dest *tmIBCTypes.ClientState
 	if err := getCodec().UnmarshalInterface(data.Value, &result); err != nil {
 		return models.IBCClientStateRow{}, err
 	}
 
-	if res, ok := result.(*tmIBCTypes.ClientState); !ok {
+	dest, ok := result.(*tmIBCTypes.ClientState)
+	if !ok {
 		return models.IBCClientStateRow{}, nil
-	} else {
-		dest = res
 	}
 
 	if err := result.Validate(); err != nil {
@@ -285,14 +284,7 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 	keySplit := strings.Split(string(data.Key), "/")
 	clientID := keySplit[1]
 
-	if clientTypes.IsRevisionFormat(dest.ChainId) {
-		// the following code has been taken from ibc-go/v2 directly
-		// blame them, not us
-		splitStr := strings.Split(dest.ChainId, "-")
-		if len(splitStr) != 1 {
-			dest.ChainId = splitStr[0]
-		}
-	}
+	dest.ChainId = parseIBCChainID(dest.ChainId, dest.LatestHeight)
 
 	return models.IBCClientStateRow{
 		ChainID:        dest.ChainId,
@@ -300,6 +292,15 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 		LatestHeight:   dest.LatestHeight.RevisionHeight,
 		TrustingPeriod: int64(dest.TrustingPeriod),
 	}, nil
+}
+
+func parseIBCChainID(fullChainID string, height clientTypes.Height) string {
+	if height.RevisionHeight == 0 {
+		return fullChainID
+	}
+
+	suffix := "-" + strconv.FormatUint(height.RevisionHeight, 10)
+	return strings.Replace(fullChainID, suffix, "", 1)
 }
 
 func (d DataMarshaler) IBCConnections(data tracelistener.TraceOperation) (models.IBCConnectionRow, error) {
