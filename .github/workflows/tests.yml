@@ -44,9 +44,6 @@ jobs:
       - name: Setup multisdk
         run: make setup-${{ matrix.versions }}
 
-      - name: Run Tests
-        run: make test-${{ matrix.versions }}
-
       - name: Run coverage
         run: make coverage-${{ matrix.versions }}
       - name: Upload coverage to Codecov
