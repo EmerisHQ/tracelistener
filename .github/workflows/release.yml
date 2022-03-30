@@ -1,0 +1,23 @@
+name: Release
+
+on:
+  pull_request:
+    types: closed
+
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Tag
+        uses: K-Phoen/semver-release-action@master
+        with:
+          release_branch: main
+          tag_format: "v%major%.%minor%.0"
+        env:
+          GITHUB_TOKEN: ${{ secrets.TENDERBOT_GIT_TOKEN }}

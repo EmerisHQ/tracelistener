@@ -19,6 +19,7 @@ type Resetter struct {
 	DB        *sqlx.DB
 	ChainName string
 	ChunkSize int
+	Tables    []string
 }
 
 func (r Resetter) Reset() error {
@@ -28,23 +29,9 @@ func (r Resetter) Reset() error {
 		"chunkSize", strconv.Itoa(r.ChunkSize),
 	)
 
-	tables := []string{
-		"balances",
-		"connections",
-		"delegations",
-		"unbonding_delegations",
-		"denom_traces",
-		"channels",
-		"auth",
-		"clients",
-		"validators",
-		"liquidity_swaps",
-		"liquidity_pools",
-	}
-
 	var errs []string
 
-	for _, t := range tables {
+	for _, t := range r.Tables {
 		l := r.Logger.With("table", t)
 		startTime := time.Now()
 		l.Info("start")
