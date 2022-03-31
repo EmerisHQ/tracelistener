@@ -1,0 +1,24 @@
+tables:
+  - name: auth
+    columns:
+      - name: id
+        type: serial
+        default: true
+        primary: true
+      - name: height
+        type: integer
+      - name: chain_name
+        type: text
+        unique: true
+      - name: address
+        type: text
+        unique: true
+      - name: account_number
+        type: numeric
+        unique: true
+      - name: sequence_number
+        type: numeric
+    unique_columns:
+      - chain_name
+      - address
+      - account_number

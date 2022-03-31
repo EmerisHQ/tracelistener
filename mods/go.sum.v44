@@ -418,6 +418,8 @@ github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaB
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emerishq/demeris-backend-models v1.2.0 h1:1tOvIS8Ou7FOAQMykmQcV9qTWLP0RR7GNGWAIAp/xKE=
 github.com/emerishq/demeris-backend-models v1.2.0/go.mod h1:nRDQ0RGcxZuzq5/J7sykPweMCydaO0305ebU7xWKcvw=
+github.com/emerishq/demeris-backend-models v1.2.1-0.20220330084908-e8436556f85c h1:o6wrd3RPIAHMOxn9ao/rwAuXlwzaFB9Xl+r/QAeZqNs=
+github.com/emerishq/demeris-backend-models v1.2.1-0.20220330084908-e8436556f85c/go.mod h1:nRDQ0RGcxZuzq5/J7sykPweMCydaO0305ebU7xWKcvw=
 github.com/emerishq/emeris-utils v1.3.0 h1:dVWtigVeUb7h/jQL2ofu1YZy61jxJ76BY9+fpzuEOmc=
 github.com/emerishq/emeris-utils v1.3.0/go.mod h1:rZguErkL/bsJ1Nj0LN5Rfm9qcI1XIwHpr5XwSJwSvN0=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=

@@ -107,6 +107,9 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		}] = models.DelegationRow{
 			Delegator: res.Delegator,
 			Validator: res.Validator,
+			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+				Height: data.BlockHeight,
+			},
 		}
 
 		return nil
@@ -116,10 +119,12 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		validator: res.Validator,
 		delegator: res.Delegator,
 	}] = models.DelegationRow{
-		Delegator:   res.Delegator,
-		Validator:   res.Validator,
-		Amount:      res.Amount,
-		BlockHeight: data.BlockHeight,
+		Delegator: res.Delegator,
+		Validator: res.Validator,
+		Amount:    res.Amount,
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}
 
 	return nil

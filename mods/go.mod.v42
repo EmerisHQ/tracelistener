@@ -14,7 +14,7 @@ require (
 	github.com/cosmos/btcutil v1.0.4
 	github.com/cosmos/cosmos-sdk v0.42.10
 	github.com/cosmos/gaia/v5 v5.0.4
-	github.com/emerishq/demeris-backend-models v1.2.0
+	github.com/emerishq/demeris-backend-models v1.2.1-0.20220330084908-e8436556f85c
 	github.com/emerishq/emeris-utils v1.3.0
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gogo/protobuf v1.3.3

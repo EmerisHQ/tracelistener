@@ -127,6 +127,8 @@ func TestAuthProcess(t *testing.T) {
 				accountNumber := row.AccountNumber
 				require.Equal(t, tt.account.AccountNumber, accountNumber)
 
+				require.Equal(t, tt.newMessage.BlockHeight, row.Height)
+
 				return
 			}
 		})
