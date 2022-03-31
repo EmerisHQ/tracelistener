@@ -23,8 +23,8 @@ type ibcChannelsProcessor struct {
 	m             sync.Mutex
 }
 
-func (*ibcChannelsProcessor) TableSchema() string {
-	return createChannelsTable
+func (*ibcChannelsProcessor) Migrations() []string {
+	return []string{createChannelsTable}
 }
 
 func (b *ibcChannelsProcessor) ModuleName() string {

@@ -27,8 +27,8 @@ type ibcConnectionsProcessor struct {
 	m                sync.Mutex
 }
 
-func (*ibcConnectionsProcessor) TableSchema() string {
-	return createConnectionsTable
+func (*ibcConnectionsProcessor) Migrations() []string {
+	return []string{createConnectionsTable}
 }
 
 func (b *ibcConnectionsProcessor) ModuleName() string {

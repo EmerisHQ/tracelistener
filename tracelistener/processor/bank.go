@@ -22,8 +22,8 @@ type bankProcessor struct {
 	m           sync.Mutex
 }
 
-func (*bankProcessor) TableSchema() string {
-	return createBalancesTable
+func (*bankProcessor) Migrations() []string {
+	return []string{createBalancesTable}
 }
 
 func (b *bankProcessor) ModuleName() string {

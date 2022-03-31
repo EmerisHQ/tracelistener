@@ -17,8 +17,8 @@ type ibcDenomTracesProcessor struct {
 	m                sync.Mutex
 }
 
-func (*ibcDenomTracesProcessor) TableSchema() string {
-	return createDenomTracesTable
+func (*ibcDenomTracesProcessor) Migrations() []string {
+	return []string{createDenomTracesTable}
 }
 
 func (b *ibcDenomTracesProcessor) ModuleName() string {
