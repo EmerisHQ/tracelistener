@@ -5,9 +5,9 @@ const (
 	// Balance-related queries
 	insertBalance = `
 INSERT INTO tracelistener.balances 
-	(chain_name, address, amount, denom, height) 
+	(height, chain_name, address, amount, denom)
 VALUES 
-	(:chain_name, :address, :amount, :denom, :height)
+	(:height, :chain_name, :address, :amount, :denom)
 	`
 
 	upsertBalance = insertBalance + `
@@ -49,9 +49,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.connections (
 
 	insertConnection = `
 INSERT INTO tracelistener.connections 
-	(chain_name, connection_id, client_id, state, counter_connection_id, counter_client_id) 
+	(height, chain_name, connection_id, client_id, state, counter_connection_id, counter_client_id) 
 VALUES 
-	(:chain_name, :connection_id, :client_id, :state, :counter_connection_id, :counter_client_id) 
+	(:height, :chain_name, :connection_id, :client_id, :state, :counter_connection_id, :counter_client_id) 
 `
 
 	upsertConnection = insertConnection + `
@@ -190,9 +190,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.delegations (
 
 	insertDelegation = `
 INSERT INTO tracelistener.delegations
-	(delegator_address, validator_address, amount, chain_name) 
+	(height, delegator_address, validator_address, amount, chain_name) 
 VALUES 
-	(:delegator_address, :validator_address, :amount, :chain_name)  
+	(:height, :delegator_address, :validator_address, :amount, :chain_name)  
 `
 
 	upsertDelegation = insertDelegation + `
@@ -226,9 +226,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.unbonding_delegations (
 
 	insertUnbondingDelegation = `
 INSERT INTO tracelistener.unbonding_delegations
-	(delegator_address, validator_address, entries, chain_name) 
+	(height, delegator_address, validator_address, entries, chain_name) 
 VALUES 
-	(:delegator_address, :validator_address, :entries, :chain_name)  
+	(:height, :delegator_address, :validator_address, :entries, :chain_name)  
 `
 
 	upsertUnbondingDelegation = insertUnbondingDelegation + `
@@ -261,9 +261,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 
 	insertDenomTrace = `
 INSERT INTO tracelistener.denom_traces
-	(path, base_denom, hash, chain_name) 
+	(height, path, base_denom, hash, chain_name) 
 VALUES 
-	(:path, :base_denom, :hash, :chain_name)
+	(:height, :path, :base_denom, :hash, :chain_name)
 `
 
 	upsertDenomTrace = insertDenomTrace + `
@@ -290,9 +290,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.channels (
 
 	insertChannel = `
 INSERT INTO tracelistener.channels
-	(channel_id, counter_channel_id, port, state, hops, chain_name) 
+	(height, channel_id, counter_channel_id, port, state, hops, chain_name) 
 VALUES 
-	(:channel_id, :counter_channel_id, :port, :state, :hops, :chain_name)
+	(:height, :channel_id, :counter_channel_id, :port, :state, :hops, :chain_name)
 `
 
 	upsertChannel = insertChannel + `
@@ -319,9 +319,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.auth (
 
 	insertAuth = `
 INSERT INTO tracelistener.auth 
-	(chain_name, address, sequence_number, account_number) 
+	(height, chain_name, address, sequence_number, account_number) 
 VALUES 
-	(:chain_name, :address, :sequence_number, :account_number) 
+	(:height, :chain_name, :address, :sequence_number, :account_number) 
 `
 
 	upsertAuth = insertAuth + `
@@ -347,9 +347,9 @@ CREATE TABLE IF NOT EXISTS tracelistener.clients (
 
 	insertClient = `
 INSERT INTO tracelistener.clients
-	(chain_name, chain_id, client_id, latest_height, trusting_period) 
+	(height, chain_name, chain_id, client_id, latest_height, trusting_period) 
 VALUES 
-	(:chain_name, :chain_id, :client_id, :latest_height, :trusting_period)
+	(:height, :chain_name, :chain_id, :client_id, :latest_height, :trusting_period)
 `
 
 	upsertClient = insertClient + `ON CONFLICT
@@ -389,6 +389,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.validators (
 
 	insertValidator = `
 INSERT INTO tracelistener.validators (
+		height,
         chain_name,
         operator_address,
         consensus_pubkey_type,
@@ -411,6 +412,7 @@ INSERT INTO tracelistener.validators (
         min_self_delegation
     )
 VALUES (
+		:height,
         :chain_name,
         :operator_address,
         :consensus_pubkey_type,
