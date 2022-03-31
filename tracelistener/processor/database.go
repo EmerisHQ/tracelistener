@@ -203,13 +203,13 @@ DO UPDATE SET
 `
 
 	deleteDelegation = `
-DELETE FROM tracelistener.delegations
-WHERE
-	delegator_address=:delegator_address
-AND
-	validator_address=:validator_address
-AND
-	chain_name=:chain_name
+UPDATE tracelistener.delegations
+	SET delete_height=:height
+	WHERE delegator_address=:delegator_address
+	AND validator_address=:validator_address
+	AND chain_name=:chain_name
+	AND height < :height
+	AND delete_height = NULL
 `
 
 	// Account unbonding delegations-related queries
@@ -238,13 +238,13 @@ DO UPDATE SET
 	entries=EXCLUDED.entries`
 
 	deleteUnbondingDelegation = `
-DELETE FROM tracelistener.unbonding_delegations
-WHERE
-	delegator_address=:delegator_address
-AND
-	validator_address=:validator_address
-AND
-	chain_name=:chain_name
+UPDATE tracelistener.unbonding_delegations
+	SET delete_height = :height
+	WHERE delegator_address=:delegator_address
+	AND validator_address=:validator_address
+	AND chain_name=:chain_name
+	AND height < :height
+	AND delete_height = NULL
 `
 
 	// Denom traces-related queries
@@ -461,10 +461,11 @@ DO UPDATE SET
     min_self_delegation = EXCLUDED.min_self_delegation`
 
 	deleteValidator = `
-	DELETE from tracelistener.validators 
-	WHERE 
-		chain_name = :chain_name
-		AND
-		operator_address = :operator_address
+UPDATE tracelistener.validators 
+	SET delete_height = :height
+	WHERE chain_name = :chain_name
+	AND operator_address = :operator_address
+	AND height < :height
+	AND delete_height = NULL
 `
 )
