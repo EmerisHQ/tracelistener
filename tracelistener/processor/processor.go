@@ -17,7 +17,7 @@ type Module interface {
 	Process(data tracelistener.TraceOperation) error
 	ModuleName() string
 	SDKModuleName() tracelistener.SDKModuleName
-	TableSchema() string
+	Migrations() []string
 	UpsertStatement() string
 	InsertStatement() string
 	DeleteStatement() string
@@ -75,7 +75,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 	}
 
 	mp := make([]Module, 0)
-	tableSchemas := make([]string, 0)
+	migrations := make([]string, 0)
 
 	sdkModuleMapping := map[tracelistener.SDKModuleName][]Module{}
 
@@ -86,7 +86,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		}
 
 		mp = append(mp, p)
-		tableSchemas = append(tableSchemas, p.TableSchema())
+		migrations = append(migrations, p.Migrations()...)
 		sdkModuleMapping[p.SDKModuleName()] = append(sdkModuleMapping[p.SDKModuleName()], p)
 	}
 
@@ -99,7 +99,7 @@ func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProce
 		writebackChan:    make(chan []tracelistener.WritebackOp),
 		errorsChan:       make(chan error),
 		moduleProcessors: mp,
-		migrations:       tableSchemas,
+		migrations:       migrations,
 		sdkModuleMapping: sdkModuleMapping,
 		lifecycleStop:    make(chan struct{}),
 	}

@@ -23,8 +23,8 @@ type unbondingDelegationsProcessor struct {
 	m                 sync.Mutex
 }
 
-func (*unbondingDelegationsProcessor) TableSchema() string {
-	return createUnbondingDelegationsTable
+func (*unbondingDelegationsProcessor) Migrations() []string {
+	return []string{createUnbondingDelegationsTable}
 }
 
 func (b *unbondingDelegationsProcessor) ModuleName() string {

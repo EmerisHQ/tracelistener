@@ -25,7 +25,7 @@ type dumbModule struct {
 	key           []byte
 	alwaysOwnsKey bool
 	processFunc   func(data tracelistener.TraceOperation) error
-	tableSchema   string
+	migrations    []string
 	moduleName    string
 }
 
@@ -56,8 +56,8 @@ func (d dumbModule) ModuleName() string {
 	return "dumbModule"
 }
 
-func (d dumbModule) TableSchema() string {
-	return d.tableSchema
+func (d dumbModule) Migrations() []string {
+	return d.migrations
 }
 
 func (d dumbModule) UpsertStatement() string {

@@ -23,8 +23,8 @@ type delegationsProcessor struct {
 	m                 sync.Mutex
 }
 
-func (*delegationsProcessor) TableSchema() string {
-	return createDelegationsTable
+func (*delegationsProcessor) Migrations() []string {
+	return []string{createDelegationsTable}
 }
 
 func (b *delegationsProcessor) ModuleName() string {

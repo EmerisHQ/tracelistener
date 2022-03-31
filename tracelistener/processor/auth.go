@@ -21,8 +21,8 @@ type authProcessor struct {
 	m           sync.Mutex
 }
 
-func (*authProcessor) TableSchema() string {
-	return createAuthTable
+func (*authProcessor) Migrations() []string {
+	return []string{createAuthTable}
 }
 
 func (b *authProcessor) ModuleName() string {

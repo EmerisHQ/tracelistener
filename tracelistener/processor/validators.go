@@ -21,8 +21,8 @@ type validatorsProcessor struct {
 	m                     sync.Mutex
 }
 
-func (*validatorsProcessor) TableSchema() string {
-	return createValidatorsTable
+func (*validatorsProcessor) Migrations() []string {
+	return []string{createValidatorsTable}
 }
 
 func (b *validatorsProcessor) ModuleName() string {
