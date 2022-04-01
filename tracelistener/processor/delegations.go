@@ -104,10 +104,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		b.deleteHeightCache[delegationCacheEntry{
 			validator: res.Validator,
 			delegator: res.Delegator,
-		}] = models.DelegationRow{
-			Delegator: res.Delegator,
-			Validator: res.Validator,
-		}
+		}] = res
 
 		return nil
 	}
@@ -115,12 +112,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 	b.insertHeightCache[delegationCacheEntry{
 		validator: res.Validator,
 		delegator: res.Delegator,
-	}] = models.DelegationRow{
-		Delegator:   res.Delegator,
-		Validator:   res.Validator,
-		Amount:      res.Amount,
-		BlockHeight: data.BlockHeight,
-	}
+	}] = res
 
 	return nil
 }
