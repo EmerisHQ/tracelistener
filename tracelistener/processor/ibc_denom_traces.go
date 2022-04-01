@@ -18,7 +18,7 @@ type ibcDenomTracesProcessor struct {
 }
 
 func (*ibcDenomTracesProcessor) Migrations() []string {
-	return []string{createDenomTracesTable, addHeightColumn(denomTracesTable), addDeleteHeightColumn(denomTracesTable)}
+	return []string{createDenomTracesTable}
 }
 
 func (b *ibcDenomTracesProcessor) ModuleName() string {

@@ -23,7 +23,7 @@ type bankProcessor struct {
 }
 
 func (*bankProcessor) Migrations() []string {
-	return []string{createBalancesTable, addHeightColumn(balanceTable), addDeleteHeightColumn(balanceTable)}
+	return []string{createBalancesTable}
 }
 
 func (b *bankProcessor) ModuleName() string {

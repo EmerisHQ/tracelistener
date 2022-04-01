@@ -3,12 +3,8 @@ package processor
 const (
 
 	// Balance-related queries
-
-	// balances table name
-	balanceTable = `balances`
-
 	insertBalance = `
-INSERT INTO tracelistener.` + balanceTable + `
+INSERT INTO tracelistener.balances 
 	(chain_name, address, amount, denom, height) 
 VALUES 
 	(:chain_name, :address, :amount, :denom, :height)
@@ -26,7 +22,7 @@ DO UPDATE SET
 	`
 
 	createBalancesTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + balanceTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.balances (
 	id serial unique primary key,
 	chain_name text not null,
 	address text not null,
@@ -38,12 +34,8 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + balanceTable + ` (
 `
 
 	// Connection-related queries
-
-	// connections table name
-	connectionsTable = `connections`
-
 	createConnectionsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + connectionsTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.connections (
 	id serial unique primary key,
 	chain_name text not null,
 	connection_id text not null,
@@ -56,7 +48,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + connectionsTable + ` (
 `
 
 	insertConnection = `
-INSERT INTO tracelistener.` + connectionsTable + ` 
+INSERT INTO tracelistener.connections 
 	(chain_name, connection_id, client_id, state, counter_connection_id, counter_client_id) 
 VALUES 
 	(:chain_name, :connection_id, :client_id, :state, :counter_connection_id, :counter_client_id) 
@@ -185,12 +177,8 @@ DO UPDATE SET
 	*/
 
 	// Account delegations-related queries
-
-	// delegations table name
-	delegationsTable = `delegations`
-
 	createDelegationsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + delegationsTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.delegations (
 	id serial unique primary key,
 	chain_name text not null,
 	delegator_address text not null,
@@ -201,7 +189,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + delegationsTable + ` (
 `
 
 	insertDelegation = `
-INSERT INTO tracelistener.` + delegationsTable + `
+INSERT INTO tracelistener.delegations
 	(delegator_address, validator_address, amount, chain_name) 
 VALUES 
 	(:delegator_address, :validator_address, :amount, :chain_name)  
@@ -215,7 +203,7 @@ DO UPDATE SET
 `
 
 	deleteDelegation = `
-DELETE FROM tracelistener.` + delegationsTable + `
+DELETE FROM tracelistener.delegations
 WHERE
 	delegator_address=:delegator_address
 AND
@@ -225,12 +213,8 @@ AND
 `
 
 	// Account unbonding delegations-related queries
-
-	// unbonding_delegations table name
-	unbondingDelegationsTable = `unbonding_delegations`
-
 	createUnbondingDelegationsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + unbondingDelegationsTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.unbonding_delegations (
 	id serial unique primary key,
 	chain_name text not null,
 	delegator_address text not null,
@@ -241,7 +225,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + unbondingDelegationsTable + ` (
 `
 
 	insertUnbondingDelegation = `
-INSERT INTO tracelistener.` + unbondingDelegationsTable + `
+INSERT INTO tracelistener.unbonding_delegations
 	(delegator_address, validator_address, entries, chain_name) 
 VALUES 
 	(:delegator_address, :validator_address, :entries, :chain_name)  
@@ -254,7 +238,7 @@ DO UPDATE SET
 	entries=EXCLUDED.entries`
 
 	deleteUnbondingDelegation = `
-DELETE FROM tracelistener.` + unbondingDelegationsTable + `
+DELETE FROM tracelistener.unbonding_delegations
 WHERE
 	delegator_address=:delegator_address
 AND
@@ -264,12 +248,8 @@ AND
 `
 
 	// Denom traces-related queries
-
-	// denom_traces table name
-	denomTracesTable = `denom_traces`
-
 	createDenomTracesTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + denomTracesTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.denom_traces (
 	id serial unique primary key,
 	chain_name text not null,
 	path text not null,
@@ -280,7 +260,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + denomTracesTable + ` (
 `
 
 	insertDenomTrace = `
-INSERT INTO tracelistener.` + denomTracesTable + `
+INSERT INTO tracelistener.denom_traces
 	(path, base_denom, hash, chain_name) 
 VALUES 
 	(:path, :base_denom, :hash, :chain_name)
@@ -295,12 +275,8 @@ DO UPDATE SET
 	path=EXCLUDED.path`
 
 	// IBC channels-related queries
-
-	// channels table name
-	channelsTable = `channels`
-
 	createChannelsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + channelsTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.channels (
 	id serial unique primary key,
 	chain_name text not null,
 	channel_id text not null,
@@ -313,7 +289,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + channelsTable + ` (
 `
 
 	insertChannel = `
-INSERT INTO tracelistener.` + channelsTable + `
+INSERT INTO tracelistener.channels
 	(channel_id, counter_channel_id, port, state, hops, chain_name) 
 VALUES 
 	(:channel_id, :counter_channel_id, :port, :state, :hops, :chain_name)
@@ -330,12 +306,8 @@ DO UPDATE SET
 	channel_id=EXCLUDED.channel_id`
 
 	// Auth-related queries
-
-	// auth table name
-	authTable = "auth"
-
 	createAuthTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + authTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.auth (
 	id serial unique primary key,
 	chain_name text not null,
 	address text not null,
@@ -346,7 +318,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + authTable + ` (
 `
 
 	insertAuth = `
-INSERT INTO tracelistener.` + authTable + ` 
+INSERT INTO tracelistener.auth 
 	(chain_name, address, sequence_number, account_number) 
 VALUES 
 	(:chain_name, :address, :sequence_number, :account_number) 
@@ -361,11 +333,8 @@ DO UPDATE SET
 	sequence_number=EXCLUDED.sequence_number,
 	account_number=EXCLUDED.account_number`
 
-	// clients table name
-	clientsTable = `clients`
-
 	createClientsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + clientsTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.clients (
 	id serial unique primary key,
 	chain_name text not null,
 	chain_id text not null,
@@ -377,7 +346,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + clientsTable + ` (
 `
 
 	insertClient = `
-INSERT INTO tracelistener.` + clientsTable + `
+INSERT INTO tracelistener.clients
 	(chain_name, chain_id, client_id, latest_height, trusting_period) 
 VALUES 
 	(:chain_name, :chain_id, :client_id, :latest_height, :trusting_period)
@@ -391,11 +360,8 @@ client_id=EXCLUDED.client_id,
 latest_height=EXCLUDED.latest_height,
 trusting_period=EXCLUDED.trusting_period`
 
-	// validators table name
-	validatorsTable = `validators`
-
 	createValidatorsTable = `
-CREATE TABLE IF NOT EXISTS tracelistener.` + validatorsTable + ` (
+CREATE TABLE IF NOT EXISTS tracelistener.validators (
 	id serial unique primary key,
 	chain_name text not null,
 	operator_address text not null,
@@ -422,7 +388,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + validatorsTable + ` (
 `
 
 	insertValidator = `
-INSERT INTO tracelistener.` + validatorsTable + ` (
+INSERT INTO tracelistener.validators (
         chain_name,
         operator_address,
         consensus_pubkey_type,
@@ -493,22 +459,10 @@ DO UPDATE SET
     min_self_delegation = EXCLUDED.min_self_delegation`
 
 	deleteValidator = `
-	DELETE from tracelistener.` + validatorsTable + ` 
+	DELETE from tracelistener.validators 
 	WHERE 
 		chain_name = :chain_name
 		AND
 		operator_address = :operator_address
 `
 )
-
-func addHeightColumn(tableName string) string {
-	return `
-	ALTER TABLE tracelistener.` + tableName + ` ADD COLUMN IF NOT EXISTS height integer not null DEFAULT -1;
-	`
-}
-
-func addDeleteHeightColumn(tableName string) string {
-	return `
-	ALTER TABLE tracelistener.` + tableName + ` ADD COLUMN IF NOT EXISTS delete_height integer;
-	`
-}
