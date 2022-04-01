@@ -28,7 +28,7 @@ type ibcConnectionsProcessor struct {
 }
 
 func (*ibcConnectionsProcessor) Migrations() []string {
-	return []string{createConnectionsTable, addHeightColumn(connectionsTable), addDeleteHeightColumn(connectionsTable)}
+	return []string{createConnectionsTable}
 }
 
 func (b *ibcConnectionsProcessor) ModuleName() string {
