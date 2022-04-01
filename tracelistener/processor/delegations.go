@@ -24,7 +24,7 @@ type delegationsProcessor struct {
 }
 
 func (*delegationsProcessor) Migrations() []string {
-	return []string{createDelegationsTable}
+	return []string{createDelegationsTable, addHeightColumn(delegationsTable), addDeleteHeightColumn(delegationsTable)}
 }
 
 func (b *delegationsProcessor) ModuleName() string {
