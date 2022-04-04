@@ -288,6 +288,7 @@ func (tr *TraceWatcher) Watch() {
 		for line := range t.Lines {
 			if line.Err != nil {
 				tr.ErrorChan <- fmt.Errorf("line reading error, line %v, error %w", line, err)
+				errorHappened = true
 				break // restart the reading loop
 			}
 
