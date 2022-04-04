@@ -31,9 +31,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
@@ -58,6 +55,8 @@ jobs:
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
             SDK_TARGET=${{ matrix.versions }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   resetchain:
     runs-on: self-hosted
@@ -91,3 +90,5 @@ jobs:
           tags: gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ steps.get_version.outputs.version }},gcr.io/tendermint-dev/emeris-tracelistener-resetchain:${{ github.sha }}
           build-args: |
             GIT_TOKEN=${{ secrets.TENDERBOT_GIT_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
