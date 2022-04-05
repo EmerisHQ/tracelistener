@@ -503,7 +503,7 @@ DO UPDATE SET
 
 func addHeightColumn(tableName string) string {
 	return `
-	ALTER TABLE tracelistener.` + tableName + ` ADD COLUMN IF NOT EXISTS height integer not null DEFAULT -1;
+	ALTER TABLE tracelistener.` + tableName + ` ADD COLUMN IF NOT EXISTS height integer not null DEFAULT 0;
 	`
 }
 
