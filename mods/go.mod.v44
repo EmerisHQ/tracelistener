@@ -16,7 +16,7 @@ require (
 	github.com/cosmos/gaia/v5 v5.0.4
 	github.com/cosmos/gaia/v6 v6.0.0
 	github.com/cosmos/ibc-go/v2 v2.0.2
-	github.com/emerishq/demeris-backend-models v1.4.0
+	github.com/emerishq/demeris-backend-models v1.5.0
 	github.com/emerishq/emeris-utils v1.3.0
 	github.com/go-playground/validator/v10 v10.10.1
 	github.com/gogo/protobuf v1.3.3

@@ -432,6 +432,8 @@ github.com/emerishq/demeris-backend-models v1.2.0 h1:1tOvIS8Ou7FOAQMykmQcV9qTWLP
 github.com/emerishq/demeris-backend-models v1.2.0/go.mod h1:nRDQ0RGcxZuzq5/J7sykPweMCydaO0305ebU7xWKcvw=
 github.com/emerishq/demeris-backend-models v1.4.0 h1:vFdiK1Ylcc5vhZWG/hHmUJP0Hk12nedlScKA2+v90O8=
 github.com/emerishq/demeris-backend-models v1.4.0/go.mod h1:1+h5uREsxHEWUbfdowE10imcluyW/Z0IgCpnihDJTyQ=
+github.com/emerishq/demeris-backend-models v1.5.0 h1:PBldMVGK+jswfmKrtHZB7K6HI0SvjwDlEfPxPoH3azo=
+github.com/emerishq/demeris-backend-models v1.5.0/go.mod h1:1+h5uREsxHEWUbfdowE10imcluyW/Z0IgCpnihDJTyQ=
 github.com/emerishq/emeris-utils v1.3.0 h1:dVWtigVeUb7h/jQL2ofu1YZy61jxJ76BY9+fpzuEOmc=
 github.com/emerishq/emeris-utils v1.3.0/go.mod h1:rZguErkL/bsJ1Nj0LN5Rfm9qcI1XIwHpr5XwSJwSvN0=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
