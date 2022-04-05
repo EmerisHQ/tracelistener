@@ -24,7 +24,8 @@ type unbondingDelegationsProcessor struct {
 }
 
 func (*unbondingDelegationsProcessor) Migrations() []string {
-	return []string{createUnbondingDelegationsTable}
+	return []string{createUnbondingDelegationsTable, addHeightColumn(unbondingDelegationsTable),
+		addDeleteHeightColumn(unbondingDelegationsTable)}
 }
 
 func (b *unbondingDelegationsProcessor) ModuleName() string {

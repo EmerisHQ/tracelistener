@@ -22,7 +22,7 @@ type validatorsProcessor struct {
 }
 
 func (*validatorsProcessor) Migrations() []string {
-	return []string{createValidatorsTable}
+	return []string{createValidatorsTable, addHeightColumn(validatorsTable), addDeleteHeightColumn(validatorsTable)}
 }
 
 func (b *validatorsProcessor) ModuleName() string {
