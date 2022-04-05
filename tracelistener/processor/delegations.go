@@ -24,7 +24,7 @@ type delegationsProcessor struct {
 }
 
 func (*delegationsProcessor) Migrations() []string {
-	return []string{createDelegationsTable}
+	return []string{createDelegationsTable, addHeightColumn(delegationsTable), addDeleteHeightColumn(delegationsTable)}
 }
 
 func (b *delegationsProcessor) ModuleName() string {
@@ -104,10 +104,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 		b.deleteHeightCache[delegationCacheEntry{
 			validator: res.Validator,
 			delegator: res.Delegator,
-		}] = models.DelegationRow{
-			Delegator: res.Delegator,
-			Validator: res.Validator,
-		}
+		}] = res
 
 		return nil
 	}
@@ -115,12 +112,7 @@ func (b *delegationsProcessor) Process(data tracelistener.TraceOperation) error 
 	b.insertHeightCache[delegationCacheEntry{
 		validator: res.Validator,
 		delegator: res.Delegator,
-	}] = models.DelegationRow{
-		Delegator:   res.Delegator,
-		Validator:   res.Validator,
-		Amount:      res.Amount,
-		BlockHeight: data.BlockHeight,
-	}
+	}] = res
 
 	return nil
 }

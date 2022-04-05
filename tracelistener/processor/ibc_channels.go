@@ -24,7 +24,7 @@ type ibcChannelsProcessor struct {
 }
 
 func (*ibcChannelsProcessor) Migrations() []string {
-	return []string{createChannelsTable}
+	return []string{createChannelsTable, addHeightColumn(channelsTable), addDeleteHeightColumn(channelsTable)}
 }
 
 func (b *ibcChannelsProcessor) ModuleName() string {

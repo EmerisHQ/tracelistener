@@ -22,7 +22,7 @@ type authProcessor struct {
 }
 
 func (*authProcessor) Migrations() []string {
-	return []string{createAuthTable}
+	return []string{createAuthTable, addHeightColumn(authTable), addDeleteHeightColumn(authTable)}
 }
 
 func (b *authProcessor) ModuleName() string {
