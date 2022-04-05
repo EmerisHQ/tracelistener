@@ -68,10 +68,12 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 		"txHash", data.TxHash,
 	)
 	return models.BalanceRow{
-		Address:     hAddr,
-		Amount:      coins.String(),
-		Denom:       coins.Denom,
-		BlockHeight: data.BlockHeight,
+		Address: hAddr,
+		Amount:  coins.String(),
+		Denom:   coins.Denom,
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, nil
 }
 
@@ -137,6 +139,9 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 		Address:        hAddr,
 		SequenceNumber: acc.GetSequence(),
 		AccountNumber:  acc.GetAccountNumber(),
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, nil
 }
 
@@ -152,6 +157,9 @@ func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.De
 		return models.DelegationRow{
 			Delegator: delegatorAddr,
 			Validator: validatorAddr,
+			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+				Height: data.BlockHeight,
+			},
 		}, nil
 	}
 
@@ -181,10 +189,12 @@ func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.De
 	)
 
 	return models.DelegationRow{
-		Delegator:   delegator,
-		Validator:   validator,
-		Amount:      delegation.Shares.String(),
-		BlockHeight: data.BlockHeight,
+		Delegator: delegator,
+		Validator: validator,
+		Amount:    delegation.Shares.String(),
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, nil
 }
 
@@ -217,6 +227,9 @@ func (d DataMarshaler) IBCChannels(data tracelistener.TraceOperation) (models.IB
 		Hops:             result.GetConnectionHops(),
 		Port:             portID,
 		State:            int32(result.State),
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, nil
 }
 
@@ -247,6 +260,9 @@ func (d DataMarshaler) IBCClients(data tracelistener.TraceOperation) (models.IBC
 		ClientID:       clientID,
 		LatestHeight:   dest.LatestHeight.RevisionHeight,
 		TrustingPeriod: int64(dest.TrustingPeriod),
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, nil
 }
 
@@ -277,6 +293,9 @@ func (d DataMarshaler) IBCConnections(data tracelistener.TraceOperation) (models
 				State:               ce.State.String(),
 				CounterConnectionID: ce.Counterparty.ConnectionId,
 				CounterClientID:     ce.Counterparty.ClientId,
+				TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+					Height: data.BlockHeight,
+				},
 			}, nil
 		}
 	}
@@ -308,6 +327,9 @@ func (d DataMarshaler) IBCDenomTraces(data tracelistener.TraceOperation) (models
 		Path:      dt.Path,
 		BaseDenom: dt.BaseDenom,
 		Hash:      hash,
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}
 
 	d.l.Debugw("denom trace unmarshaled", "object", newObj)
@@ -327,6 +349,9 @@ func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (
 		return models.UnbondingDelegationRow{
 			Delegator: delegatorAddr,
 			Validator: validatorAddr,
+			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+				Height: data.BlockHeight,
+			},
 		}, nil
 	}
 
@@ -372,6 +397,9 @@ func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (
 		Delegator: delegator,
 		Validator: validator,
 		Entries:   entriesStore,
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, err
 }
 
@@ -386,6 +414,9 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 
 		return models.ValidatorRow{
 			OperatorAddress: operatorAddress,
+			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+				Height: data.BlockHeight,
+			},
 		}, nil
 
 	}
@@ -429,5 +460,8 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 		MaxChangeRate:        v.Commission.CommissionRates.MaxChangeRate.String(),
 		UpdateTime:           v.Commission.UpdateTime.String(),
 		MinSelfDelegation:    v.MinSelfDelegation.String(),
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
 	}, nil
 }
