@@ -44,17 +44,71 @@ type (
 
 var (
 	// ErrExporterRunning is used when we try to run the exporter, but another exporting is underway.
-	ErrExporterRunning = errors.New("exporter running")
+	ErrExporterRunning = errors.New("exporter: running")
 	// ErrExporterNotRunning is used when we try to stop an exporter, but there is no running exporting task.
-	ErrExporterNotRunning = errors.New("exporter not running")
+	ErrExporterNotRunning = errors.New("exporter: not running")
 	// ErrNotAcceptingData is used when exporter is running but, not receiving data anymore. Usually used
 	// when we close the done channel, but the export process is still running. (Maybe uploading file for ex)
-	ErrNotAcceptingData = errors.New("exporter not accepting data")
+	ErrNotAcceptingData = errors.New("exporter: not accepting data")
 )
 
-func New(params Params) (*Exporter, error) {
-	// TODO: validate params
-	return nil, nil
+const (
+	MaxSizeLim   = 1024
+	MaxRecordLim = 1000000
+	MaxDuration  = 24 * time.Hour
+)
+
+// New takes a params as input, then
+// 1. Validate the params. Returns ValidationError if failed.
+// 2. Creates the local file to hold the records
+// 3. Builds and returns a pointer to the Exporter
+func New(params *Params) (*Exporter, error) {
+	err := runParamValidators(
+		params,
+		validateSizeLim,          // 0 <= size <= MaxSizeLim.
+		validateRecordCount,      // 0 <= record count <= MaxRecordLim.
+		validateDuration,         // 0 <= duration <= 24 hours.
+		validateFileId,           // len(id) <= 10; only alphanumeric.
+		ValidateParamCombination) // At least one valid param present.
+	if err != nil {
+		return nil, err
+	}
+
+	startTime := time.Now()
+	recordChCap := int32(MaxRecordLim)
+	if params.RecordLim > 0 {
+		recordChCap = params.RecordLim
+	}
+
+	// fileName = 01-02-2006 15:04:05-100MB-1h20m0s-fileId-03118414
+	// `fileId` comes from user. Useful if the user wants to insert (max len 10)
+	// an identifier in the file name.
+	// 03118414 is a random id inserted by the library.
+	f, err := createFile(startTime, params.RecordLim, params.SizeLim, params.Duration, params.FileId)
+	if err != nil {
+		return nil, err
+	}
+	localFile, err := os.OpenFile(f.Name(), os.O_APPEND|os.O_RDWR, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	e := &Exporter{
+		running:   false,
+		muRunning: sync.Mutex{},
+		localFile: localFile,
+		params:    *params,
+		stat: Stat{
+			StartTime:   startTime,
+			RunningTime: 0,
+			TotalSize:   0,
+			NumRecords:  0,
+			Err:         nil,
+		},
+		recordChan: make(chan []byte, recordChCap),
+		doneChan:   make(chan struct{}),
+	}
+	return e, nil
 }
 
 func (e *Exporter) AcceptingData() bool {
@@ -122,43 +176,26 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 		return nil, nil, errChan
 	}
 
-	recordChCap := int32(1000000) // Max value for RecordLim
-	if e.params.RecordLim > 0 {
-		recordChCap = e.params.RecordLim
+	err := e.SetRunning(true)
+	if err != nil {
+		errChan <- err
+		return nil, nil, errChan
 	}
-	e.recordChan = make(chan []byte, recordChCap)
-	e.doneChan = make(chan struct{})
-	e.stat.StartTime = time.Now()
 
-	doOnce := sync.Once{}.Do
+	doOnce := (&sync.Once{}).Do
 
 	if e.params.Duration > 0 {
 		time.AfterFunc(e.params.Duration, func() {
 			report, err := e.Stop(e.params.Persis, doOnce)
 			if err != nil {
-				// Handle error
+				// TODO: Handle error
+				fmt.Println(err)
 			}
 			// TODO: e.Stat(report)
 			fmt.Println(report)
 		})
 	}
-
-	// fileName = 01-02-2006 15:04:05-100MB-1h20m0s-fileId-03118414
-	// `file id` comes from user. Useful if the user wants to insert
-	// an identifier in the file name.
-	// 03118414 is a random id inserted by the library.
-	f, err := createFile(e.stat.StartTime, e.params.RecordLim, e.params.SizeLim, e.params.Duration, e.params.FileId)
-	if err != nil {
-		errChan <- fmt.Errorf("start: could not create file %w", err)
-		return nil, nil, errChan
-	}
-	e.localFile, err = os.OpenFile(f.Name(), os.O_APPEND|os.O_RDWR, 0644)
-	if err != nil {
-		errChan <- fmt.Errorf("start: could not open file %s - %w", f.Name(), err)
-		return nil, nil, errChan
-	}
-
-	//go e.WatchStorage(e.doneChan, 1000) // TODO: implement later
+	// go e.WatchStorage(e.doneChan, 1000) // TODO: implement later
 
 	go func(errCh chan error) {
 		err := e.HandleRecord(doOnce)
@@ -178,11 +215,13 @@ func (e *Exporter) Stop(persist bool, doOnce func(func())) (interface{}, error) 
 	}
 
 	if e.params.Persis || persist {
+		// TODO
 		// 1. Upload to google
 		// 2. Generate slack msg
 		// 3. Delete local file
+		fmt.Println(persist)
 	}
-	// Process user report
+	// TODO: Process user report
 
 	doOnce(func() {
 		close(e.recordChan)
@@ -236,17 +275,17 @@ func (e *Exporter) HandleRecord(doOnce func(func())) error {
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {
 	fileNameParts := []string{t.Format("01-02-2006 15:04:05")}
-	if n > 0 {
+	if n > 0 { // Number of records.
 		fileNameParts = append(fileNameParts, fmt.Sprintf("%dN", n))
 	}
-	if s > 0 {
+	if s > 0 { // Size of the file.
 		fileNameParts = append(fileNameParts, fmt.Sprintf("%dMB", s))
 	}
 	if d > 0 {
-		fileNameParts = append(fileNameParts, fmt.Sprintf("%s", d))
+		fileNameParts = append(fileNameParts, d.String())
 	}
 	if id != "" {
-		fileNameParts = append(fileNameParts, fmt.Sprintf("%s", id))
+		fileNameParts = append(fileNameParts, id)
 	}
 	fileName := strings.Join(append(fileNameParts, "-"), "-")
 	return ioutil.TempFile("", fileName)
