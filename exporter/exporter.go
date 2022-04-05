@@ -69,7 +69,8 @@ func New(params *Params) (*Exporter, error) {
 		validateRecordCount,      // 0 <= record count <= MaxRecordLim.
 		validateDuration,         // 0 <= duration <= 24 hours.
 		validateFileId,           // len(id) <= 10; only alphanumeric.
-		ValidateParamCombination) // At least one valid param present.
+		ValidateParamCombination, // At least one valid param present.
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -107,67 +108,6 @@ func New(params *Params) (*Exporter, error) {
 	return e, nil
 }
 
-// AcceptingData checks if exporter is running i.e. recordChan
-// is not nil AND done channel is not closed.
-func (e *Exporter) AcceptingData() bool {
-	if e.recordChan == nil {
-		return false
-	}
-	select {
-	default:
-		return true
-	case <-e.doneChan:
-	}
-	return false
-}
-
-func (e *Exporter) IsRunning() bool {
-	e.muRunning.Lock()
-	r := e.running
-	e.muRunning.Unlock()
-	return r
-}
-
-func (e *Exporter) SetRunning(newStatus bool) error {
-	curStatus := e.IsRunning()
-	if curStatus == newStatus {
-		if curStatus {
-			return ErrExporterRunning
-		}
-		return ErrExporterNotRunning
-	}
-	e.muRunning.Lock()
-	e.running = newStatus
-	e.muRunning.Unlock()
-	return nil
-}
-
-func (e *Exporter) GetRecordChan() (chan []byte, error) {
-	if !e.IsRunning() {
-		return nil, ErrExporterNotRunning
-	}
-	return e.recordChan, nil
-}
-
-func (e *Exporter) GetDoneChan() (chan struct{}, error) {
-	if !e.IsRunning() {
-		return nil, ErrExporterNotRunning
-	}
-	return e.doneChan, nil
-}
-
-func (e *Exporter) UnblockedReceive(record []byte) error {
-	if !e.AcceptingData() {
-		return ErrNotAcceptingData
-	}
-	select {
-	case e.recordChan <- record:
-	default:
-		return fmt.Errorf("blocked on sending data to record channel")
-	}
-	return nil
-}
-
 func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 	errChan := make(chan error, 1)
 
@@ -182,8 +122,6 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 		return nil, nil, errChan
 	}
 
-	doOnce := (&sync.Once{}).Do
-
 	recordChCap := int32(MaxRecordLim)
 	if e.params.RecordLim > 0 {
 		recordChCap = e.params.RecordLim
@@ -191,6 +129,7 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 	e.recordChan = make(chan []byte, recordChCap)
 	e.doneChan = make(chan struct{})
 
+	doOnce := (&sync.Once{}).Do
 	if e.params.Duration > 0 {
 		time.AfterFunc(e.params.Duration, func() {
 			report, err := e.Stop(e.params.Persis, doOnce, nil)
@@ -275,6 +214,67 @@ func (e *Exporter) HandleRecord(doOnce func(func())) error {
 			}
 		}
 	}
+}
+
+// AcceptingData checks if exporter is running i.e. recordChan
+// is not nil AND done channel is not closed.
+func (e *Exporter) AcceptingData() bool {
+	if e.recordChan == nil {
+		return false
+	}
+	select {
+	default:
+		return true
+	case <-e.doneChan:
+	}
+	return false
+}
+
+func (e *Exporter) IsRunning() bool {
+	e.muRunning.Lock()
+	r := e.running
+	e.muRunning.Unlock()
+	return r
+}
+
+func (e *Exporter) SetRunning(newStatus bool) error {
+	curStatus := e.IsRunning()
+	if curStatus == newStatus {
+		if curStatus {
+			return ErrExporterRunning
+		}
+		return ErrExporterNotRunning
+	}
+	e.muRunning.Lock()
+	e.running = newStatus
+	e.muRunning.Unlock()
+	return nil
+}
+
+func (e *Exporter) GetRecordChan() (chan []byte, error) {
+	if !e.IsRunning() {
+		return nil, ErrExporterNotRunning
+	}
+	return e.recordChan, nil
+}
+
+func (e *Exporter) GetDoneChan() (chan struct{}, error) {
+	if !e.IsRunning() {
+		return nil, ErrExporterNotRunning
+	}
+	return e.doneChan, nil
+}
+
+func (e *Exporter) UnblockedReceive(record []byte) error {
+	if !e.AcceptingData() {
+		return ErrNotAcceptingData
+	}
+	select {
+	case e.recordChan <- record:
+	default:
+		return fmt.Errorf("blocked on sending data to record channel")
+	}
+	return nil
 }
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {
