@@ -3,6 +3,7 @@ package exporter
 import (
 	"fmt"
 	"regexp"
+	"time"
 )
 
 type (
@@ -47,7 +48,7 @@ func validateRecordCount(p *Params) error {
 }
 
 func validateDuration(p *Params) error {
-	if p.Duration < 0 || p.Duration > MaxDuration {
+	if p.Duration < 5*time.Second || p.Duration > MaxDuration {
 		return NewValidationError(fmt.Errorf("accepted duration 1s-24Hour received %v", p.Duration))
 	}
 	return nil
@@ -65,16 +66,8 @@ func validateFileId(p *Params) error {
 
 func ValidateParamCombination(p *Params) error {
 	// At least one valid param required.
-	var vFs = []paramValFunc{validateDuration, validateSizeLim, validateRecordCount}
-	var errCount int
-	for _, fn := range vFs {
-		if err := fn(p); err != nil {
-			errCount++
-		}
-	}
-	if errCount == len(vFs) {
+	if p.SizeLim == 0 && p.Duration < 5*time.Second && p.RecordLim == 0 {
 		return NewValidationError(fmt.Errorf("invalid param combination"))
 	}
-
 	return nil
 }
