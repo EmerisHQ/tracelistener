@@ -75,9 +75,9 @@ func New(params *Params) (*Exporter, error) {
 		return nil, err
 	}
 
-	startTime := time.Now()
+	startTime := time.Now().Round(0)
 
-	// fileName = 01-02-2006 15:04:05-100MB-1h20m0s-fileId-03118414
+	// fileName = 01-02-2006-15:04:05-100MB-1h20m0s-fileId-03118414
 	// `fileId` comes from user. Useful if the user wants to insert (max len 10)
 	// an identifier in the file name.
 	// 03118414 is a random id inserted by the library.
@@ -96,11 +96,8 @@ func New(params *Params) (*Exporter, error) {
 		LocalFile: localFile,
 		params:    *params,
 		stat: Stat{
-			StartTime:   startTime,
-			RunningTime: 0,
-			TotalSize:   0,
-			NumRecords:  0,
-			Err:         nil,
+			StartTime: startTime,
+			Err:       nil,
 		},
 		recordChan: nil, // Initialised when start is called.
 		doneChan:   nil, // ditto
@@ -130,32 +127,36 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 	e.doneChan = make(chan struct{})
 
 	doOnce := (&sync.Once{}).Do
+
+	go func(errCh chan error) {
+		errCh <- e.Orchestrate(doOnce)
+	}(errChan)
+
 	if e.params.Duration > 0 {
 		time.AfterFunc(e.params.Duration, func() {
-			report, err := e.Stop(e.params.Persis, doOnce, nil)
-			if err != nil {
-				// TODO: Handle error
-				fmt.Println(err)
-			}
-			// TODO: e.Stat(report)
-			fmt.Println(report)
+			e.StopReceiving(doOnce)
 		})
 	}
 	// go e.WatchStorage(e.doneChan, 1000) // TODO: implement later
 
-	go func(errCh chan error) {
-		err := e.HandleRecord(doOnce)
-		if err != nil {
-			return
-		}
-	}(errChan)
-
 	return nil, doOnce, errChan
 }
 
-// Stop stops the record exporting process. This is an idempotent method. Calling
-// it multiple times should not have any adversary effect.
-func (e *Exporter) Stop(persistOverride bool, doOnce func(func()), errChan chan error) (interface{}, error) {
+// Stop stops the record exporting process. This method must be called once.
+func (e *Exporter) Stop(persistOverride bool, doOnce func(func())) (interface{}, error) {
+	fmt.Println("Stop: entered")
+	if !e.IsRunning() {
+		return nil, ErrExporterNotRunning
+	}
+	err := e.SetRunning(false)
+	if err != nil {
+		return nil, err
+	}
+
+	if e.AcceptingData() {
+		e.StopReceiving(doOnce)
+	}
+
 	if (e.params.Persis || persistOverride) && e.IsRunning() {
 		// TODO
 		// 1. Upload to google
@@ -165,55 +166,77 @@ func (e *Exporter) Stop(persistOverride bool, doOnce func(func()), errChan chan 
 	}
 	// TODO: Process user report
 
-	doOnce(func() {
-		close(e.recordChan)
-		close(e.doneChan)
-		close(errChan)
-	})
+	e.stat.RunningTime = time.Since(e.stat.StartTime).Round(0)
 
-	// Drain the recordChan.
-	for r := range e.recordChan {
-		_, err := e.LocalFile.Write(r)
-		if err != nil {
-			return nil,
-				fmt.Errorf("stop: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
-		}
-	}
-
-	err := e.SetRunning(false)
-	if !errors.Is(err, ErrExporterNotRunning) {
-		return nil, err
-	}
 	return nil, nil
 }
 
-func (e *Exporter) HandleRecord(doOnce func(func())) error {
+func (e *Exporter) Orchestrate(doOnce func(func())) error {
+	err := e.HandleRecord()
+	if err != nil {
+		return err
+	}
+	_, err = e.Stop(e.params.Persis, doOnce)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *Exporter) UnblockedReceive(record []byte, doOnce func(func())) error {
+	if !e.AcceptingData() {
+		return ErrNotAcceptingData
+	}
+	select {
+	case e.recordChan <- record:
+		fmt.Println("UnblockedReceive: e.recordChan <- record:", record)
+		e.stat.NumRecords++
+		e.stat.TotalSize += int32(len(record))
+		// Stop export process if condition reached.
+		if e.reachedRecordLimit() || e.reachedRecordLimit() {
+			fmt.Println("UnblockedReceive: e.reachedRecordLimit calling StopReceiving")
+			e.StopReceiving(doOnce)
+		}
+	default:
+		fmt.Println("UnblockedReceive: blocked on record chan", record)
+		return fmt.Errorf("blocked on sending data to record channel")
+	}
+	return nil
+}
+
+func (e *Exporter) HandleRecord() error {
 	for {
 		select {
 		case <-e.doneChan:
-			return fmt.Errorf("handleRecord: stop called")
-		case r, ok := <-e.recordChan:
-			if !ok {
-				return fmt.Errorf("handleRecord: record chan drained")
+			// Drain the recordChan.
+			for r := range e.recordChan {
+				fmt.Println("HandleRecord draining: r := range e.recordChan", r)
+				n, err := e.LocalFile.Write(append(r, []byte("\n")...))
+				if err != nil {
+					return fmt.Errorf("handleRecord: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
+				}
+				fmt.Println("HandleRecord: Wrote to file", n, "bytes", r)
 			}
-			n, err := e.LocalFile.Write(r)
+			return nil
+		case r, ok := <-e.recordChan:
+			fmt.Println("HandleRecord: from <-e.recordChan", r, ok)
+			if !ok {
+				return nil
+			}
+			n, err := e.LocalFile.Write(append(r, []byte("\n")...))
 			if err != nil {
 				return fmt.Errorf("handleRecord: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
 			}
-			e.stat.TotalSize += int32(n)
-			e.stat.NumRecords += 1
-
-			// Stop export process if condition reached.
-			if e.stat.TotalSize >= e.params.SizeLim || e.stat.NumRecords >= e.params.RecordLim {
-				report, err := e.Stop(e.params.Persis, doOnce, nil)
-				if err != nil {
-					return fmt.Errorf("handleRecord: error while calling stop %w", err)
-				}
-				// TODO: handle stat
-				fmt.Println(report)
-			}
+			fmt.Println("HandleRecord: Wrote to file", n, "bytes", r)
 		}
 	}
+}
+
+func (e *Exporter) StopReceiving(doOnce func(func())) {
+	doOnce(func() {
+		close(e.recordChan)
+		close(e.doneChan)
+	})
 }
 
 // AcceptingData checks if exporter is running i.e. recordChan
@@ -265,20 +288,22 @@ func (e *Exporter) GetDoneChan() (chan struct{}, error) {
 	return e.doneChan, nil
 }
 
-func (e *Exporter) UnblockedReceive(record []byte) error {
-	if !e.AcceptingData() {
-		return ErrNotAcceptingData
+func (e *Exporter) reachedRecordLimit() bool {
+	if e.params.RecordLim <= 0 {
+		return false
 	}
-	select {
-	case e.recordChan <- record:
-	default:
-		return fmt.Errorf("blocked on sending data to record channel")
+	return e.stat.NumRecords >= e.params.RecordLim
+}
+
+func (e *Exporter) reachedSizeLimit() bool {
+	if e.params.SizeLim <= 0 {
+		return false
 	}
-	return nil
+	return e.stat.TotalSize >= e.params.SizeLim
 }
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {
-	fileNameParts := []string{t.Format("01-02-2006 15:04:05")}
+	fileNameParts := []string{t.Format("01-02-2006-15:04:05")}
 	if n > 0 { // Number of records.
 		fileNameParts = append(fileNameParts, fmt.Sprintf("%dN", n))
 	}
@@ -291,6 +316,6 @@ func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, 
 	if id != "" {
 		fileNameParts = append(fileNameParts, id)
 	}
-	fileName := strings.Join(append(fileNameParts, "-"), "-")
+	fileName := strings.Join(append(fileNameParts, "-*.txt"), "-")
 	return ioutil.TempFile("", fileName)
 }
