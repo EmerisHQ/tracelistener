@@ -193,7 +193,7 @@ func (e *Exporter) UnblockedReceive(record []byte, doOnce func(func())) error {
 		e.stat.NumRecords++
 		e.stat.TotalSize += int32(len(record))
 		// Stop export process if condition reached.
-		if e.reachedRecordLimit() || e.reachedRecordLimit() {
+		if e.reachedRecordLimit() || e.reachedSizeLimit() {
 			fmt.Println("UnblockedReceive: e.reachedRecordLimit calling StopReceiving")
 			e.StopReceiving(doOnce)
 		}
