@@ -3,9 +3,7 @@ FROM golang:1.17-alpine3.14 as builder
 ARG GIT_TOKEN
 ARG SDK_TARGET
 
-RUN set -eux; apk add --no-cache ca-certificates build-base;
-
-RUN apk add git jq bash findutils
+RUN set -eux; apk add --no-cache ca-certificates build-base git jq bash findutils
 
 RUN go env -w GOPRIVATE=github.com/emerishq,github.com/allinbits
 RUN git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
