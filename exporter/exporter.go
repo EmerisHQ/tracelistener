@@ -79,7 +79,7 @@ func New(params *Params) (*Exporter, error) {
 
 	// fileName = 01-02-2006-15:04:05-100MB-1h20m0s-fileId-03118414
 	// `fileId` comes from user. Useful if the user wants to insert (max len 10)
-	// an identifier in the file name.
+	// an identifier in the file name. Ex: JunoProd, irisDev, atomStag
 	// 03118414 is a random id inserted by the library.
 	f, err := createFile(startTime, params.RecordLim, params.SizeLim, params.Duration, params.FileId)
 	if err != nil {
@@ -148,13 +148,14 @@ func (e *Exporter) Stop(persistOverride bool, doOnce func(func())) (interface{},
 	if !e.IsRunning() {
 		return nil, ErrExporterNotRunning
 	}
-	err := e.SetRunning(false)
-	if err != nil {
-		return nil, err
-	}
 
 	if e.AcceptingData() {
 		e.StopReceiving(doOnce)
+	}
+
+	err := e.SetRunning(false)
+	if err != nil {
+		return nil, err
 	}
 
 	if (e.params.Persis || persistOverride) && e.IsRunning() {
@@ -176,10 +177,16 @@ func (e *Exporter) Orchestrate(doOnce func(func())) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.Stop(e.params.Persis, doOnce)
-	if err != nil {
-		return err
+
+	// Exporter is still running. i.e. not forced stopped by user.
+	// So we stop it as e.HandleRecord has stored all the records to file.
+	if e.IsRunning() {
+		_, err = e.Stop(e.params.Persis, doOnce)
+		if err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
