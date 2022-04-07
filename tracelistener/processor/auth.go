@@ -7,8 +7,11 @@ import (
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 	"go.uber.org/zap"
 )
+
+var authTable = tables.NewAuthTable("tracelistener.auth")
 
 type authCacheEntry struct {
 	address   string
@@ -22,7 +25,11 @@ type authProcessor struct {
 }
 
 func (*authProcessor) Migrations() []string {
-	return []string{createAuthTable, addHeightColumn(authTable), addDeleteHeightColumn(authTable)}
+	if useSQLGen {
+		return []string{authTable.CreateTable()}
+	} else {
+		return []string{createAuthTable, addHeightColumn(authTableOld), addDeleteHeightColumn(authTableOld)}
+	}
 }
 
 func (b *authProcessor) ModuleName() string {
@@ -34,11 +41,19 @@ func (b *authProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *authProcessor) UpsertStatement() string {
-	return upsertAuth
+	if useSQLGen {
+		return authTable.Upsert()
+	} else {
+		return upsertAuth
+	}
 }
 
 func (b *authProcessor) InsertStatement() string {
-	return insertAuth
+	if useSQLGen {
+		return authTable.Insert()
+	} else {
+		return insertAuth
+	}
 }
 
 func (b *authProcessor) DeleteStatement() string {

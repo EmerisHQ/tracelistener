@@ -9,7 +9,10 @@ import (
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 )
+
+var balancesTable = tables.NewBalancesTable("tracelistener.balances")
 
 type bankCacheEntry struct {
 	address string
@@ -23,7 +26,11 @@ type bankProcessor struct {
 }
 
 func (*bankProcessor) Migrations() []string {
-	return []string{createBalancesTable, addHeightColumn(balanceTable), addDeleteHeightColumn(balanceTable)}
+	if useSQLGen {
+		return []string{balancesTable.CreateTable()}
+	} else {
+		return []string{createBalancesTable, addHeightColumn(balanceTableOld), addDeleteHeightColumn(balanceTableOld)}
+	}
 }
 
 func (b *bankProcessor) ModuleName() string {
@@ -31,11 +38,19 @@ func (b *bankProcessor) ModuleName() string {
 }
 
 func (b *bankProcessor) UpsertStatement() string {
-	return upsertBalance
+	if useSQLGen {
+		return balancesTable.Upsert()
+	} else {
+		return upsertBalance
+	}
 }
 
 func (b *bankProcessor) InsertStatement() string {
-	return insertBalance
+	if useSQLGen {
+		return balancesTable.Insert()
+	} else {
+		return insertBalance
+	}
 }
 
 func (b *bankProcessor) DeleteStatement() string {

@@ -5,11 +5,14 @@ import (
 	"sync"
 
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 	"go.uber.org/zap"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 )
+
+var unbondingDelegationsTable = tables.NewUnbondingDelegationsTable("tracelistener.unbonding_delegations")
 
 type unbondingDelegationCacheEntry struct {
 	delegator string
@@ -24,8 +27,16 @@ type unbondingDelegationsProcessor struct {
 }
 
 func (*unbondingDelegationsProcessor) Migrations() []string {
-	return []string{createUnbondingDelegationsTable, addHeightColumn(unbondingDelegationsTable),
-		addDeleteHeightColumn(unbondingDelegationsTable)}
+	if useSQLGen {
+		return []string{
+			unbondingDelegationsTable.CreateTable(),
+			addHeightColumn(unbondingDelegationsTableOld),
+			addDeleteHeightColumn(unbondingDelegationsTableOld),
+		}
+	} else {
+		return []string{createUnbondingDelegationsTable, addHeightColumn(unbondingDelegationsTableOld),
+			addDeleteHeightColumn(unbondingDelegationsTableOld)}
+	}
 }
 
 func (b *unbondingDelegationsProcessor) ModuleName() string {
@@ -37,15 +48,27 @@ func (b *unbondingDelegationsProcessor) SDKModuleName() tracelistener.SDKModuleN
 }
 
 func (b *unbondingDelegationsProcessor) InsertStatement() string {
-	return insertUnbondingDelegation
+	if useSQLGen {
+		return unbondingDelegationsTable.Insert()
+	} else {
+		return insertUnbondingDelegation
+	}
 }
 
 func (b *unbondingDelegationsProcessor) UpsertStatement() string {
-	return upsertUnbondingDelegation
+	if useSQLGen {
+		return unbondingDelegationsTable.Upsert()
+	} else {
+		return upsertUnbondingDelegation
+	}
 }
 
 func (b *unbondingDelegationsProcessor) DeleteStatement() string {
-	return deleteUnbondingDelegation
+	if useSQLGen {
+		return unbondingDelegationsTable.Delete()
+	} else {
+		return deleteUnbondingDelegation
+	}
 }
 
 func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp {

@@ -10,7 +10,10 @@ import (
 
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 )
+
+var clientsTable = tables.NewClientsTable("tracelistener.clients")
 
 type clientCacheEntry struct {
 	chainID  string
@@ -24,7 +27,11 @@ type ibcClientsProcessor struct {
 }
 
 func (*ibcClientsProcessor) Migrations() []string {
-	return []string{createClientsTable, addHeightColumn(clientsTable), addDeleteHeightColumn(clientsTable)}
+	if useSQLGen {
+		return []string{clientsTable.CreateTable()}
+	} else {
+		return []string{createClientsTable, addHeightColumn(clientsTableOld), addDeleteHeightColumn(clientsTableOld)}
+	}
 }
 
 func (b *ibcClientsProcessor) ModuleName() string {
@@ -36,11 +43,19 @@ func (b *ibcClientsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *ibcClientsProcessor) UpsertStatement() string {
-	return insertClient
+	if useSQLGen {
+		return clientsTable.Upsert()
+	} else {
+		return insertClient
+	}
 }
 
 func (b *ibcClientsProcessor) InsertStatement() string {
-	return upsertClient
+	if useSQLGen {
+		return clientsTable.Insert()
+	} else {
+		return upsertClient
+	}
 }
 
 func (b *ibcClientsProcessor) DeleteStatement() string {

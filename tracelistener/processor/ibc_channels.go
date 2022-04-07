@@ -10,7 +10,10 @@ import (
 
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 )
+
+var channelsTable = tables.NewChannelsTable("tracelistener.channels")
 
 type channelCacheEntry struct {
 	channelID string
@@ -24,7 +27,11 @@ type ibcChannelsProcessor struct {
 }
 
 func (*ibcChannelsProcessor) Migrations() []string {
-	return []string{createChannelsTable, addHeightColumn(channelsTable), addDeleteHeightColumn(channelsTable)}
+	if useSQLGen {
+		return []string{channelsTable.CreateTable(), addHeightColumn(channelsTableOld), addDeleteHeightColumn(channelsTableOld)}
+	} else {
+		return []string{createChannelsTable, addHeightColumn(channelsTableOld), addDeleteHeightColumn(channelsTableOld)}
+	}
 }
 
 func (b *ibcChannelsProcessor) ModuleName() string {
@@ -36,11 +43,19 @@ func (b *ibcChannelsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *ibcChannelsProcessor) UpsertStatement() string {
-	return upsertChannel
+	if useSQLGen {
+		return channelsTable.Upsert()
+	} else {
+		return upsertChannel
+	}
 }
 
 func (b *ibcChannelsProcessor) InsertStatement() string {
-	return insertChannel
+	if useSQLGen {
+		return channelsTable.Insert()
+	} else {
+		return insertChannel
+	}
 }
 
 func (b *ibcChannelsProcessor) DeleteStatement() string {
