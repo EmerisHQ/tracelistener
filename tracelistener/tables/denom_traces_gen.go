@@ -19,7 +19,7 @@ func NewDenomTracesTable(tableName string) DenomTracesTable {
 func (r DenomTracesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, path text NOT NULL, base_denom text NOT NULL, hash text NOT NULL, UNIQUE (chain_name, hash))
+		(id serial PRIMARY KEY NOT NULL, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, path text NOT NULL, base_denom text NOT NULL, hash text NOT NULL, UNIQUE (chain_name, hash))
 	`, r.tableName)
 }
 
@@ -37,12 +37,15 @@ func (r DenomTracesTable) Upsert() string {
 		ON CONFLICT (chain_name, hash)
 		DO UPDATE
 		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, path = EXCLUDED.path, base_denom = EXCLUDED.base_denom, hash = EXCLUDED.hash
-	`, r.tableName)
+		WHERE %s.height < EXCLUDED.height
+	`, r.tableName, r.tableName)
 }
 
 func (r DenomTracesTable) Delete() string {
 	return fmt.Sprintf(`
-		DELETE FROM %s
+		UPDATE %s
+		SET delete_height = :height, height = :height
 		WHERE chain_name=:chain_name AND hash=:hash
+		AND delete_height IS NULL
 	`, r.tableName)
 }
