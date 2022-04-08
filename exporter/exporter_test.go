@@ -1,14 +1,11 @@
 package exporter_test
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/emerishq/emeris-utils/logging"
 	"github.com/emerishq/tracelistener/exporter"
 	"github.com/stretchr/testify/require"
-	"io"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -223,47 +220,4 @@ func setUpParams(t *testing.T, n, s int32, id string, d time.Duration, p bool) (
 		Persis:    p,
 		FileId:    id,
 	}, nil
-}
-
-func copyFile(src, dst string) (int64, error) {
-	sourceFileStat, err := os.Stat(src)
-	if err != nil {
-		return 0, err
-	}
-
-	if !sourceFileStat.Mode().IsRegular() {
-		return 0, fmt.Errorf("%s is not a regular file", src)
-	}
-
-	source, err := os.Open(src)
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		_ = source.Close()
-	}()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		_ = destination.Close()
-	}()
-
-	nBytes, err := io.Copy(destination, source)
-	return nBytes, err
-}
-
-func linesFromFile(f *os.File) ([][]byte, error) {
-	scanner := bufio.NewScanner(f)
-	var ret [][]byte
-	for scanner.Scan() {
-		ret = append(ret, scanner.Bytes())
-		fmt.Println("Last ret", ret[len(ret)-1])
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return ret, nil
 }
