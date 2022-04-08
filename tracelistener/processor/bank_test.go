@@ -111,7 +111,7 @@ func TestBankProcess(t *testing.T) {
 				denom := row.Denom
 				require.Equal(t, tt.coin.Denom, denom)
 
-				return
+				require.Equal(t, tt.newMessage.BlockHeight, row.Height)
 			}
 		})
 	}

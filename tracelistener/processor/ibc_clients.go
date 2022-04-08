@@ -24,7 +24,7 @@ type ibcClientsProcessor struct {
 }
 
 func (*ibcClientsProcessor) Migrations() []string {
-	return []string{createClientsTable}
+	return []string{createClientsTable, addHeightColumn(clientsTable), addDeleteHeightColumn(clientsTable)}
 }
 
 func (b *ibcClientsProcessor) ModuleName() string {

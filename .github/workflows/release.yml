@@ -20,4 +20,4 @@ jobs:
           release_branch: main
           tag_format: "v%major%.%minor%.0"
         env:
-          GITHUB_TOKEN: ${{ secrets.TENDERBOT_GIT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
