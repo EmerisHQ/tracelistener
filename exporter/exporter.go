@@ -18,7 +18,10 @@ type (
 		RunningTime time.Duration
 		TotalSize   int32
 		TraceCount  int32
-		Err         error
+		// Full name in pod.
+		LocalFile     *os.File
+		RunningStatus string
+		Err           error
 	}
 
 	// Params represents the acceptable http request params.
@@ -33,16 +36,15 @@ type (
 	Exporter struct {
 		running   bool
 		muRunning sync.Mutex
-		// Full name in pod.
-		LocalFile *os.File
-		params    Params
-		stat      Stat
+		params    *Params
+		Stat      *Stat
+		logger    *zap.SugaredLogger
 
 		traceChan chan []byte
 		doneChan  chan struct{}
-
-		logger *zap.SugaredLogger
 	}
+
+	Option func(*Exporter) error
 )
 
 var (
@@ -53,6 +55,9 @@ var (
 	// ErrNotAcceptingData is used when exporter is running but, not receiving data anymore. Usually used
 	// when we close the done channel, but the export process is still running. (Maybe uploading file for ex)
 	ErrNotAcceptingData = errors.New("exporter: not accepting data")
+	// ErrShouldNotAcceptData is used when exporter should not accept data, but accepting anyway.
+	// Indicates an inconsistent state.
+	ErrShouldNotAcceptData = errors.New("exporter: should not accepting data")
 )
 
 const (
@@ -61,11 +66,37 @@ const (
 	MaxDuration   = 24 * time.Hour
 )
 
+func WithLogger(l *zap.SugaredLogger) Option {
+	return func(e *Exporter) error {
+		if l == nil {
+			return fmt.Errorf("logger can not be nil")
+		}
+		e.logger = l
+		return nil
+	}
+}
+
+func New(opts ...Option) (*Exporter, error) {
+	e := &Exporter{
+		muRunning: sync.Mutex{},
+		running:   false, // Being explicit!
+	}
+	for _, o := range opts {
+		if err := o(e); err != nil {
+			return nil, err
+		}
+	}
+	return e, nil
+}
+
 // Init takes a params as input, then
 // 1. Validate the params. Returns ValidationError if failed.
 // 2. Creates the local file to hold the traces
-// 3. Builds and returns a pointer to the Exporter
-func Init(params *Params, l *zap.SugaredLogger) (*Exporter, error) {
+// 3. Updates the Exporter in place
+func (e *Exporter) Init(params *Params) error {
+	if e.IsRunning() {
+		return ErrExporterRunning
+	}
 	err := runParamValidators(
 		params,
 		validateSizeLim,          // 0 <= size <= MaxSizeLim.
@@ -75,7 +106,7 @@ func Init(params *Params, l *zap.SugaredLogger) (*Exporter, error) {
 		ValidateParamCombination, // At least one valid param present.
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	startTime := time.Now().Round(0)
@@ -89,27 +120,22 @@ func Init(params *Params, l *zap.SugaredLogger) (*Exporter, error) {
 	// file name if empty.
 	f, err := createFile(startTime, params.NumTraces, params.SizeLim, params.Duration, params.FileId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	localFile, err := os.OpenFile(f.Name(), os.O_APPEND|os.O_RDWR, 0644)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	e := &Exporter{
-		running:   false,
-		muRunning: sync.Mutex{},
-		LocalFile: localFile,
-		params:    *params,
-		stat: Stat{
-			StartTime: startTime,
-			Err:       nil,
-		},
-		traceChan: nil, // Initialised when start is called.
-		doneChan:  nil, // ditto
-		logger:    l,
+	e.params = params
+	e.Stat = &Stat{
+		StartTime:     startTime,
+		LocalFile:     localFile,
+		RunningStatus: "Init",
 	}
-	return e, nil
+	e.traceChan = nil // Initialised when start is called.
+	e.doneChan = nil  // ditto
+	return nil
 }
 
 func (e *Exporter) Start() (interface{}, func(func()), chan error) {
@@ -120,11 +146,11 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 		return nil, nil, errChan
 	}
 
-	err := e.SetRunning(true)
-	if err != nil {
+	if err := e.SetRunning(true); err != nil {
 		errChan <- err
 		return nil, nil, errChan
 	}
+	e.Stat.RunningStatus = "Receiving"
 
 	traceChCap := int32(MaxTraceCount)
 	if e.params.NumTraces > 0 {
@@ -136,33 +162,38 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 	doOnce := (&sync.Once{}).Do
 
 	go func(errCh chan error) {
-		errCh <- e.Orchestrate(doOnce)
+		errCh <- e.Orchestrate()
 	}(errChan)
 
-	if e.params.Duration > 0 {
-		time.AfterFunc(e.params.Duration, func() {
-			e.StopReceiving(doOnce)
-		})
-	}
+	// Trying to have stopReceiving called only from one place
+	//if e.params.Duration > 0 {
+	//	time.AfterFunc(e.params.Duration, func() {
+	//		e.StopReceiving(doOnce)
+	//	})
+	//}
 	// go e.WatchStorage(e.doneChan, 1000) // TODO: implement later
 
 	return nil, doOnce, errChan
 }
 
-// Stop stops the trace exporting process. This method must be called once.
-func (e *Exporter) Stop(persistOverride bool, doOnce func(func()), forceClean bool) (interface{}, error) {
+// finish the trace exporting process. This method must be called once.
+// 1. sets state for running to false.
+// 2. Uploads file to cloud if necessary.
+// 3. Closes the local file descriptor.
+// 4. Removed the local file if necessary.
+func (e *Exporter) finish(persistOverride bool, forceClean bool) (interface{}, error) {
 	if !e.IsRunning() {
 		return nil, ErrExporterNotRunning
 	}
 
 	if e.IsAcceptingData() {
-		e.StopReceiving(doOnce)
+		return nil, ErrShouldNotAcceptData
 	}
 
-	err := e.SetRunning(false)
-	if err != nil {
+	if err := e.SetRunning(false); err != nil {
 		return nil, err
 	}
+	e.Stat.RunningStatus = "Finished"
 
 	if (e.params.Persis || persistOverride) && e.IsRunning() {
 		// TODO
@@ -173,10 +204,14 @@ func (e *Exporter) Stop(persistOverride bool, doOnce func(func()), forceClean bo
 	}
 	// TODO: Process user report
 
-	e.stat.RunningTime = time.Since(e.stat.StartTime).Round(0)
+	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
+	if err := e.Stat.LocalFile.Close(); err != nil {
+		return nil, err
+	}
+
 	if forceClean {
-		if _, err := os.Stat(e.LocalFile.Name()); !os.IsNotExist(err) {
-			err2 := os.Remove(e.LocalFile.Name())
+		if _, err := os.Stat(e.Stat.LocalFile.Name()); !os.IsNotExist(err) {
+			err2 := os.Remove(e.Stat.LocalFile.Name())
 			if err2 != nil {
 				return nil, err2
 			}
@@ -186,19 +221,14 @@ func (e *Exporter) Stop(persistOverride bool, doOnce func(func()), forceClean bo
 	return nil, nil
 }
 
-func (e *Exporter) Orchestrate(doOnce func(func())) error {
-	err := e.HandleTrace()
-	if err != nil {
+func (e *Exporter) Orchestrate() error {
+	if err := e.HandleTrace(); err != nil {
 		return err
 	}
-
-	// Exporter is still running. i.e. not forced stopped by user.
-	// So we stop it as e.HandleTrace has stored all the traces to file.
-	if e.IsRunning() {
-		_, err = e.Stop(e.params.Persis, doOnce, false)
-		if err != nil {
-			return err
-		}
+	// e.HandleTrace returned with no error. That means e.StopReceiving was called.
+	// Now we finish the exporter i.e. upload file to cloud, cleanup etc.
+	if _, err := e.finish(e.params.Persis, false); err != nil {
+		return err
 	}
 
 	return nil
@@ -211,11 +241,12 @@ func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
 	select {
 	case e.traceChan <- trace:
 		e.logger.Debugw("UnblockedReceive:", "e.traceChan <- trace:", trace)
-		e.stat.TraceCount++
-		e.stat.TotalSize += int32(len(trace))
+		e.Stat.TraceCount++
+		e.Stat.TotalSize += int32(len(trace))
 		// Stop export process if condition reached.
-		if e.reachedTraceCount() || e.reachedSizeLimit() {
-			e.logger.Debugw("UnblockedReceive:", "e.reachedTraceCount calling StopReceiving")
+		if e.reachedTraceCount() || e.reachedSizeLimit() ||
+			time.Since(e.Stat.StartTime).Round(0) >= e.params.Duration {
+			e.logger.Debugw("UnblockedReceive: called StopReceiving")
 			e.StopReceiving(doOnce)
 		}
 	default:
@@ -232,9 +263,9 @@ func (e *Exporter) HandleTrace() error {
 			// Drain the traceChan.
 			for r := range e.traceChan {
 				e.logger.Debugw("HandleTrace:", "draining: r", r)
-				n, err := e.LocalFile.Write(append(r, []byte("\n")...))
+				n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...))
 				if err != nil {
-					return fmt.Errorf("handleTrace: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
+					return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 				}
 				e.logger.Debugw("HandleTrace:", "Write size", n, "bytes", r)
 			}
@@ -244,19 +275,23 @@ func (e *Exporter) HandleTrace() error {
 			if !ok {
 				return nil
 			}
-			n, err := e.LocalFile.Write(append(r, []byte("\n")...))
+			n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...))
 			if err != nil {
-				return fmt.Errorf("handleTrace: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
+				return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 			}
 			e.logger.Debugw("HandleTrace:", "Wrote size", n, "bytes", r)
 		}
 	}
 }
 
+// StopReceiving is idempotent, it can be called multiple times. It's used in
+// 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
+// 2. When user calls stop from rest endpoint.
 func (e *Exporter) StopReceiving(doOnce func(func())) {
 	doOnce(func() {
 		close(e.traceChan)
 		close(e.doneChan)
+		e.Stat.RunningStatus = "Exporter stopped receiving traces, Finishing remaining tasks"
 	})
 }
 
@@ -313,14 +348,14 @@ func (e *Exporter) reachedTraceCount() bool {
 	if e.params.NumTraces <= 0 {
 		return false
 	}
-	return e.stat.TraceCount >= e.params.NumTraces
+	return e.Stat.TraceCount >= e.params.NumTraces
 }
 
 func (e *Exporter) reachedSizeLimit() bool {
 	if e.params.SizeLim <= 0 {
 		return false
 	}
-	return e.stat.TotalSize >= e.params.SizeLim
+	return e.Stat.TotalSize >= e.params.SizeLim
 }
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {

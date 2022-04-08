@@ -16,8 +16,10 @@ func TestNew(t *testing.T) {
 	params, err := setUpParams(t, 10, 100, "xxxx", 10*time.Minute, false)
 	require.NoError(t, err)
 
+	ex, err := exporter.New(exporter.WithLogger(logging.New(logging.LoggingConfig{Debug: true})))
+	require.NoError(t, err)
 	// Build the exporter.
-	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
+	err = ex.Init(&params)
 	require.NoError(t, err)
 
 	// Exporter should not be running, and not yet accepting records.
@@ -32,23 +34,14 @@ func TestNew(t *testing.T) {
 	_, _, errCh = ex.Start()
 	require.ErrorIs(t, <-errCh, exporter.ErrExporterRunning)
 
-	t.Log("local file name:", ex.LocalFile.Name())
-
-	// First stop call should not return error
-	_, err = ex.Stop(false, doOnce, false)
-	require.NoError(t, err)
-
-	// Next stop calls should return ErrExporterNotRunning
+	// StopReceiving must be idempotent
 	for i := 0; i < 10; i++ {
-		_, err = ex.Stop(false, doOnce, false)
-		require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
-		require.False(t, ex.IsRunning())
-		require.False(t, ex.IsAcceptingData())
+		ex.StopReceiving(doOnce)
 	}
 
-	t.Cleanup(func() {
-		require.NoError(t, os.Remove(ex.LocalFile.Name()))
-	})
+	require.Eventually(t, func() bool {
+		return !ex.IsRunning()
+	}, time.Second*4, time.Millisecond*100)
 }
 
 func TestStart_AcceptXXXRecords(t *testing.T) {
@@ -56,7 +49,10 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 	params, err := setUpParams(t, XXX, 100, "XXXRecords", 100*time.Minute, false)
 	require.NoError(t, err)
 
-	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
+	ex, err := exporter.New(exporter.WithLogger(logging.New(logging.LoggingConfig{Debug: true})))
+	require.NoError(t, err)
+	// Build the exporter.
+	err = ex.Init(&params)
 	require.NoError(t, err)
 
 	_, doOnce, errCh := ex.Start()
@@ -75,7 +71,7 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 
 	require.NoError(t, <-errCh)
 
-	f, err := os.Open(ex.LocalFile.Name())
+	f, err := os.Open(ex.Stat.LocalFile.Name())
 	require.NoError(t, err)
 
 	asByte, err := ioutil.ReadFile(f.Name())
@@ -89,15 +85,18 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 
 	t.Cleanup(func() {
 		_ = f.Close() // Not needed, OCD kick.
-		require.NoError(t, os.Remove(ex.LocalFile.Name()))
+		require.NoError(t, os.Remove(ex.Stat.LocalFile.Name()))
 	})
 }
 
-func TestExporter_ForcedStop(t *testing.T) {
+func TestExporter_User_Called_Stop(t *testing.T) {
 	params, err := setUpParams(t, 0, 0, "1hr", 1*time.Hour, false)
 	require.NoError(t, err)
 
-	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
+	ex, err := exporter.New(exporter.WithLogger(logging.New(logging.LoggingConfig{Debug: true})))
+	require.NoError(t, err)
+	// Build the exporter.
+	err = ex.Init(&params)
 	require.NoError(t, err)
 
 	_, doOnce, errCh := ex.Start()
@@ -122,20 +121,21 @@ func TestExporter_ForcedStop(t *testing.T) {
 	// Ensure at least some data get accepted.
 	time.Sleep(3 * dataInsertInterval)
 
-	// Force stop.
-	_, err = ex.Stop(false, doOnce, false)
-	require.NoError(t, err)
+	// 1. Simulate: no more data.
 	close(dataInserterDone)
+	// 2. User called stop.
+	ex.StopReceiving(doOnce)
+	//_, err = ex.Stop(false, doOnce, false)
+	//require.NoError(t, err)
 	require.NoError(t, <-errCh)
 
-	// Subsequent stop calls should return error
-	_, err = ex.Stop(false, doOnce, false)
-	require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
-	_, err = ex.Stop(false, doOnce, false)
-	require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
+	// Check exporter.finish() was called.
+	require.Eventually(t, func() bool {
+		return !ex.IsRunning()
+	}, time.Second*4, time.Millisecond*100)
 
 	// Ensure something is written to the file.
-	f, err := os.Open(ex.LocalFile.Name())
+	f, err := os.Open(ex.Stat.LocalFile.Name())
 	require.NoError(t, err)
 	asByte, err := ioutil.ReadFile(f.Name())
 	require.NoError(t, err)
@@ -144,7 +144,7 @@ func TestExporter_ForcedStop(t *testing.T) {
 
 	t.Cleanup(func() {
 		_ = f.Close() // Not needed, OCD kick.
-		require.NoError(t, os.Remove(ex.LocalFile.Name()))
+		require.NoError(t, os.Remove(ex.Stat.LocalFile.Name()))
 	})
 }
 
@@ -152,7 +152,10 @@ func TestExporter_DurationExpired(t *testing.T) {
 	params, err := setUpParams(t, 0, 0, "2Second", 2*time.Second, false)
 	require.NoError(t, err)
 
-	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
+	ex, err := exporter.New(exporter.WithLogger(logging.New(logging.LoggingConfig{Debug: true})))
+	require.NoError(t, err)
+	// Build the exporter.
+	err = ex.Init(&params)
 	require.NoError(t, err)
 
 	_, doOnce, errCh := ex.Start()
@@ -192,13 +195,8 @@ func TestExporter_DurationExpired(t *testing.T) {
 		}
 	}, 4*time.Second, dataInsertInterval)
 
-	// stop was already once called by exporter.Orchestrate when
-	// params.Duration expired. So, this call should return error.
-	_, err = ex.Stop(false, doOnce, false)
-	require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
-
 	// Ensure something is written to the file.
-	f, err := os.Open(ex.LocalFile.Name())
+	f, err := os.Open(ex.Stat.LocalFile.Name())
 	require.NoError(t, err)
 	asByte, err := ioutil.ReadFile(f.Name())
 	require.NoError(t, err)
@@ -207,7 +205,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 
 	t.Cleanup(func() {
 		_ = f.Close() // Not needed, OCD kick.
-		require.NoError(t, os.Remove(ex.LocalFile.Name()))
+		require.NoError(t, os.Remove(ex.Stat.LocalFile.Name()))
 	})
 }
 

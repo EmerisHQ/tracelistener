@@ -18,6 +18,9 @@ type Config struct {
 
 	// Processors configs
 	Processor ProcessorConfig
+
+	// Exporter http port
+	ExporterHTTPPort string
 }
 
 type ProcessorConfig struct {
