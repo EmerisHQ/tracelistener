@@ -40,15 +40,15 @@ func validateSizeLim(p *Params) error {
 	return nil
 }
 
-func validateRecordCount(p *Params) error {
-	if p.RecordLim < 0 || p.RecordLim > MaxRecordLim {
-		return NewValidationError(fmt.Errorf("accepted record count 1-1000000 received %d", p.RecordLim))
+func validateNumTrace(p *Params) error {
+	if p.NumTraces < 0 || p.NumTraces > MaxTraceCount {
+		return NewValidationError(fmt.Errorf("accepted record count 1-1000000 received %d", p.NumTraces))
 	}
 	return nil
 }
 
 func validateDuration(p *Params) error {
-	if p.Duration < 5*time.Second || p.Duration > MaxDuration {
+	if p.Duration < 1*time.Second || p.Duration > MaxDuration {
 		return NewValidationError(fmt.Errorf("accepted duration 1s-24Hour received %v", p.Duration))
 	}
 	return nil
@@ -66,7 +66,7 @@ func validateFileId(p *Params) error {
 
 func ValidateParamCombination(p *Params) error {
 	// At least one valid param required.
-	if p.SizeLim == 0 && p.Duration < 5*time.Second && p.RecordLim == 0 {
+	if p.SizeLim == 0 && p.Duration < 1*time.Second && p.NumTraces == 0 {
 		return NewValidationError(fmt.Errorf("invalid param combination"))
 	}
 	return nil

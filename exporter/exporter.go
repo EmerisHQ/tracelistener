@@ -16,13 +16,13 @@ type (
 		StartTime   time.Time
 		RunningTime time.Duration
 		TotalSize   int32
-		NumRecords  int32
+		TraceCount  int32
 		Err         error
 	}
 
 	// Params represents the acceptable http request params.
 	Params struct {
-		RecordLim int32
+		NumTraces int32
 		SizeLim   int32
 		Duration  time.Duration
 		Persis    bool
@@ -37,8 +37,8 @@ type (
 		params    Params
 		stat      Stat
 
-		recordChan chan []byte
-		doneChan   chan struct{}
+		traceChan chan []byte
+		doneChan  chan struct{}
 	}
 )
 
@@ -53,20 +53,20 @@ var (
 )
 
 const (
-	MaxSizeLim   = 1024
-	MaxRecordLim = 1000000
-	MaxDuration  = 24 * time.Hour
+	MaxSizeLim    = 1024
+	MaxTraceCount = 1000000
+	MaxDuration   = 24 * time.Hour
 )
 
 // New takes a params as input, then
 // 1. Validate the params. Returns ValidationError if failed.
-// 2. Creates the local file to hold the records
+// 2. Creates the local file to hold the traces
 // 3. Builds and returns a pointer to the Exporter
 func New(params *Params) (*Exporter, error) {
 	err := runParamValidators(
 		params,
 		validateSizeLim,          // 0 <= size <= MaxSizeLim.
-		validateRecordCount,      // 0 <= record count <= MaxRecordLim.
+		validateNumTrace,         // 0 <= trace count <= MaxTraceCount.
 		validateDuration,         // 0 <= duration <= 24 hours.
 		validateFileId,           // len(id) <= 10; only alphanumeric.
 		ValidateParamCombination, // At least one valid param present.
@@ -77,11 +77,14 @@ func New(params *Params) (*Exporter, error) {
 
 	startTime := time.Now().Round(0)
 
-	// fileName = 01-02-2006-15:04:05-100MB-1h20m0s-fileId-03118414
+	// fileName = 01-02-2006-15:04:05-1000N-100MB-1h20m0s-fileId-03118414
 	// `fileId` comes from user. Useful if the user wants to insert (max len 10)
 	// an identifier in the file name. Ex: JunoProd, irisDev, atomStag
 	// 03118414 is a random id inserted by the library.
-	f, err := createFile(startTime, params.RecordLim, params.SizeLim, params.Duration, params.FileId)
+	//
+	// 1000N-100MB-1h20m0s-fileId these are optional fields. Not included in the
+	// file name if empty.
+	f, err := createFile(startTime, params.NumTraces, params.SizeLim, params.Duration, params.FileId)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +102,8 @@ func New(params *Params) (*Exporter, error) {
 			StartTime: startTime,
 			Err:       nil,
 		},
-		recordChan: nil, // Initialised when start is called.
-		doneChan:   nil, // ditto
+		traceChan: nil, // Initialised when start is called.
+		doneChan:  nil, // ditto
 	}
 	return e, nil
 }
@@ -119,11 +122,11 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 		return nil, nil, errChan
 	}
 
-	recordChCap := int32(MaxRecordLim)
-	if e.params.RecordLim > 0 {
-		recordChCap = e.params.RecordLim
+	traceChCap := int32(MaxTraceCount)
+	if e.params.NumTraces > 0 {
+		traceChCap = e.params.NumTraces
 	}
-	e.recordChan = make(chan []byte, recordChCap)
+	e.traceChan = make(chan []byte, traceChCap)
 	e.doneChan = make(chan struct{})
 
 	doOnce := (&sync.Once{}).Do
@@ -142,14 +145,14 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 	return nil, doOnce, errChan
 }
 
-// Stop stops the record exporting process. This method must be called once.
+// Stop stops the trace exporting process. This method must be called once.
 func (e *Exporter) Stop(persistOverride bool, doOnce func(func())) (interface{}, error) {
 	fmt.Println("Stop: entered")
 	if !e.IsRunning() {
 		return nil, ErrExporterNotRunning
 	}
 
-	if e.AcceptingData() {
+	if e.IsAcceptingData() {
 		e.StopReceiving(doOnce)
 	}
 
@@ -173,13 +176,13 @@ func (e *Exporter) Stop(persistOverride bool, doOnce func(func())) (interface{},
 }
 
 func (e *Exporter) Orchestrate(doOnce func(func())) error {
-	err := e.HandleRecord()
+	err := e.HandleTrace()
 	if err != nil {
 		return err
 	}
 
 	// Exporter is still running. i.e. not forced stopped by user.
-	// So we stop it as e.HandleRecord has stored all the records to file.
+	// So we stop it as e.HandleTrace has stored all the traces to file.
 	if e.IsRunning() {
 		_, err = e.Stop(e.params.Persis, doOnce)
 		if err != nil {
@@ -190,66 +193,66 @@ func (e *Exporter) Orchestrate(doOnce func(func())) error {
 	return nil
 }
 
-func (e *Exporter) UnblockedReceive(record []byte, doOnce func(func())) error {
-	if !e.AcceptingData() {
+func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
+	if !e.IsAcceptingData() {
 		return ErrNotAcceptingData
 	}
 	select {
-	case e.recordChan <- record:
-		fmt.Println("UnblockedReceive: e.recordChan <- record:", record)
-		e.stat.NumRecords++
-		e.stat.TotalSize += int32(len(record))
+	case e.traceChan <- trace:
+		fmt.Println("UnblockedReceive: e.traceChan <- trace:", trace)
+		e.stat.TraceCount++
+		e.stat.TotalSize += int32(len(trace))
 		// Stop export process if condition reached.
-		if e.reachedRecordLimit() || e.reachedSizeLimit() {
-			fmt.Println("UnblockedReceive: e.reachedRecordLimit calling StopReceiving")
+		if e.reachedTraceCount() || e.reachedSizeLimit() {
+			fmt.Println("UnblockedReceive: e.reachedTraceCount calling StopReceiving")
 			e.StopReceiving(doOnce)
 		}
 	default:
-		fmt.Println("UnblockedReceive: blocked on record chan", record)
-		return fmt.Errorf("blocked on sending data to record channel")
+		fmt.Println("UnblockedReceive: blocked on trace chan", trace)
+		return fmt.Errorf("blocked on sending data to trace channel")
 	}
 	return nil
 }
 
-func (e *Exporter) HandleRecord() error {
+func (e *Exporter) HandleTrace() error {
 	for {
 		select {
 		case <-e.doneChan:
-			// Drain the recordChan.
-			for r := range e.recordChan {
-				fmt.Println("HandleRecord draining: r := range e.recordChan", r)
+			// Drain the traceChan.
+			for r := range e.traceChan {
+				fmt.Println("HandleTrace draining: r := range e.traceChan", r)
 				n, err := e.LocalFile.Write(append(r, []byte("\n")...))
 				if err != nil {
-					return fmt.Errorf("handleRecord: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
+					return fmt.Errorf("handleTrace: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
 				}
-				fmt.Println("HandleRecord: Wrote to file", n, "bytes", r)
+				fmt.Println("HandleTrace: Wrote to file", n, "bytes", r)
 			}
 			return nil
-		case r, ok := <-e.recordChan:
-			fmt.Println("HandleRecord: from <-e.recordChan", r, ok)
+		case r, ok := <-e.traceChan:
+			fmt.Println("HandleTrace: from <-e.traceChan", r, ok)
 			if !ok {
 				return nil
 			}
 			n, err := e.LocalFile.Write(append(r, []byte("\n")...))
 			if err != nil {
-				return fmt.Errorf("handleRecord: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
+				return fmt.Errorf("handleTrace: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
 			}
-			fmt.Println("HandleRecord: Wrote to file", n, "bytes", r)
+			fmt.Println("HandleTrace: Wrote to file", n, "bytes", r)
 		}
 	}
 }
 
 func (e *Exporter) StopReceiving(doOnce func(func())) {
 	doOnce(func() {
-		close(e.recordChan)
+		close(e.traceChan)
 		close(e.doneChan)
 	})
 }
 
-// AcceptingData checks if exporter is running i.e. recordChan
+// IsAcceptingData checks if exporter is running i.e. traceChan
 // is not nil AND done channel is not closed.
-func (e *Exporter) AcceptingData() bool {
-	if e.recordChan == nil {
+func (e *Exporter) IsAcceptingData() bool {
+	if e.traceChan == nil {
 		return false
 	}
 	select {
@@ -281,11 +284,11 @@ func (e *Exporter) SetRunning(newStatus bool) error {
 	return nil
 }
 
-func (e *Exporter) GetRecordChan() (chan []byte, error) {
+func (e *Exporter) GetTraceChan() (chan []byte, error) {
 	if !e.IsRunning() {
 		return nil, ErrExporterNotRunning
 	}
-	return e.recordChan, nil
+	return e.traceChan, nil
 }
 
 func (e *Exporter) GetDoneChan() (chan struct{}, error) {
@@ -295,11 +298,11 @@ func (e *Exporter) GetDoneChan() (chan struct{}, error) {
 	return e.doneChan, nil
 }
 
-func (e *Exporter) reachedRecordLimit() bool {
-	if e.params.RecordLim <= 0 {
+func (e *Exporter) reachedTraceCount() bool {
+	if e.params.NumTraces <= 0 {
 		return false
 	}
-	return e.stat.NumRecords >= e.params.RecordLim
+	return e.stat.TraceCount >= e.params.NumTraces
 }
 
 func (e *Exporter) reachedSizeLimit() bool {
@@ -311,7 +314,7 @@ func (e *Exporter) reachedSizeLimit() bool {
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {
 	fileNameParts := []string{t.Format("01-02-2006-15:04:05")}
-	if n > 0 { // Number of records.
+	if n > 0 { // Number of traces.
 		fileNameParts = append(fileNameParts, fmt.Sprintf("%dN", n))
 	}
 	if s > 0 { // Size of the file.

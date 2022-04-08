@@ -24,11 +24,11 @@ func TestNew(t *testing.T) {
 
 	// Exporter should not be running, and not yet accepting records.
 	require.False(t, ex.IsRunning())
-	require.False(t, ex.AcceptingData())
+	require.False(t, ex.IsAcceptingData())
 
 	_, doOnce, errCh := ex.Start()
 	require.True(t, ex.IsRunning())
-	require.True(t, ex.AcceptingData())
+	require.True(t, ex.IsAcceptingData())
 
 	// Only one running process allowed
 	_, _, errCh = ex.Start()
@@ -45,7 +45,7 @@ func TestNew(t *testing.T) {
 		_, err = ex.Stop(false, doOnce)
 		require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
 		require.False(t, ex.IsRunning())
-		require.False(t, ex.AcceptingData())
+		require.False(t, ex.IsAcceptingData())
 	}
 
 	t.Cleanup(func() {
@@ -187,7 +187,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 		case err := <-errCh:
 			require.NoError(t, err)
 			require.False(t, ex.IsRunning())
-			require.False(t, ex.AcceptingData())
+			require.False(t, ex.IsAcceptingData())
 			return true
 		default:
 			return false
@@ -216,7 +216,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 func setUpParams(t *testing.T, n, s int32, id string, d time.Duration, p bool) (exporter.Params, error) {
 	t.Helper()
 	return exporter.Params{
-		RecordLim: n,
+		NumTraces: n,
 		SizeLim:   s,
 		Duration:  d,
 		Persis:    p,

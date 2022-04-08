@@ -91,7 +91,7 @@ func TestValidate_ParamCombination(t *testing.T) {
 			"no valid params present",
 			int32(0),
 			int32(0),
-			time.Second,
+			0,
 			NewValidationError(fmt.Errorf("invalid param combination")),
 		},
 	}
@@ -107,7 +107,7 @@ func TestValidate_ParamCombination(t *testing.T) {
 func setUpParams(t *testing.T, n, s int32, id string, d time.Duration) Params {
 	t.Helper()
 	return Params{
-		RecordLim: n,
+		NumTraces: n,
 		SizeLim:   s,
 		Duration:  d,
 		Persis:    false,
