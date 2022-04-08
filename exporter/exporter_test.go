@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/emerishq/emeris-utils/logging"
 	"github.com/emerishq/tracelistener/exporter"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -15,11 +16,11 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	p, err := setUpParams(t, 10, 100, "xxxx", 10*time.Minute, false)
+	params, err := setUpParams(t, 10, 100, "xxxx", 10*time.Minute, false)
 	require.NoError(t, err)
 
 	// Build the exporter.
-	ex, err := exporter.New(&p)
+	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
 	require.NoError(t, err)
 
 	// Exporter should not be running, and not yet accepting records.
@@ -37,12 +38,12 @@ func TestNew(t *testing.T) {
 	t.Log("local file name:", ex.LocalFile.Name())
 
 	// First stop call should not return error
-	_, err = ex.Stop(false, doOnce)
+	_, err = ex.Stop(false, doOnce, false)
 	require.NoError(t, err)
 
 	// Next stop calls should return ErrExporterNotRunning
 	for i := 0; i < 10; i++ {
-		_, err = ex.Stop(false, doOnce)
+		_, err = ex.Stop(false, doOnce, false)
 		require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
 		require.False(t, ex.IsRunning())
 		require.False(t, ex.IsAcceptingData())
@@ -55,10 +56,10 @@ func TestNew(t *testing.T) {
 
 func TestStart_AcceptXXXRecords(t *testing.T) {
 	XXX := int32(10)
-	p, err := setUpParams(t, XXX, 100, "XXXRecords", 100*time.Minute, false)
+	params, err := setUpParams(t, XXX, 100, "XXXRecords", 100*time.Minute, false)
 	require.NoError(t, err)
 
-	ex, err := exporter.New(&p)
+	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
 	require.NoError(t, err)
 
 	_, doOnce, errCh := ex.Start()
@@ -99,7 +100,7 @@ func TestExporter_ForcedStop(t *testing.T) {
 	params, err := setUpParams(t, 0, 0, "1hr", 1*time.Hour, false)
 	require.NoError(t, err)
 
-	ex, err := exporter.New(&params)
+	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
 	require.NoError(t, err)
 
 	_, doOnce, errCh := ex.Start()
@@ -125,15 +126,15 @@ func TestExporter_ForcedStop(t *testing.T) {
 	time.Sleep(3 * dataInsertInterval)
 
 	// Force stop.
-	_, err = ex.Stop(false, doOnce)
+	_, err = ex.Stop(false, doOnce, false)
 	require.NoError(t, err)
 	close(dataInserterDone)
 	require.NoError(t, <-errCh)
 
 	// Subsequent stop calls should return error
-	_, err = ex.Stop(false, doOnce)
+	_, err = ex.Stop(false, doOnce, false)
 	require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
-	_, err = ex.Stop(false, doOnce)
+	_, err = ex.Stop(false, doOnce, false)
 	require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
 
 	// Ensure something is written to the file.
@@ -154,7 +155,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 	params, err := setUpParams(t, 0, 0, "2Second", 2*time.Second, false)
 	require.NoError(t, err)
 
-	ex, err := exporter.New(&params)
+	ex, err := exporter.Init(&params, logging.New(logging.LoggingConfig{Debug: true}))
 	require.NoError(t, err)
 
 	_, doOnce, errCh := ex.Start()
@@ -196,7 +197,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 
 	// stop was already once called by exporter.Orchestrate when
 	// params.Duration expired. So, this call should return error.
-	_, err = ex.Stop(false, doOnce)
+	_, err = ex.Stop(false, doOnce, false)
 	require.ErrorIs(t, err, exporter.ErrExporterNotRunning)
 
 	// Ensure something is written to the file.

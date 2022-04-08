@@ -3,6 +3,7 @@ package exporter
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -39,6 +40,8 @@ type (
 
 		traceChan chan []byte
 		doneChan  chan struct{}
+
+		logger *zap.SugaredLogger
 	}
 )
 
@@ -58,11 +61,11 @@ const (
 	MaxDuration   = 24 * time.Hour
 )
 
-// New takes a params as input, then
+// Init takes a params as input, then
 // 1. Validate the params. Returns ValidationError if failed.
 // 2. Creates the local file to hold the traces
 // 3. Builds and returns a pointer to the Exporter
-func New(params *Params) (*Exporter, error) {
+func Init(params *Params, l *zap.SugaredLogger) (*Exporter, error) {
 	err := runParamValidators(
 		params,
 		validateSizeLim,          // 0 <= size <= MaxSizeLim.
@@ -104,6 +107,7 @@ func New(params *Params) (*Exporter, error) {
 		},
 		traceChan: nil, // Initialised when start is called.
 		doneChan:  nil, // ditto
+		logger:    l,
 	}
 	return e, nil
 }
@@ -146,8 +150,7 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 }
 
 // Stop stops the trace exporting process. This method must be called once.
-func (e *Exporter) Stop(persistOverride bool, doOnce func(func())) (interface{}, error) {
-	fmt.Println("Stop: entered")
+func (e *Exporter) Stop(persistOverride bool, doOnce func(func()), forceClean bool) (interface{}, error) {
 	if !e.IsRunning() {
 		return nil, ErrExporterNotRunning
 	}
@@ -166,11 +169,19 @@ func (e *Exporter) Stop(persistOverride bool, doOnce func(func())) (interface{},
 		// 1. Upload to google
 		// 2. Generate slack msg
 		// 3. Delete local file
-		fmt.Println(persistOverride)
+		e.logger.Debugw("Persist", persistOverride)
 	}
 	// TODO: Process user report
 
 	e.stat.RunningTime = time.Since(e.stat.StartTime).Round(0)
+	if forceClean {
+		if _, err := os.Stat(e.LocalFile.Name()); !os.IsNotExist(err) {
+			err2 := os.Remove(e.LocalFile.Name())
+			if err2 != nil {
+				return nil, err2
+			}
+		}
+	}
 
 	return nil, nil
 }
@@ -184,7 +195,7 @@ func (e *Exporter) Orchestrate(doOnce func(func())) error {
 	// Exporter is still running. i.e. not forced stopped by user.
 	// So we stop it as e.HandleTrace has stored all the traces to file.
 	if e.IsRunning() {
-		_, err = e.Stop(e.params.Persis, doOnce)
+		_, err = e.Stop(e.params.Persis, doOnce, false)
 		if err != nil {
 			return err
 		}
@@ -199,16 +210,16 @@ func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
 	}
 	select {
 	case e.traceChan <- trace:
-		fmt.Println("UnblockedReceive: e.traceChan <- trace:", trace)
+		e.logger.Debugw("UnblockedReceive:", "e.traceChan <- trace:", trace)
 		e.stat.TraceCount++
 		e.stat.TotalSize += int32(len(trace))
 		// Stop export process if condition reached.
 		if e.reachedTraceCount() || e.reachedSizeLimit() {
-			fmt.Println("UnblockedReceive: e.reachedTraceCount calling StopReceiving")
+			e.logger.Debugw("UnblockedReceive:", "e.reachedTraceCount calling StopReceiving")
 			e.StopReceiving(doOnce)
 		}
 	default:
-		fmt.Println("UnblockedReceive: blocked on trace chan", trace)
+		e.logger.Debugw("UnblockedReceive:", "blocked on chan; trace", trace)
 		return fmt.Errorf("blocked on sending data to trace channel")
 	}
 	return nil
@@ -220,16 +231,16 @@ func (e *Exporter) HandleTrace() error {
 		case <-e.doneChan:
 			// Drain the traceChan.
 			for r := range e.traceChan {
-				fmt.Println("HandleTrace draining: r := range e.traceChan", r)
+				e.logger.Debugw("HandleTrace:", "draining: r", r)
 				n, err := e.LocalFile.Write(append(r, []byte("\n")...))
 				if err != nil {
 					return fmt.Errorf("handleTrace: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
 				}
-				fmt.Println("HandleTrace: Wrote to file", n, "bytes", r)
+				e.logger.Debugw("HandleTrace:", "Write size", n, "bytes", r)
 			}
 			return nil
 		case r, ok := <-e.traceChan:
-			fmt.Println("HandleTrace: from <-e.traceChan", r, ok)
+			e.logger.Debugw("HandleTrace:", "from <-e.traceChan", r, "ok", ok)
 			if !ok {
 				return nil
 			}
@@ -237,7 +248,7 @@ func (e *Exporter) HandleTrace() error {
 			if err != nil {
 				return fmt.Errorf("handleTrace: could not write to file: %s, error: %w", e.LocalFile.Name(), err)
 			}
-			fmt.Println("HandleTrace: Wrote to file", n, "bytes", r)
+			e.logger.Debugw("HandleTrace:", "Wrote size", n, "bytes", r)
 		}
 	}
 }
