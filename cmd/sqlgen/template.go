@@ -45,8 +45,10 @@ func (r {{ .StructName }}) Upsert() string {
 
 func (r {{ .StructName }}) Delete() string {
 	return fmt.Sprintf(` + "`" + `
-		DELETE FROM %s
+		UPDATE %s
+		SET delete_height = :height, height = :height
 		WHERE {{ JoinAnd .Config.WhereConditions }}
+		AND delete_height IS NULL
 	` + "`" + `, r.tableName)
 }
 `
