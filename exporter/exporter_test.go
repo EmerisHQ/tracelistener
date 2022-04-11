@@ -45,7 +45,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestStart_AcceptXXXRecords(t *testing.T) {
-	XXX := int32(10)
+	XXX := int32(5)
 	params, err := setUpParams(t, XXX, 100, "XXXRecords", 100*time.Minute, false)
 	require.NoError(t, err)
 
@@ -57,7 +57,7 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 
 	_, doOnce, errCh := ex.StartReceiving()
 
-	records := [][]byte{{14, 14}, {24, 24}, {34, 34}, {44, 44}, {54, 54}, {64, 64}, {74, 74}, {84, 84}, {94, 94}, {104, 104}, {114, 114}, {124, 124}}
+	records := [][]byte{[]byte("go is"), []byte("short but"), []byte("handle the error"), []byte("java is"), []byte("dark and"), []byte("full of terror")}
 
 	// After XXX records, no more processed.
 	for i, record := range records {
@@ -76,7 +76,7 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 
 	asByte, err := ioutil.ReadFile(f.Name())
 	require.NoError(t, err)
-	parts := bytes.Fields(asByte)
+	parts := bytes.Split(asByte, []byte("\n"))
 
 	// Parts come from the file, records is the original raw data. Must match.
 	for i, r := range records[:XXX] {
@@ -110,7 +110,7 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 		for {
 			select {
 			case <-ticker.C:
-				err := ex.UnblockedReceive([]byte{33, 44, 55, 66}, doOnce) // Simulate trace capture
+				err := ex.UnblockedReceive([]byte{66, 66, 66, 66}, doOnce) // Simulate trace capture
 				require.NoError(t, err)
 			case <-selfDone:
 				return
