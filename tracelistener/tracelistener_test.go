@@ -147,10 +147,10 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			go func() {
 				if tt.shouldPanic {
 					require.Panics(t, func() {
-						tw.Watch()
+						tw.Watch(nil)
 					})
 				} else {
-					tw.Watch()
+					tw.Watch(nil)
 				}
 			}()
 

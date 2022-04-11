@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func (e *Exporter) ListenAndServe(cfg config.Config) {
+func (e *Exporter) ListenAndServeHTTP(cfg *config.Config) {
 	handler := handler{
 		exporter: e,
 		doOnce:   nil, // Populated when startHandler is called.
@@ -25,14 +25,12 @@ func (e *Exporter) ListenAndServe(cfg config.Config) {
 	if port == "" {
 		port = ":8111"
 	}
-	s := &http.Server{
+	if err := (&http.Server{
 		Addr:         port,
 		Handler:      mux,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
-	}
-
-	if err := s.ListenAndServe(); err != nil {
+	}).ListenAndServe(); err != nil {
 		e.logger.Errorw("server failed to start", "error", err.Error())
 	}
 }
@@ -42,6 +40,9 @@ type handler struct {
 	doOnce   func(func())
 }
 
+// startHandler listens on /start. Initializes the exporter with params from url
+// and starts exporter.StartReceiving. If another exporter is already running,
+// exporter.Init will return error.
 func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 	qp := r.URL.Query()
 	var numTraces int32
@@ -126,10 +127,10 @@ func (h *handler) stopHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) statHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotImplemented)
+	writeJson(w, h.exporter.GetStat(), http.StatusOK)
 }
 
-func writeJson(w http.ResponseWriter, stat interface{}, code int) {
+func writeJson(w http.ResponseWriter, stat Stat, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(stat)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/emerishq/tracelistener/exporter"
 	"math"
 	"reflect"
 	"time"
@@ -268,7 +269,7 @@ type TraceWatcher struct {
 	Logger         *zap.SugaredLogger
 }
 
-func (tr *TraceWatcher) Watch() {
+func (tr *TraceWatcher) Watch(exporter *exporter.Exporter) {
 	errorHappened := false
 	for { // infinite cycle, if something goes wrong in reading the fifo we restart the cycle
 		if errorHappened {
@@ -295,6 +296,13 @@ func (tr *TraceWatcher) Watch() {
 			tr.Logger.Debugw("new line read from reader", "line", line.Text)
 
 			lineBytes := []byte(line.Text)
+
+			// Feed data to exporter.
+			if exporter != nil && exporter.IsAcceptingData() {
+				if err := exporter.UnblockedReceive(lineBytes, nil); err != nil {
+					tr.Logger.Infow("exporter", "err receive trace", err)
+				}
+			}
 
 			// Log line used to trigger Grafana alerts.
 			// Do not modify or remove without changing the corresponding dashboards

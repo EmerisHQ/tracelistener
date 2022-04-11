@@ -14,14 +14,14 @@ import (
 type (
 	// Stat used to report progress to the caller.
 	Stat struct {
-		StartTime   time.Time
-		RunningTime time.Duration
-		TotalSize   int32
-		TraceCount  int32
+		StartTime   time.Time     `json:"start_time"`
+		RunningTime time.Duration `json:"running_time"`
+		TotalSize   int32         `json:"total_size"`
+		TraceCount  int32         `json:"trace_count"`
 		// Full name in pod.
-		LocalFile     *os.File
-		RunningStatus string
-		Err           error
+		LocalFile     *os.File `json:"local_file"`
+		RunningStatus string   `json:"running_status"`
+		Err           error    `json:"error"`
 	}
 
 	// Params represents the acceptable http request params.
@@ -131,25 +131,29 @@ func (e *Exporter) Init(params *Params) error {
 	e.params = params
 	e.Stat = &Stat{
 		StartTime:     startTime,
+		RunningTime:   0,
+		TotalSize:     0,
+		TraceCount:    0,
 		LocalFile:     localFile,
 		RunningStatus: "Init",
+		Err:           nil,
 	}
-	e.traceChan = nil // Initialised when start is called.
+	e.traceChan = nil // Initialised when StartReceiving is called.
 	e.doneChan = nil  // ditto
 	return nil
 }
 
-func (e *Exporter) StartReceiving() (interface{}, func(func()), chan error) {
+func (e *Exporter) StartReceiving() (Stat, func(func()), chan error) {
 	errChan := make(chan error, 1)
 
 	if e.IsRunning() {
 		errChan <- ErrExporterRunning
-		return nil, nil, errChan
+		return e.GetStat(), nil, errChan
 	}
 
 	if err := e.SetRunning(true); err != nil {
 		errChan <- err
-		return nil, nil, errChan
+		return e.GetStat(), nil, errChan
 	}
 	e.Stat.RunningStatus = "Receiving"
 
@@ -166,7 +170,7 @@ func (e *Exporter) StartReceiving() (interface{}, func(func()), chan error) {
 		errCh <- e.Orchestrate()
 	}(errChan)
 
-	return nil, doOnce, errChan
+	return e.GetStat(), doOnce, errChan
 }
 
 // StopReceiving is idempotent, it can be called multiple times. It's used in
@@ -199,17 +203,17 @@ func (e *Exporter) Orchestrate() error {
 // 2. Uploads file to cloud if necessary.
 // 3. Closes the local file descriptor.
 // 4. Removed the local file if necessary.
-func (e *Exporter) finish() (interface{}, error) {
+func (e *Exporter) finish() (Stat, error) {
 	if !e.IsRunning() {
-		return nil, ErrExporterNotRunning
+		return e.GetStat(), ErrExporterNotRunning
 	}
 
 	if e.IsAcceptingData() {
-		return nil, ErrShouldNotAcceptData
+		return e.GetStat(), ErrShouldNotAcceptData
 	}
 
 	if err := e.SetRunning(false); err != nil {
-		return nil, err
+		return e.GetStat(), err
 	}
 	e.Stat.RunningStatus = "Finished"
 
@@ -224,19 +228,19 @@ func (e *Exporter) finish() (interface{}, error) {
 
 	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
 	if err := e.Stat.LocalFile.Close(); err != nil {
-		return nil, err
+		return e.GetStat(), err
 	}
 
 	if e.params.Clean {
 		if _, err := os.Stat(e.Stat.LocalFile.Name()); !os.IsNotExist(err) {
 			err2 := os.Remove(e.Stat.LocalFile.Name())
 			if err2 != nil {
-				return nil, err2
+				return e.GetStat(), err2
 			}
 		}
 	}
 
-	return nil, nil
+	return e.GetStat(), nil
 }
 
 func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
@@ -338,6 +342,10 @@ func (e *Exporter) GetDoneChan() (chan struct{}, error) {
 	return e.doneChan, nil
 }
 
+func (e *Exporter) GetStat() Stat {
+	return *e.Stat
+}
+
 func (e *Exporter) reachedTraceCount() bool {
 	if e.params.NumTraces <= 0 {
 		return false
@@ -353,7 +361,7 @@ func (e *Exporter) reachedSizeLimit() bool {
 }
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {
-	fileNameParts := []string{t.Format("01-02-2006-15:04:05")}
+	fileNameParts := []string{t.Format("2006-01-02-15:04:05")}
 	if n > 0 { // Number of traces.
 		fileNameParts = append(fileNameParts, fmt.Sprintf("%dN", n))
 	}
