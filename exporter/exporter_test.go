@@ -26,12 +26,12 @@ func TestNew(t *testing.T) {
 	require.False(t, ex.IsRunning())
 	require.False(t, ex.IsAcceptingData())
 
-	_, doOnce, errCh := ex.Start()
+	_, doOnce, errCh := ex.StartReceiving()
 	require.True(t, ex.IsRunning())
 	require.True(t, ex.IsAcceptingData())
 
 	// Only one running process allowed
-	_, _, errCh = ex.Start()
+	_, _, errCh = ex.StartReceiving()
 	require.ErrorIs(t, <-errCh, exporter.ErrExporterRunning)
 
 	// StopReceiving must be idempotent
@@ -55,7 +55,7 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 	err = ex.Init(&params)
 	require.NoError(t, err)
 
-	_, doOnce, errCh := ex.Start()
+	_, doOnce, errCh := ex.StartReceiving()
 
 	records := [][]byte{{14, 14}, {24, 24}, {34, 34}, {44, 44}, {54, 54}, {64, 64}, {74, 74}, {84, 84}, {94, 94}, {104, 104}, {114, 114}, {124, 124}}
 
@@ -99,18 +99,18 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 	err = ex.Init(&params)
 	require.NoError(t, err)
 
-	_, doOnce, errCh := ex.Start()
+	_, doOnce, errCh := ex.StartReceiving()
 
 	dataInserterDone := make(chan struct{})
 	dataInsertInterval := 300 * time.Millisecond
-
+	// Simulate: traces capture until stopped.
 	go func(t *testing.T, doOnce func(func()), selfDone chan struct{}, interval time.Duration) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				err := ex.UnblockedReceive([]byte{33, 44, 55, 66}, doOnce)
+				err := ex.UnblockedReceive([]byte{33, 44, 55, 66}, doOnce) // Simulate trace capture
 				require.NoError(t, err)
 			case <-selfDone:
 				return
@@ -158,11 +158,11 @@ func TestExporter_DurationExpired(t *testing.T) {
 	err = ex.Init(&params)
 	require.NoError(t, err)
 
-	_, doOnce, errCh := ex.Start()
+	_, doOnce, errCh := ex.StartReceiving()
 
 	dataInserterDone := make(chan struct{})
 	dataInsertInterval := 200 * time.Millisecond
-
+	// Simulate: traces capture until stopped.
 	go func(t *testing.T, doOnce func(func()), selfDone chan struct{}, interval time.Duration) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -215,7 +215,7 @@ func setUpParams(t *testing.T, n, s int32, id string, d time.Duration, p bool) (
 		NumTraces: n,
 		SizeLim:   s,
 		Duration:  d,
-		Persis:    p,
+		Upload:    p,
 		FileId:    id,
 	}, nil
 }

@@ -29,7 +29,8 @@ type (
 		NumTraces int32
 		SizeLim   int32
 		Duration  time.Duration
-		Persis    bool
+		Upload    bool
+		Clean     bool
 		FileId    string
 	}
 
@@ -138,7 +139,7 @@ func (e *Exporter) Init(params *Params) error {
 	return nil
 }
 
-func (e *Exporter) Start() (interface{}, func(func()), chan error) {
+func (e *Exporter) StartReceiving() (interface{}, func(func()), chan error) {
 	errChan := make(chan error, 1)
 
 	if e.IsRunning() {
@@ -165,23 +166,40 @@ func (e *Exporter) Start() (interface{}, func(func()), chan error) {
 		errCh <- e.Orchestrate()
 	}(errChan)
 
-	// Trying to have stopReceiving called only from one place
-	//if e.params.Duration > 0 {
-	//	time.AfterFunc(e.params.Duration, func() {
-	//		e.StopReceiving(doOnce)
-	//	})
-	//}
-	// go e.WatchStorage(e.doneChan, 1000) // TODO: implement later
-
 	return nil, doOnce, errChan
 }
 
+// StopReceiving is idempotent, it can be called multiple times. It's used in
+// 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
+// 2. When user calls stop from rest endpoint.
+func (e *Exporter) StopReceiving(doOnce func(func())) {
+	doOnce(func() {
+		close(e.traceChan)
+		close(e.doneChan)
+		e.Stat.RunningStatus = "Exporter stopped receiving traces, Finishing remaining tasks"
+	})
+}
+
+func (e *Exporter) Orchestrate() error {
+	if err := e.HandleTrace(); err != nil {
+		return err
+	}
+	// e.HandleTrace returned with no error. That means e.StopReceiving was called.
+	// Now we finish the exporter i.e. upload file to cloud, cleanup etc.
+	if _, err := e.finish(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // finish the trace exporting process. This method must be called once.
+// multiple calls to this method indicates logical error in code.
 // 1. sets state for running to false.
 // 2. Uploads file to cloud if necessary.
 // 3. Closes the local file descriptor.
 // 4. Removed the local file if necessary.
-func (e *Exporter) finish(persistOverride bool, forceClean bool) (interface{}, error) {
+func (e *Exporter) finish() (interface{}, error) {
 	if !e.IsRunning() {
 		return nil, ErrExporterNotRunning
 	}
@@ -195,12 +213,12 @@ func (e *Exporter) finish(persistOverride bool, forceClean bool) (interface{}, e
 	}
 	e.Stat.RunningStatus = "Finished"
 
-	if (e.params.Persis || persistOverride) && e.IsRunning() {
+	if e.params.Upload {
 		// TODO
 		// 1. Upload to google
 		// 2. Generate slack msg
 		// 3. Delete local file
-		e.logger.Debugw("Persist", persistOverride)
+		e.logger.Debugw("Upload", e.params.Upload)
 	}
 	// TODO: Process user report
 
@@ -209,7 +227,7 @@ func (e *Exporter) finish(persistOverride bool, forceClean bool) (interface{}, e
 		return nil, err
 	}
 
-	if forceClean {
+	if e.params.Clean {
 		if _, err := os.Stat(e.Stat.LocalFile.Name()); !os.IsNotExist(err) {
 			err2 := os.Remove(e.Stat.LocalFile.Name())
 			if err2 != nil {
@@ -219,19 +237,6 @@ func (e *Exporter) finish(persistOverride bool, forceClean bool) (interface{}, e
 	}
 
 	return nil, nil
-}
-
-func (e *Exporter) Orchestrate() error {
-	if err := e.HandleTrace(); err != nil {
-		return err
-	}
-	// e.HandleTrace returned with no error. That means e.StopReceiving was called.
-	// Now we finish the exporter i.e. upload file to cloud, cleanup etc.
-	if _, err := e.finish(e.params.Persis, false); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
@@ -282,17 +287,6 @@ func (e *Exporter) HandleTrace() error {
 			e.logger.Debugw("HandleTrace:", "Wrote size", n, "bytes", r)
 		}
 	}
-}
-
-// StopReceiving is idempotent, it can be called multiple times. It's used in
-// 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
-// 2. When user calls stop from rest endpoint.
-func (e *Exporter) StopReceiving(doOnce func(func())) {
-	doOnce(func() {
-		close(e.traceChan)
-		close(e.doneChan)
-		e.Stat.RunningStatus = "Exporter stopped receiving traces, Finishing remaining tasks"
-	})
 }
 
 // IsAcceptingData checks if exporter is running i.e. traceChan

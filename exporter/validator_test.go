@@ -110,7 +110,7 @@ func setUpParams(t *testing.T, n, s int32, id string, d time.Duration) Params {
 		NumTraces: n,
 		SizeLim:   s,
 		Duration:  d,
-		Persis:    false,
+		Upload:    false,
 		FileId:    id,
 	}
 }

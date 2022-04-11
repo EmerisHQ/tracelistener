@@ -14,7 +14,7 @@ import (
 func (e *Exporter) ListenAndServe(cfg config.Config) {
 	handler := handler{
 		exporter: e,
-		doOnce:   nil,
+		doOnce:   nil, // Populated when startHandler is called.
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/start", handler.startHandler)
@@ -52,7 +52,7 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	n := qp.Get("N")
 	if len(n) > 0 {
-		if numTraces, err = validateParamN(n); err != nil {
+		if numTraces, err = validateMustIntMustSuffix(n, "N", "N"); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
@@ -60,7 +60,7 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	m := qp.Get("M")
 	if len(m) > 0 {
-		if sizeLim, err = validateParamM(m); err != nil {
+		if sizeLim, err = validateMustIntMustSuffix(m, "MB", "M"); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
@@ -68,14 +68,14 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	d := qp.Get("D")
 	if len(d) > 0 {
-		if duration, err = validateParamD(d); err != nil {
+		if duration, err = validateMustDuration(d); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 		}
 	}
 
 	p := qp.Get("P")
 	if len(p) > 0 {
-		if persist, err = validateParamP(p); err != nil {
+		if persist, err = validateMustBool(p); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 		}
 	}
@@ -84,7 +84,7 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 		NumTraces: numTraces,
 		SizeLim:   sizeLim,
 		Duration:  duration,
-		Persis:    persist,
+		Upload:    persist,
 		FileId:    qp.Get("id"), // Validation for file id is
 		// sufficiently handled when we call e.Init
 	}
@@ -99,7 +99,7 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stat, doOnce, errCh := h.exporter.Start()
+	stat, doOnce, errCh := h.exporter.StartReceiving()
 	if err := <-errCh; err != nil {
 		writeError(w, err, http.StatusInternalServerError)
 	}
@@ -109,17 +109,16 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) stopHandler(w http.ResponseWriter, r *http.Request) {
 	qp := r.URL.Query()
-	var clean bool
 	var err error
 
 	c := qp.Get("clean")
 	if len(c) > 0 {
-		if clean, err = validateParamP(c); err != nil {
+		if h.exporter.params.Clean, err = validateMustBool(c); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
 	}
-	_, err = h.exporter.finish(false, clean)
+	h.exporter.StopReceiving(h.doOnce)
 	if err != nil {
 		writeError(w, err, http.StatusInternalServerError)
 	}
@@ -141,7 +140,7 @@ func writeError(w http.ResponseWriter, err error, code int) {
 	_, _ = w.Write([]byte(err.Error()))
 }
 
-func validateParamP(p string) (bool, error) {
+func validateMustBool(p string) (bool, error) {
 	persist, err := strconv.ParseBool(p)
 	if err != nil {
 		return false, fmt.Errorf("invalid query param P, want either t, true, True, f, false, False, got %s", p)
@@ -149,7 +148,7 @@ func validateParamP(p string) (bool, error) {
 	return persist, nil
 }
 
-func validateParamD(d string) (time.Duration, error) {
+func validateMustDuration(d string) (time.Duration, error) {
 	duration, err := time.ParseDuration(d)
 	if err != nil {
 		return 0, fmt.Errorf("invalid query param D, %w", err)
@@ -157,32 +156,14 @@ func validateParamD(d string) (time.Duration, error) {
 	return duration, nil
 }
 
-func validateParamM(m string) (int32, error) {
-	if !strings.HasSuffix(m, "MB") {
-		return 0, fmt.Errorf("invalid query param M, want format 20MB got %s", m)
+func validateMustIntMustSuffix(n string, suf string, pName string) (int32, error) {
+	if !strings.HasSuffix(n, suf) {
+		return 0, fmt.Errorf("invalid query param %s, want format 20%s got %s", pName, suf, n)
 	}
-	m = strings.TrimSuffix(m, "MB")
-	val, err := strconv.ParseInt(m, 10, 32)
-	if err != nil {
-		return 0, fmt.Errorf("invalid query param M, %w", err)
-	}
-	if val < 0 {
-		return 0, fmt.Errorf("invalid value for M, want > 0, got %d", val)
-	}
-	return int32(val), nil
-}
-
-func validateParamN(n string) (int32, error) {
-	if !strings.HasSuffix(n, "N") {
-		return 0, fmt.Errorf("invalid query param N, want format 20N got %s", n)
-	}
-	n = strings.TrimSuffix(n, "N")
+	n = strings.TrimSuffix(n, suf)
 	val, err := strconv.ParseInt(n, 10, 32)
 	if err != nil {
-		return 0, fmt.Errorf("invalid query param N, %w", err)
-	}
-	if val < 0 {
-		return 0, fmt.Errorf("invalid value for N, want > 0, got %d", val)
+		return 0, fmt.Errorf("invalid query param %s, %w", pName, err)
 	}
 	return int32(val), nil
 }
