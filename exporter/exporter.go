@@ -141,9 +141,22 @@ func (e *Exporter) Init(params *Params) error {
 		RunningStatus: "Init",
 		Err:           nil,
 	}
+
+	if e.params.NumTraces == 0 {
+		e.params.NumTraces = MaxTraceCount
+	}
+	e.params.SizeLim *= 100_000_0 // Convert to byte
+	if e.params.SizeLim == 0 {
+		e.params.SizeLim = MaxSizeLim * 100_000_0 // 1024 MB converted to bytes
+	}
+	if e.params.Duration == 0 {
+		e.params.Duration = MaxDuration
+	}
+
 	e.doOnce = (&sync.Once{}).Do
-	e.traceChan = nil // Initialised when StartReceiving is called.
-	e.doneChan = nil  // ditto
+	e.doneChan = nil // Indicates that exporter is initialised, but not yet ready to receive traces.
+	e.traceChan = nil
+
 	return nil
 }
 
@@ -161,18 +174,8 @@ func (e *Exporter) StartReceiving() chan error {
 	}
 	e.Stat.RunningStatus = "Receiving"
 
-	if e.params.NumTraces == 0 {
-		e.params.NumTraces = MaxTraceCount
-	}
-	e.params.SizeLim *= 100_000_0 // Convert to byte
-	if e.params.SizeLim == 0 {
-		e.params.SizeLim = MaxSizeLim * 100_000_0 // 1024 MB converted to bytes
-	}
-	if e.params.Duration == 0 {
-		e.params.Duration = MaxDuration
-	}
-	e.traceChan = make(chan []byte, e.params.NumTraces) // TODO: move to init
-	e.doneChan = make(chan struct{})                    // TODO: ditto
+	e.traceChan = make(chan []byte, e.params.NumTraces)
+	e.doneChan = make(chan struct{})
 
 	go func(errCh chan error) {
 		errCh <- e.Orchestrate()
