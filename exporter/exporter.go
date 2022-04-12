@@ -82,6 +82,7 @@ func WithLogger(l *zap.SugaredLogger) Option {
 func New(opts ...Option) (*Exporter, error) {
 	e := &Exporter{
 		muRunning: sync.Mutex{},
+		logger:    zap.NewNop().Sugar(),
 		running:   false, // Being explicit!
 	}
 	for _, o := range opts {
@@ -154,7 +155,7 @@ func (e *Exporter) StartReceiving() chan error {
 		return errChan
 	}
 
-	if err := e.SetRunning(true); err != nil {
+	if err := e.setRunning(true); err != nil {
 		errChan <- err
 		return errChan
 	}
@@ -206,10 +207,10 @@ func (e *Exporter) Orchestrate() error {
 
 // finish the trace exporting process. This method must be called once.
 // multiple calls to this method indicates logical error in code.
-// 1. sets state for running to false.
-// 2. Uploads file to cloud if necessary.
-// 3. Closes the local file descriptor.
-// 4. Removed the local file if necessary.
+// 1. Uploads file to cloud if necessary.
+// 2. Closes the local file descriptor.
+// 3. Removed the local file if necessary.
+// 4. sets state for running to false.
 func (e *Exporter) finish() error {
 	if !e.IsRunning() {
 		return ErrExporterNotRunning
@@ -218,11 +219,6 @@ func (e *Exporter) finish() error {
 	if e.IsAcceptingData() {
 		return ErrShouldNotAcceptData
 	}
-
-	if err := e.SetRunning(false); err != nil {
-		return err
-	}
-	e.Stat.RunningStatus = "Finished"
 
 	if e.params.Upload {
 		// TODO
@@ -247,6 +243,10 @@ func (e *Exporter) finish() error {
 		}
 	}
 
+	if err := e.setRunning(false); err != nil {
+		return err
+	}
+	e.Stat.RunningStatus = "Finished"
 	return nil
 }
 
@@ -322,7 +322,7 @@ func (e *Exporter) IsRunning() bool {
 	return r
 }
 
-func (e *Exporter) SetRunning(newStatus bool) error {
+func (e *Exporter) setRunning(newStatus bool) error {
 	curStatus := e.IsRunning()
 	if curStatus == newStatus {
 		if curStatus {
