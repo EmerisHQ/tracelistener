@@ -3,12 +3,13 @@ package exporter
 import (
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type (
@@ -21,7 +22,7 @@ type (
 		// Full name in pod.
 		LocalFile     *os.File `json:"local_file"`
 		RunningStatus string   `json:"running_status"`
-		Err           error    `json:"error"`
+		Err           error    `json:"error,omitempty"`
 	}
 
 	// Params represents the acceptable http request params.
@@ -43,6 +44,7 @@ type (
 
 		traceChan chan []byte
 		doneChan  chan struct{}
+		doOnce    func(func())
 	}
 
 	Option func(*Exporter) error
@@ -138,46 +140,51 @@ func (e *Exporter) Init(params *Params) error {
 		RunningStatus: "Init",
 		Err:           nil,
 	}
+	e.doOnce = (&sync.Once{}).Do
 	e.traceChan = nil // Initialised when StartReceiving is called.
 	e.doneChan = nil  // ditto
 	return nil
 }
 
-func (e *Exporter) StartReceiving() (Stat, func(func()), chan error) {
+func (e *Exporter) StartReceiving() chan error {
 	errChan := make(chan error, 1)
 
 	if e.IsRunning() {
 		errChan <- ErrExporterRunning
-		return e.GetStat(), nil, errChan
+		return errChan
 	}
 
 	if err := e.SetRunning(true); err != nil {
 		errChan <- err
-		return e.GetStat(), nil, errChan
+		return errChan
 	}
 	e.Stat.RunningStatus = "Receiving"
 
-	traceChCap := int32(MaxTraceCount)
-	if e.params.NumTraces > 0 {
-		traceChCap = e.params.NumTraces
+	if e.params.NumTraces == 0 {
+		e.params.NumTraces = MaxTraceCount
 	}
-	e.traceChan = make(chan []byte, traceChCap)
-	e.doneChan = make(chan struct{})
-
-	doOnce := (&sync.Once{}).Do
+	e.params.SizeLim *= 100_000_0 // Convert to byte
+	if e.params.SizeLim == 0 {
+		e.params.SizeLim = MaxSizeLim * 100_000_0 // 1024 MB converted to bytes
+	}
+	if e.params.Duration == 0 {
+		e.params.Duration = MaxDuration
+	}
+	e.traceChan = make(chan []byte, e.params.NumTraces) // TODO: move to init
+	e.doneChan = make(chan struct{})                    // TODO: ditto
 
 	go func(errCh chan error) {
 		errCh <- e.Orchestrate()
 	}(errChan)
 
-	return e.GetStat(), doOnce, errChan
+	return errChan
 }
 
 // StopReceiving is idempotent, it can be called multiple times. It's used in
 // 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
 // 2. When user calls stop from rest endpoint.
-func (e *Exporter) StopReceiving(doOnce func(func())) {
-	doOnce(func() {
+func (e *Exporter) StopReceiving() {
+	e.doOnce(func() {
 		close(e.traceChan)
 		close(e.doneChan)
 		e.Stat.RunningStatus = "Exporter stopped receiving traces, Finishing remaining tasks"
@@ -190,7 +197,7 @@ func (e *Exporter) Orchestrate() error {
 	}
 	// e.HandleTrace returned with no error. That means e.StopReceiving was called.
 	// Now we finish the exporter i.e. upload file to cloud, cleanup etc.
-	if _, err := e.finish(); err != nil {
+	if err := e.finish(); err != nil {
 		return err
 	}
 
@@ -203,17 +210,17 @@ func (e *Exporter) Orchestrate() error {
 // 2. Uploads file to cloud if necessary.
 // 3. Closes the local file descriptor.
 // 4. Removed the local file if necessary.
-func (e *Exporter) finish() (Stat, error) {
+func (e *Exporter) finish() error {
 	if !e.IsRunning() {
-		return e.GetStat(), ErrExporterNotRunning
+		return ErrExporterNotRunning
 	}
 
 	if e.IsAcceptingData() {
-		return e.GetStat(), ErrShouldNotAcceptData
+		return ErrShouldNotAcceptData
 	}
 
 	if err := e.SetRunning(false); err != nil {
-		return e.GetStat(), err
+		return err
 	}
 	e.Stat.RunningStatus = "Finished"
 
@@ -228,22 +235,22 @@ func (e *Exporter) finish() (Stat, error) {
 
 	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
 	if err := e.Stat.LocalFile.Close(); err != nil {
-		return e.GetStat(), err
+		return err
 	}
 
 	if e.params.Clean {
 		if _, err := os.Stat(e.Stat.LocalFile.Name()); !os.IsNotExist(err) {
 			err2 := os.Remove(e.Stat.LocalFile.Name())
 			if err2 != nil {
-				return e.GetStat(), err2
+				return err2
 			}
 		}
 	}
 
-	return e.GetStat(), nil
+	return nil
 }
 
-func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
+func (e *Exporter) UnblockedReceive(trace []byte) error {
 	if !e.IsAcceptingData() {
 		return ErrNotAcceptingData
 	}
@@ -252,11 +259,12 @@ func (e *Exporter) UnblockedReceive(trace []byte, doOnce func(func())) error {
 		e.logger.Debugw("UnblockedReceive:", "e.traceChan <- trace:", trace)
 		e.Stat.TraceCount++
 		e.Stat.TotalSize += int32(len(trace))
+		e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
 		// Stop export process if condition reached.
 		if e.reachedTraceCount() || e.reachedSizeLimit() ||
 			time.Since(e.Stat.StartTime).Round(0) >= e.params.Duration {
 			e.logger.Debugw("UnblockedReceive: called StopReceiving")
-			e.StopReceiving(doOnce)
+			e.StopReceiving()
 		}
 	default:
 		e.logger.Debugw("UnblockedReceive:", "blocked on chan; trace", trace)
@@ -358,6 +366,26 @@ func (e *Exporter) reachedSizeLimit() bool {
 		return false
 	}
 	return e.Stat.TotalSize >= e.params.SizeLim
+}
+
+func (s Stat) Public() any {
+	return struct {
+		StartTime  time.Time `json:"start_time"`
+		Runtime    string    `json:"runtime"`
+		TotalSize  int32     `json:"total_size"`
+		TraceCount int32     `json:"trace_count"`
+		LocalFile  string    `json:"file_name"`
+		Status     string    `json:"status"`
+		Error      error     `json:"error,omitempty"`
+	}{
+		s.StartTime,
+		s.RunningTime.String(),
+		s.TotalSize,
+		s.TraceCount,
+		s.LocalFile.Name(),
+		s.RunningStatus,
+		s.Err,
+	}
 }
 
 func createFile(t time.Time, n, s int32, d time.Duration, id string) (*os.File, error) {

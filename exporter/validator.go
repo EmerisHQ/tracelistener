@@ -48,7 +48,7 @@ func validateNumTrace(p *Params) error {
 }
 
 func validateDuration(p *Params) error {
-	if p.Duration < 1*time.Second || p.Duration > MaxDuration {
+	if p.Duration < 0 || p.Duration > MaxDuration {
 		return NewValidationError(fmt.Errorf("accepted duration 1s-24Hour received %v", p.Duration))
 	}
 	return nil

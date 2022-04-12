@@ -4,22 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/emerishq/tracelistener/tracelistener/config"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/emerishq/tracelistener/tracelistener/config"
 )
 
 func (e *Exporter) ListenAndServeHTTP(cfg *config.Config) {
-	handler := handler{
-		exporter: e,
-		doOnce:   nil, // Populated when startHandler is called.
-	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/start", handler.startHandler)
-	mux.HandleFunc("/stop", handler.stopHandler)
-	mux.HandleFunc("/Stat", handler.statHandler)
+	mux.HandleFunc("/start", e.startHandler)
+	mux.HandleFunc("/stop", e.stopHandler)
+	mux.HandleFunc("/stat", e.statHandler)
 
 	port := cfg.ExporterHTTPPort
 	if port == "" {
@@ -35,15 +32,10 @@ func (e *Exporter) ListenAndServeHTTP(cfg *config.Config) {
 	}
 }
 
-type handler struct {
-	exporter *Exporter
-	doOnce   func(func())
-}
-
 // startHandler listens on /start. Initializes the exporter with params from url
 // and starts exporter.StartReceiving. If another exporter is already running,
 // exporter.Init will return error.
-func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
+func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 	qp := r.URL.Query()
 	var numTraces int32
 	var sizeLim int32
@@ -90,7 +82,7 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 		// sufficiently handled when we call e.Init
 	}
 
-	if err := h.exporter.Init(params); err != nil {
+	if err := e.Init(params); err != nil {
 		var vErr ValidationError
 		if errors.As(err, &vErr) {
 			writeError(w, err, http.StatusBadRequest)
@@ -100,45 +92,60 @@ func (h *handler) startHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stat, doOnce, errCh := h.exporter.StartReceiving()
-	if err := <-errCh; err != nil {
-		writeError(w, err, http.StatusInternalServerError)
-	}
-	h.doOnce = doOnce
-	writeJson(w, stat, http.StatusOK)
+	errCh := e.StartReceiving()
+	go func() {
+		e.Stat.Err = <-errCh
+	}()
+
+	e.statHandler(w, r)
 }
 
-func (h *handler) stopHandler(w http.ResponseWriter, r *http.Request) {
+func (e *Exporter) stopHandler(w http.ResponseWriter, r *http.Request) {
 	qp := r.URL.Query()
 	var err error
 
 	c := qp.Get("clean")
 	if len(c) > 0 {
-		if h.exporter.params.Clean, err = validateMustBool(c); err != nil {
+		if e.params.Clean, err = validateMustBool(c); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
 	}
-	h.exporter.StopReceiving(h.doOnce)
-	if err != nil {
+	e.StopReceiving()
+	e.statHandler(w, r)
+}
+
+func (e *Exporter) statHandler(w http.ResponseWriter, _ *http.Request) {
+	if err := writeJson(w, e.GetStat(), http.StatusOK); err != nil {
+		e.logger.Errorw("StatHandler", "write json", e.GetStat(), "error", err)
 		writeError(w, err, http.StatusInternalServerError)
 	}
 }
 
-func (h *handler) statHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	writeJson(w, h.exporter.GetStat(), http.StatusOK)
+func writeJson(w http.ResponseWriter, stat Stat, code int) error {
+	writeContentType(w, []string{"application/json; charset=utf-8"})
+	w.WriteHeader(code)
+
+	if err := json.NewEncoder(w).Encode(stat.Public()); err != nil {
+		return err
+	}
+	return nil
 }
 
-func writeJson(w http.ResponseWriter, stat Stat, code int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	_ = json.NewEncoder(w).Encode(stat)
+func writeContentType(w http.ResponseWriter, value []string) {
+	header := w.Header()
+	if val := header["Content-Type"]; len(val) == 0 {
+		header["Content-Type"] = value
+	}
 }
 
 func writeError(w http.ResponseWriter, err error, code int) {
 	w.WriteHeader(code)
-	_, _ = w.Write([]byte(err.Error()))
+	msg := "nil"
+	if err != nil {
+		msg = err.Error()
+	}
+	_, _ = w.Write([]byte(msg))
 }
 
 func validateMustBool(p string) (bool, error) {

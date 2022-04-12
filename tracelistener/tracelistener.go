@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/emerishq/tracelistener/exporter"
 	"math"
 	"reflect"
 	"time"
+
+	"github.com/emerishq/tracelistener/exporter"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
@@ -299,7 +300,7 @@ func (tr *TraceWatcher) Watch(exporter *exporter.Exporter) {
 
 			// Feed data to exporter.
 			if exporter != nil && exporter.IsAcceptingData() {
-				if err := exporter.UnblockedReceive(lineBytes, nil); err != nil {
+				if err := exporter.UnblockedReceive(lineBytes); err != nil {
 					tr.Logger.Infow("exporter", "err receive trace", err)
 				}
 			}

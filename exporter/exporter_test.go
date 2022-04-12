@@ -26,17 +26,17 @@ func TestNew(t *testing.T) {
 	require.False(t, ex.IsRunning())
 	require.False(t, ex.IsAcceptingData())
 
-	_, doOnce, errCh := ex.StartReceiving()
+	errCh := ex.StartReceiving()
 	require.True(t, ex.IsRunning())
 	require.True(t, ex.IsAcceptingData())
 
 	// Only one running process allowed
-	_, _, errCh = ex.StartReceiving()
+	errCh = ex.StartReceiving()
 	require.ErrorIs(t, <-errCh, exporter.ErrExporterRunning)
 
 	// StopReceiving must be idempotent
 	for i := 0; i < 10; i++ {
-		ex.StopReceiving(doOnce)
+		ex.StopReceiving()
 	}
 
 	require.Eventually(t, func() bool {
@@ -55,13 +55,13 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 	err = ex.Init(&params)
 	require.NoError(t, err)
 
-	_, doOnce, errCh := ex.StartReceiving()
+	errCh := ex.StartReceiving()
 
 	records := [][]byte{[]byte("go is"), []byte("short but"), []byte("handle the error"), []byte("java is"), []byte("dark and"), []byte("full of terror")}
 
 	// After XXX records, no more processed.
 	for i, record := range records {
-		err = ex.UnblockedReceive(record, doOnce)
+		err = ex.UnblockedReceive(record)
 		if i < int(XXX) {
 			require.NoError(t, err)
 			continue
@@ -99,24 +99,24 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 	err = ex.Init(&params)
 	require.NoError(t, err)
 
-	_, doOnce, errCh := ex.StartReceiving()
+	errCh := ex.StartReceiving()
 
 	dataInserterDone := make(chan struct{})
 	dataInsertInterval := 300 * time.Millisecond
 	// Simulate: traces capture until stopped.
-	go func(t *testing.T, doOnce func(func()), selfDone chan struct{}, interval time.Duration) {
+	go func(t *testing.T, selfDone chan struct{}, interval time.Duration) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				err := ex.UnblockedReceive([]byte{66, 66, 66, 66}, doOnce) // Simulate trace capture
+				err := ex.UnblockedReceive([]byte{66, 66, 66, 66}) // Simulate trace capture
 				require.NoError(t, err)
 			case <-selfDone:
 				return
 			}
 		}
-	}(t, doOnce, dataInserterDone, dataInsertInterval)
+	}(t, dataInserterDone, dataInsertInterval)
 
 	// Ensure at least some data get accepted.
 	time.Sleep(3 * dataInsertInterval)
@@ -124,7 +124,7 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 	// 1. Simulate: no more data.
 	close(dataInserterDone)
 	// 2. User called stop.
-	ex.StopReceiving(doOnce)
+	ex.StopReceiving()
 	//_, err = ex.Stop(false, doOnce, false)
 	//require.NoError(t, err)
 	require.NoError(t, <-errCh)
@@ -158,18 +158,18 @@ func TestExporter_DurationExpired(t *testing.T) {
 	err = ex.Init(&params)
 	require.NoError(t, err)
 
-	_, doOnce, errCh := ex.StartReceiving()
+	errCh := ex.StartReceiving()
 
 	dataInserterDone := make(chan struct{})
 	dataInsertInterval := 200 * time.Millisecond
 	// Simulate: traces capture until stopped.
-	go func(t *testing.T, doOnce func(func()), selfDone chan struct{}, interval time.Duration) {
+	go func(t *testing.T, selfDone chan struct{}, interval time.Duration) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				err := ex.UnblockedReceive([]byte{33, 44, 55, 66}, doOnce)
+				err := ex.UnblockedReceive([]byte{33, 44, 55, 66})
 				require.Condition(t, func() bool {
 					if err == nil {
 						return true
@@ -180,7 +180,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 				return
 			}
 		}
-	}(t, doOnce, dataInserterDone, dataInsertInterval)
+	}(t, dataInserterDone, dataInsertInterval)
 
 	// Ensure deadline expired.
 	require.Eventually(t, func() bool {
