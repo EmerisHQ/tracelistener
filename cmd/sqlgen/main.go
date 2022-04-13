@@ -116,7 +116,7 @@ func (f Flags) Validate() error {
 
 func GetFlags() Flags {
 	configPath := flag.String("config", "", "path to config file (yaml)")
-	outputDir := flag.String("out", "", "path to a folder where will be generated into")
+	outputDir := flag.String("out", "./tracelistener/tables", "path to a folder where will be generated into (default ./tracelistener/tables)")
 	flag.Parse()
 
 	return Flags{

@@ -33,10 +33,9 @@ func (*unbondingDelegationsProcessor) Migrations() []string {
 			addHeightColumn(unbondingDelegationsTableOld),
 			addDeleteHeightColumn(unbondingDelegationsTableOld),
 		}
-	} else {
-		return []string{createUnbondingDelegationsTable, addHeightColumn(unbondingDelegationsTableOld),
-			addDeleteHeightColumn(unbondingDelegationsTableOld)}
 	}
+	return []string{createUnbondingDelegationsTable, addHeightColumn(unbondingDelegationsTableOld),
+		addDeleteHeightColumn(unbondingDelegationsTableOld)}
 }
 
 func (b *unbondingDelegationsProcessor) ModuleName() string {

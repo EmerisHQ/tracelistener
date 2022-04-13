@@ -55,7 +55,7 @@ func (t TableConfig) ColumnsDefinition() []string {
 		if c.Primary {
 			def += " PRIMARY KEY"
 		}
-		if !c.Primary && !c.Nullable {
+		if !c.Nullable {
 			def += " NOT NULL"
 		}
 		res = append(res, def)
