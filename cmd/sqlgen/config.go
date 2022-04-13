@@ -24,16 +24,26 @@ type TableConfig struct {
 func (t TableConfig) Validate() error {
 	var names map[string]bool
 	for _, c := range t.Columns {
-		if len(c.Name) == 0 {
-			return fmt.Errorf("column name cannot be empty")
+		if err := validateName(c.Name); err != nil {
+			return fmt.Errorf("validating column name %s: %w", c.Name, err)
 		}
 		if len(c.Type) == 0 {
 			return fmt.Errorf("column type cannot be empty")
 		}
 		if _, found := names[c.Name]; found {
-			return fmt.Errorf("duplicate table name %s", c.Name)
+			return fmt.Errorf("duplicate column name %s", c.Name)
+		}
+		if c.Primary && c.Nullable {
+			return fmt.Errorf("primary column %s cannot be nullable", c.Name)
 		}
 	}
+
+	for _, c := range t.UniqueColumns {
+		if _, found := names[c]; !found {
+			return fmt.Errorf("unique column %s not defined in the columns section", c)
+		}
+	}
+
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"text/template"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v2"
 )
 
@@ -83,8 +86,7 @@ func getStructName(tableName string) string {
 	sb := strings.Builder{}
 	words := strings.Split(tableName, "_")
 	for _, w := range words {
-		sb.WriteString(strings.ToUpper(w[0:1]))
-		sb.WriteString(w[1:])
+		sb.WriteString(cases.Title(language.English).String(w))
 	}
 	sb.WriteString(structSuffix)
 
@@ -103,6 +105,10 @@ type Flags struct {
 func (f Flags) Validate() error {
 	if len(f.ConfigPath) == 0 {
 		return fmt.Errorf("missing config file")
+	}
+
+	if _, err := os.Stat("/path/to/whatever"); errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("%s: file does not exist", f.ConfigPath)
 	}
 
 	if len(f.OutputDir) == 0 {
