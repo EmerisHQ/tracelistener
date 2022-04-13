@@ -50,25 +50,22 @@ func (b *unbondingDelegationsProcessor) SDKModuleName() tracelistener.SDKModuleN
 func (b *unbondingDelegationsProcessor) InsertStatement() string {
 	if useSQLGen {
 		return unbondingDelegationsTable.Insert()
-	} else {
-		return insertUnbondingDelegation
 	}
+	return insertUnbondingDelegation
 }
 
 func (b *unbondingDelegationsProcessor) UpsertStatement() string {
 	if useSQLGen {
 		return unbondingDelegationsTable.Upsert()
-	} else {
-		return upsertUnbondingDelegation
 	}
+	return upsertUnbondingDelegation
 }
 
 func (b *unbondingDelegationsProcessor) DeleteStatement() string {
 	if useSQLGen {
 		return unbondingDelegationsTable.Delete()
-	} else {
-		return deleteUnbondingDelegation
 	}
+	return deleteUnbondingDelegation
 }
 
 func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp {

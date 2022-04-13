@@ -36,6 +36,7 @@ func (t TableConfig) Validate() error {
 		if c.Primary && c.Nullable {
 			return fmt.Errorf("primary column %s cannot be nullable", c.Name)
 		}
+		names[c.Name] = true
 	}
 
 	for _, c := range t.UniqueColumns {
@@ -61,7 +62,7 @@ func (t TableConfig) ColumnsDefinition() []string {
 	}
 
 	if len(t.UniqueColumns) > 0 {
-		res = append(res, "UNIQUE ("+strings.Join(t.UniqueColumns, ",")+")")
+		res = append(res, "UNIQUE ("+strings.Join(t.UniqueColumns, ", ")+")")
 	}
 
 	return res

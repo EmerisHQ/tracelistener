@@ -28,9 +28,8 @@ type bankProcessor struct {
 func (*bankProcessor) Migrations() []string {
 	if useSQLGen {
 		return []string{balancesTable.CreateTable()}
-	} else {
-		return []string{createBalancesTable, addHeightColumn(balanceTableOld), addDeleteHeightColumn(balanceTableOld)}
 	}
+	return []string{createBalancesTable, addHeightColumn(balanceTableOld), addDeleteHeightColumn(balanceTableOld)}
 }
 
 func (b *bankProcessor) ModuleName() string {
@@ -40,17 +39,15 @@ func (b *bankProcessor) ModuleName() string {
 func (b *bankProcessor) UpsertStatement() string {
 	if useSQLGen {
 		return balancesTable.Upsert()
-	} else {
-		return upsertBalance
 	}
+	return upsertBalance
 }
 
 func (b *bankProcessor) InsertStatement() string {
 	if useSQLGen {
 		return balancesTable.Insert()
-	} else {
-		return insertBalance
 	}
+	return insertBalance
 }
 
 func (b *bankProcessor) DeleteStatement() string {

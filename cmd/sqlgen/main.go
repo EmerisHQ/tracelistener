@@ -32,15 +32,14 @@ func main() {
 	}
 
 	var yamlData YamlData
-	err = yaml.Unmarshal(configFile, &yamlData)
-	if err != nil {
+	if err := yaml.Unmarshal(configFile, &yamlData); err != nil {
 		panic(err)
 	}
 
 	t, err := template.New("template").
 		Funcs(template.FuncMap{
 			"Join": func(s []string) string {
-				return strings.Join(s, ",")
+				return strings.Join(s, ", ")
 			},
 			"JoinAnd": func(s []string) string {
 				return strings.Join(s, " AND ")
@@ -50,14 +49,12 @@ func main() {
 		panic(err)
 	}
 
-	err = os.MkdirAll(f.OutputDir, os.ModePerm)
-	if err != nil {
+	if err := os.MkdirAll(f.OutputDir, os.ModePerm); err != nil {
 		panic(err)
 	}
 
 	for _, table := range yamlData.Tables {
-		err := table.Validate()
-		if err != nil {
+		if err := table.Validate(); err != nil {
 			panic(err)
 		}
 
@@ -73,8 +70,7 @@ func main() {
 			Config:      table,
 		}
 
-		err = t.Execute(outFile, params)
-		if err != nil {
+		if err := t.Execute(outFile, params); err != nil {
 			panic(err)
 		}
 	}
@@ -107,7 +103,7 @@ func (f Flags) Validate() error {
 		return fmt.Errorf("missing config file")
 	}
 
-	if _, err := os.Stat("/path/to/whatever"); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(f.ConfigPath); errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("%s: file does not exist", f.ConfigPath)
 	}
 

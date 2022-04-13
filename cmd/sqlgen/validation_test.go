@@ -37,15 +37,25 @@ func Test_validateName(t *testing.T) {
 			name:     "namenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamenamename",
 			wantErr:  true,
 		},
+		{
+			testName: "non ascii",
+			name:     "ΩOmega",
+			wantErr:  false,
+		},
+		{
+			testName: "DBName.TableName",
+			name:     "tracelistener.validators",
+			wantErr:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			err := validateName(tt.name)
 			if tt.wantErr {
 				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+				return
 			}
+			require.NoError(t, err)
 		})
 	}
 }

@@ -27,9 +27,8 @@ type validatorsProcessor struct {
 func (*validatorsProcessor) Migrations() []string {
 	if useSQLGen {
 		return []string{validatorsTable.CreateTable()}
-	} else {
-		return []string{createValidatorsTable, addHeightColumn(validatorsTableOld), addDeleteHeightColumn(validatorsTableOld)}
 	}
+	return []string{createValidatorsTable, addHeightColumn(validatorsTableOld), addDeleteHeightColumn(validatorsTableOld)}
 }
 
 func (b *validatorsProcessor) ModuleName() string {
@@ -43,25 +42,22 @@ func (b *validatorsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 func (b *validatorsProcessor) InsertStatement() string {
 	if useSQLGen {
 		return validatorsTable.Insert()
-	} else {
-		return insertValidator
 	}
+	return insertValidator
 }
 
 func (b *validatorsProcessor) UpsertStatement() string {
 	if useSQLGen {
 		return validatorsTable.Upsert()
-	} else {
-		return upsertValidator
 	}
+	return upsertValidator
 }
 
 func (b *validatorsProcessor) DeleteStatement() string {
 	if useSQLGen {
 		return validatorsTable.Delete()
-	} else {
-		return deleteValidator
 	}
+	return deleteValidator
 }
 
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {
