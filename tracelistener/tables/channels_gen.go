@@ -19,24 +19,24 @@ func NewChannelsTable(tableName string) ChannelsTable {
 func (r ChannelsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY,height integer NOT NULL,delete_height integer,chain_name text NOT NULL,channel_id text NOT NULL,counter_channel_id text NOT NULL,port text NOT NULL,state integer NOT NULL,hops text[] NOT NULL,UNIQUE (chain_name,channel_id,port))
+		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, channel_id text NOT NULL, counter_channel_id text NOT NULL, port text NOT NULL, state integer NOT NULL, hops text[] NOT NULL, UNIQUE (chain_name, channel_id, port))
 	`, r.tableName)
 }
 
 func (r ChannelsTable) Insert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,channel_id,counter_channel_id,port,state,hops)
-		VALUES (:height,:chain_name,:channel_id,:counter_channel_id,:port,:state,:hops)
+		INSERT INTO %s (height, chain_name, channel_id, counter_channel_id, port, state, hops)
+		VALUES (:height, :chain_name, :channel_id, :counter_channel_id, :port, :state, :hops)
 	`, r.tableName)
 }
 
 func (r ChannelsTable) Upsert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,channel_id,counter_channel_id,port,state,hops)
-		VALUES (:height,:chain_name,:channel_id,:counter_channel_id,:port,:state,:hops)
-		ON CONFLICT (chain_name,channel_id,port)
+		INSERT INTO %s (height, chain_name, channel_id, counter_channel_id, port, state, hops)
+		VALUES (:height, :chain_name, :channel_id, :counter_channel_id, :port, :state, :hops)
+		ON CONFLICT (chain_name, channel_id, port)
 		DO UPDATE
-		SET height = EXCLUDED.height,chain_name = EXCLUDED.chain_name,channel_id = EXCLUDED.channel_id,counter_channel_id = EXCLUDED.counter_channel_id,port = EXCLUDED.port,state = EXCLUDED.state,hops = EXCLUDED.hops
+		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, channel_id = EXCLUDED.channel_id, counter_channel_id = EXCLUDED.counter_channel_id, port = EXCLUDED.port, state = EXCLUDED.state, hops = EXCLUDED.hops
 	`, r.tableName)
 }
 

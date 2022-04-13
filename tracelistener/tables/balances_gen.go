@@ -19,24 +19,24 @@ func NewBalancesTable(tableName string) BalancesTable {
 func (r BalancesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY,height integer NOT NULL,delete_height integer,chain_name text NOT NULL,address text NOT NULL,amount text NOT NULL,denom text NOT NULL,UNIQUE (chain_name,address,denom))
+		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, address text NOT NULL, amount text NOT NULL, denom text NOT NULL, UNIQUE (chain_name, address, denom))
 	`, r.tableName)
 }
 
 func (r BalancesTable) Insert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,address,amount,denom)
-		VALUES (:height,:chain_name,:address,:amount,:denom)
+		INSERT INTO %s (height, chain_name, address, amount, denom)
+		VALUES (:height, :chain_name, :address, :amount, :denom)
 	`, r.tableName)
 }
 
 func (r BalancesTable) Upsert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,address,amount,denom)
-		VALUES (:height,:chain_name,:address,:amount,:denom)
-		ON CONFLICT (chain_name,address,denom)
+		INSERT INTO %s (height, chain_name, address, amount, denom)
+		VALUES (:height, :chain_name, :address, :amount, :denom)
+		ON CONFLICT (chain_name, address, denom)
 		DO UPDATE
-		SET height = EXCLUDED.height,chain_name = EXCLUDED.chain_name,address = EXCLUDED.address,amount = EXCLUDED.amount,denom = EXCLUDED.denom
+		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, address = EXCLUDED.address, amount = EXCLUDED.amount, denom = EXCLUDED.denom
 	`, r.tableName)
 }
 

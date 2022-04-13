@@ -19,24 +19,24 @@ func NewDenomTracesTable(tableName string) DenomTracesTable {
 func (r DenomTracesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY,height integer NOT NULL,delete_height integer,chain_name text NOT NULL,path text NOT NULL,base_denom text NOT NULL,hash text NOT NULL,UNIQUE (chain_name,hash))
+		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, path text NOT NULL, base_denom text NOT NULL, hash text NOT NULL, UNIQUE (chain_name, hash))
 	`, r.tableName)
 }
 
 func (r DenomTracesTable) Insert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,path,base_denom,hash)
-		VALUES (:height,:chain_name,:path,:base_denom,:hash)
+		INSERT INTO %s (height, chain_name, path, base_denom, hash)
+		VALUES (:height, :chain_name, :path, :base_denom, :hash)
 	`, r.tableName)
 }
 
 func (r DenomTracesTable) Upsert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,path,base_denom,hash)
-		VALUES (:height,:chain_name,:path,:base_denom,:hash)
-		ON CONFLICT (chain_name,hash)
+		INSERT INTO %s (height, chain_name, path, base_denom, hash)
+		VALUES (:height, :chain_name, :path, :base_denom, :hash)
+		ON CONFLICT (chain_name, hash)
 		DO UPDATE
-		SET height = EXCLUDED.height,chain_name = EXCLUDED.chain_name,path = EXCLUDED.path,base_denom = EXCLUDED.base_denom,hash = EXCLUDED.hash
+		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, path = EXCLUDED.path, base_denom = EXCLUDED.base_denom, hash = EXCLUDED.hash
 	`, r.tableName)
 }
 

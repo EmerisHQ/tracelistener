@@ -19,24 +19,24 @@ func NewDelegationsTable(tableName string) DelegationsTable {
 func (r DelegationsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY,height integer NOT NULL,delete_height integer,chain_name text NOT NULL,delegator_address text NOT NULL,validator_address text NOT NULL,amount text NOT NULL,UNIQUE (chain_name,delegator_address,validator_address))
+		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, delegator_address text NOT NULL, validator_address text NOT NULL, amount text NOT NULL, UNIQUE (chain_name, delegator_address, validator_address))
 	`, r.tableName)
 }
 
 func (r DelegationsTable) Insert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,delegator_address,validator_address,amount)
-		VALUES (:height,:chain_name,:delegator_address,:validator_address,:amount)
+		INSERT INTO %s (height, chain_name, delegator_address, validator_address, amount)
+		VALUES (:height, :chain_name, :delegator_address, :validator_address, :amount)
 	`, r.tableName)
 }
 
 func (r DelegationsTable) Upsert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,delegator_address,validator_address,amount)
-		VALUES (:height,:chain_name,:delegator_address,:validator_address,:amount)
-		ON CONFLICT (chain_name,delegator_address,validator_address)
+		INSERT INTO %s (height, chain_name, delegator_address, validator_address, amount)
+		VALUES (:height, :chain_name, :delegator_address, :validator_address, :amount)
+		ON CONFLICT (chain_name, delegator_address, validator_address)
 		DO UPDATE
-		SET height = EXCLUDED.height,chain_name = EXCLUDED.chain_name,delegator_address = EXCLUDED.delegator_address,validator_address = EXCLUDED.validator_address,amount = EXCLUDED.amount
+		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, delegator_address = EXCLUDED.delegator_address, validator_address = EXCLUDED.validator_address, amount = EXCLUDED.amount
 	`, r.tableName)
 }
 

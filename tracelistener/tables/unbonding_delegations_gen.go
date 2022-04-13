@@ -19,24 +19,24 @@ func NewUnbondingDelegationsTable(tableName string) UnbondingDelegationsTable {
 func (r UnbondingDelegationsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY,height integer NOT NULL,delete_height integer,chain_name text NOT NULL,delegator_address text NOT NULL,validator_address text NOT NULL,entries jsonb NOT NULL,UNIQUE (chain_name,delegator_address,validator_address))
+		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, delegator_address text NOT NULL, validator_address text NOT NULL, entries jsonb NOT NULL, UNIQUE (chain_name, delegator_address, validator_address))
 	`, r.tableName)
 }
 
 func (r UnbondingDelegationsTable) Insert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,delegator_address,validator_address,entries)
-		VALUES (:height,:chain_name,:delegator_address,:validator_address,:entries)
+		INSERT INTO %s (height, chain_name, delegator_address, validator_address, entries)
+		VALUES (:height, :chain_name, :delegator_address, :validator_address, :entries)
 	`, r.tableName)
 }
 
 func (r UnbondingDelegationsTable) Upsert() string {
 	return fmt.Sprintf(`
-		INSERT INTO %s (height,chain_name,delegator_address,validator_address,entries)
-		VALUES (:height,:chain_name,:delegator_address,:validator_address,:entries)
-		ON CONFLICT (chain_name,delegator_address,validator_address)
+		INSERT INTO %s (height, chain_name, delegator_address, validator_address, entries)
+		VALUES (:height, :chain_name, :delegator_address, :validator_address, :entries)
+		ON CONFLICT (chain_name, delegator_address, validator_address)
 		DO UPDATE
-		SET height = EXCLUDED.height,chain_name = EXCLUDED.chain_name,delegator_address = EXCLUDED.delegator_address,validator_address = EXCLUDED.validator_address,entries = EXCLUDED.entries
+		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, delegator_address = EXCLUDED.delegator_address, validator_address = EXCLUDED.validator_address, entries = EXCLUDED.entries
 	`, r.tableName)
 }
 
