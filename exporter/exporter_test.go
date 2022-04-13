@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 
 	// StopReceiving must be idempotent
 	for i := 0; i < 10; i++ {
-		ex.StopReceiving()
+		require.NoError(t, ex.StopReceiving())
 	}
 
 	require.Eventually(t, func() bool {
@@ -124,7 +124,7 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 	// 1. Simulate: no more data.
 	close(dataInserterDone)
 	// 2. User called stop.
-	ex.StopReceiving()
+	require.NoError(t, ex.StopReceiving())
 	//_, err = ex.Stop(false, doOnce, false)
 	//require.NoError(t, err)
 	require.NoError(t, <-errCh)

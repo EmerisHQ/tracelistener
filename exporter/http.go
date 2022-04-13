@@ -111,13 +111,21 @@ func (e *Exporter) stopHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	e.StopReceiving()
+	if err := e.StopReceiving(); err != nil {
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
 	e.statHandler(w, r)
 }
 
 func (e *Exporter) statHandler(w http.ResponseWriter, _ *http.Request) {
-	if err := writeJson(w, e.GetStat(), http.StatusOK); err != nil {
-		e.logger.Errorw("StatHandler", "write json", e.GetStat(), "error", err)
+	stat, err := e.GetStat()
+	if err != nil {
+		writeError(w, err, http.StatusInternalServerError)
+		return
+	}
+	if err := writeJson(w, stat, http.StatusOK); err != nil {
+		e.logger.Errorw("StatHandler", "write json", stat, "error", err)
 		writeError(w, err, http.StatusInternalServerError)
 	}
 }
@@ -143,7 +151,7 @@ func writeError(w http.ResponseWriter, err error, code int) {
 	w.WriteHeader(code)
 	msg := "nil"
 	if err != nil {
-		msg = err.Error()
+		msg = "Error: " + err.Error()
 	}
 	_, _ = w.Write([]byte(msg))
 }

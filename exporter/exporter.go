@@ -15,14 +15,13 @@ import (
 type (
 	// Stat used to report progress to the caller.
 	Stat struct {
-		StartTime   time.Time     `json:"start_time"`
-		RunningTime time.Duration `json:"running_time"`
-		TotalSize   int32         `json:"total_size"`
-		TraceCount  int32         `json:"trace_count"`
-		// Full name in pod.
-		LocalFile     *os.File `json:"local_file"`
-		RunningStatus string   `json:"running_status"`
-		Err           error    `json:"error,omitempty"`
+		StartTime     time.Time     `json:"start_time"`
+		RunningTime   time.Duration `json:"running_time"`
+		TotalSize     int32         `json:"total_size"`
+		TraceCount    int32         `json:"trace_count"`
+		LocalFile     *os.File      `json:"local_file"`
+		RunningStatus string        `json:"running_status"`
+		Err           error         `json:"error,omitempty"`
 	}
 
 	// Params represents the acceptable http request params.
@@ -52,7 +51,7 @@ type (
 
 var (
 	// ErrExporterRunning is used when we try to run the exporter, but another exporting is underway.
-	ErrExporterRunning = errors.New("exporter: running")
+	ErrExporterRunning = errors.New("exporter: already running")
 	// ErrExporterNotRunning is used when we try to stop an exporter, but there is no running exporting task.
 	ErrExporterNotRunning = errors.New("exporter: not running")
 	// ErrNotAcceptingData is used when exporter is running but, not receiving data anymore. Usually used
@@ -187,12 +186,16 @@ func (e *Exporter) StartReceiving() chan error {
 // StopReceiving is idempotent, it can be called multiple times. It's used in
 // 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
 // 2. When user calls stop from rest endpoint.
-func (e *Exporter) StopReceiving() {
+func (e *Exporter) StopReceiving() error {
+	if e.doOnce == nil {
+		return ErrExporterNotRunning
+	}
 	e.doOnce(func() {
 		close(e.traceChan)
 		close(e.doneChan)
 		e.Stat.RunningStatus = "Exporter stopped receiving traces, Finishing remaining tasks"
 	})
+	return nil
 }
 
 func (e *Exporter) Orchestrate() error {
@@ -267,7 +270,9 @@ func (e *Exporter) UnblockedReceive(trace []byte) error {
 		if e.reachedTraceCount() || e.reachedSizeLimit() ||
 			time.Since(e.Stat.StartTime).Round(0) >= e.params.Duration {
 			e.logger.Debugw("UnblockedReceive: called StopReceiving")
-			e.StopReceiving()
+			if err := e.StopReceiving(); err != nil {
+				return err
+			}
 		}
 	default:
 		e.logger.Debugw("UnblockedReceive:", "blocked on chan; trace", trace)
@@ -353,8 +358,11 @@ func (e *Exporter) GetDoneChan() (chan struct{}, error) {
 	return e.doneChan, nil
 }
 
-func (e *Exporter) GetStat() Stat {
-	return *e.Stat
+func (e *Exporter) GetStat() (Stat, error) {
+	if e.Stat == nil {
+		return Stat{}, ErrExporterNotRunning
+	}
+	return *e.Stat, nil
 }
 
 func (e *Exporter) reachedTraceCount() bool {
@@ -375,7 +383,7 @@ func (s Stat) Public() any {
 	return struct {
 		StartTime  time.Time `json:"start_time"`
 		Runtime    string    `json:"runtime"`
-		TotalSize  int32     `json:"total_size"`
+		TotalSize  string    `json:"total_size"`
 		TraceCount int32     `json:"trace_count"`
 		LocalFile  string    `json:"file_name"`
 		Status     string    `json:"status"`
@@ -383,7 +391,7 @@ func (s Stat) Public() any {
 	}{
 		s.StartTime,
 		s.RunningTime.String(),
-		s.TotalSize,
+		fmt.Sprintf("%0.8f MB", float32(s.TotalSize)/1000000.0),
 		s.TraceCount,
 		s.LocalFile.Name(),
 		s.RunningStatus,
