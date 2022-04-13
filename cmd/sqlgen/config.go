@@ -22,7 +22,7 @@ type TableConfig struct {
 }
 
 func (t TableConfig) Validate() error {
-	var names map[string]bool
+	names := make(map[string]bool)
 	for _, c := range t.Columns {
 		if err := validateName(c.Name); err != nil {
 			return fmt.Errorf("validating column name %s: %w", c.Name, err)
