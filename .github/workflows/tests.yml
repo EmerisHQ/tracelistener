@@ -2,7 +2,7 @@ name: Tests
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
 
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
