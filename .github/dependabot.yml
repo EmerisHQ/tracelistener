@@ -23,3 +23,4 @@ updates:
       - dependency-name: "github.com/tendermint/*"
       - dependency-name: "github.com/gravity-devs/*"
       - dependency-name: "github.com/allinbits/*"
+      - dependency-name: "github.com/emerishq/*"
