@@ -8,8 +8,11 @@ import (
 
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 	"go.uber.org/zap"
 )
+
+var denomTracesTable = tables.NewDenomTracesTable("tracelistener.denom_traces")
 
 type ibcDenomTracesProcessor struct {
 	l                *zap.SugaredLogger
@@ -18,7 +21,10 @@ type ibcDenomTracesProcessor struct {
 }
 
 func (*ibcDenomTracesProcessor) Migrations() []string {
-	return []string{createDenomTracesTable, addHeightColumn(denomTracesTable), addDeleteHeightColumn(denomTracesTable)}
+	if useSQLGen {
+		return []string{denomTracesTable.CreateTable()}
+	}
+	return []string{createDenomTracesTable, addHeightColumn(denomTracesTableOld), addDeleteHeightColumn(denomTracesTableOld)}
 }
 
 func (b *ibcDenomTracesProcessor) ModuleName() string {
@@ -30,10 +36,16 @@ func (b *ibcDenomTracesProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *ibcDenomTracesProcessor) UpsertStatement() string {
+	if useSQLGen {
+		return denomTracesTable.Upsert()
+	}
 	return upsertDenomTrace
 }
 
 func (b *ibcDenomTracesProcessor) InsertStatement() string {
+	if useSQLGen {
+		return denomTracesTable.Insert()
+	}
 	return insertDenomTrace
 }
 
