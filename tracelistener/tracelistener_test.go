@@ -1,10 +1,16 @@
 package tracelistener_test
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/emerishq/tracelistener/exporter"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
@@ -573,4 +579,134 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 
 		require.NoError(t, insertErr)
 	}
+}
+
+func TestTracelistener_Exporter_invalidParams(t *testing.T) {
+	op := `{"operation":"write","key":"aWJjL2Z3ZC8weGMwMDA0ZThkMzg=","value":"cG9ydHMvdHJhbnNmZXI=","metadata":null}`
+	tests := []struct {
+		name       string
+		data       string
+		params     string
+		getRespMsg string
+	}{
+		{
+			"no param: returns validation error",
+			op,
+			"",
+			"invalid param combination",
+		},
+		{
+			"D invalid param: exceeds the range",
+			op,
+			"?D=30h",
+			fmt.Sprintf("validation error: accepted duration 1s-%s received %s", exporter.MaxDuration, (time.Hour * 30).String()),
+		},
+		{
+			"D invalid param: below the range",
+			op,
+			"?D=-30h",
+			fmt.Sprintf("validation error: accepted duration 1s-%s received %s", exporter.MaxDuration, (-time.Hour * 30).String()),
+		},
+		{
+			"N invalid param: malformed, missing suffix `N`",
+			op,
+			fmt.Sprintf("?N=%d", exporter.MaxTraceCount+1),
+			"invalid query param N, want format 20N got " + fmt.Sprint(exporter.MaxTraceCount+1),
+		},
+		{
+			"N invalid param: exceeds the range",
+			op,
+			fmt.Sprintf("?N=%dN", exporter.MaxTraceCount+1),
+			"validation error: accepted trace count 1-1000000 received " + fmt.Sprint(exporter.MaxTraceCount+1),
+		},
+		{
+			"N invalid param: below the range",
+			op,
+			fmt.Sprintf("?N=%dN", -1),
+			"validation error: accepted trace count 1-1000000 received -1",
+		},
+		{
+			"M invalid param: malformed, missing suffix `MB`",
+			op,
+			fmt.Sprintf("?M=%d", exporter.MaxSizeLim),
+			"invalid query param M, want format 20MB got " + fmt.Sprint(exporter.MaxSizeLim),
+		},
+		{
+			"M invalid param: exceeds the range",
+			op,
+			fmt.Sprintf("?M=%dMB", exporter.MaxSizeLim+1),
+			fmt.Sprintf("validation error: accepted record file size 1-%dMB received %d", exporter.MaxSizeLim, exporter.MaxSizeLim+1),
+		},
+		{
+			"M invalid param: below the range",
+			op,
+			fmt.Sprintf("?M=%dMB", -1),
+			fmt.Sprintf("validation error: accepted record file size 1-%dMB received %d", exporter.MaxSizeLim, -1),
+		},
+		{
+			"invalid param xxxx: returns validation error",
+			op,
+			"?N=10N&xxxx=yyyy",
+			"validation error: unknown param xxxx",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := os.CreateTemp("", "test_data")
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				_ = os.Remove(f.Name())
+			})
+
+			dataChan := make(chan tracelistener.TraceOperation)
+			errChan := make(chan error)
+			l, _ := zap.NewDevelopment()
+			tw := tracelistener.TraceWatcher{
+				DataSourcePath: f.Name(),
+				WatchedOps:     []tracelistener.Operation{},
+				DataChan:       dataChan,
+				ErrorChan:      errChan,
+				Logger:         l.Sugar(),
+			}
+
+			p, err := getFreePort(t)
+			require.NoError(t, err)
+			exp, err := exporter.New(exporter.WithLogger(l.Sugar()))
+			require.NoError(t, err)
+			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", p))
+			go tw.Watch(exp)
+
+			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", p, tt.params))
+			by, err := ioutil.ReadAll(r.Body)
+			require.NoError(t, err)
+			require.NoError(t, r.Body.Close())
+			require.Contains(t, string(by), tt.getRespMsg)
+
+			r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", p))
+			require.NoError(t, err)
+			by, err = ioutil.ReadAll(r.Body)
+			require.Contains(t, string(by), exporter.ErrExporterNotRunning.Error())
+			require.NoError(t, r.Body.Close())
+
+			n, err := f.Write([]byte(tt.data))
+			require.NoError(t, err)
+			require.Equal(t, len(tt.data), n)
+		})
+	}
+}
+
+func getFreePort(t *testing.T) (int, error) {
+	t.Helper()
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

@@ -121,7 +121,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	go traceExporter.ListenAndServeHTTP(cfg)
+	go traceExporter.ListenAndServeHTTP(cfg.ExporterHTTPPort)
 
 	go watcher.Watch(traceExporter)
 

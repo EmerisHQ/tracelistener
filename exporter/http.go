@@ -8,20 +8,21 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/emerishq/tracelistener/tracelistener/config"
 )
 
-func (e *Exporter) ListenAndServeHTTP(cfg *config.Config) {
+func (e *Exporter) ListenAndServeHTTP(port string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/start", e.startHandler)
 	mux.HandleFunc("/stop", e.stopHandler)
 	mux.HandleFunc("/stat", e.statHandler)
 
-	port := cfg.ExporterHTTPPort
 	if port == "" {
 		port = ":8111"
 	}
+	if !strings.HasPrefix(port, ":") {
+		port = fmt.Sprintf(":%s", port)
+	}
+
 	if err := (&http.Server{
 		Addr:         port,
 		Handler:      mux,
@@ -42,6 +43,14 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 	var duration time.Duration
 	var persist bool
 	var err error
+
+	validParams := map[string]bool{"N": true, "M": true, "P": true, "D": true}
+	for p := range qp {
+		if _, ok := validParams[p]; !ok {
+			writeError(w, fmt.Errorf("validation error: unknown param %s", p), http.StatusBadRequest)
+			return
+		}
+	}
 
 	n := qp.Get("N")
 	if len(n) > 0 {

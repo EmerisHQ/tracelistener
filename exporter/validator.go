@@ -35,21 +35,21 @@ func runParamValidators(p *Params, fns ...paramValFunc) error {
 
 func validateSizeLim(p *Params) error {
 	if p.SizeLim < 0 || p.SizeLim >= MaxSizeLim {
-		return NewValidationError(fmt.Errorf("accepted record file size 1-100MB received %d", p.SizeLim))
+		return NewValidationError(fmt.Errorf("accepted record file size 1-%dMB received %d", MaxSizeLim, p.SizeLim))
 	}
 	return nil
 }
 
 func validateNumTrace(p *Params) error {
 	if p.NumTraces < 0 || p.NumTraces > MaxTraceCount {
-		return NewValidationError(fmt.Errorf("accepted record count 1-1000000 received %d", p.NumTraces))
+		return NewValidationError(fmt.Errorf("accepted trace count 1-%d received %d", MaxTraceCount, p.NumTraces))
 	}
 	return nil
 }
 
 func validateDuration(p *Params) error {
 	if p.Duration < 0 || p.Duration > MaxDuration {
-		return NewValidationError(fmt.Errorf("accepted duration 1s-24Hour received %v", p.Duration))
+		return NewValidationError(fmt.Errorf("accepted duration 1s-%s received %v", MaxDuration, p.Duration))
 	}
 	return nil
 }
