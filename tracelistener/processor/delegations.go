@@ -5,11 +5,14 @@ import (
 	"sync"
 
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 	"go.uber.org/zap"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 )
+
+var delegationsTable = tables.NewDelegationsTable("tracelistener.delegations")
 
 type delegationCacheEntry struct {
 	delegator string
@@ -24,7 +27,10 @@ type delegationsProcessor struct {
 }
 
 func (*delegationsProcessor) Migrations() []string {
-	return []string{createDelegationsTable, addHeightColumn(delegationsTable), addDeleteHeightColumn(delegationsTable)}
+	if useSQLGen {
+		return []string{delegationsTable.CreateTable(), addHeightColumn(delegationsTableOld), addDeleteHeightColumn(delegationsTableOld)}
+	}
+	return []string{createDelegationsTable, addHeightColumn(delegationsTableOld), addDeleteHeightColumn(delegationsTableOld)}
 }
 
 func (b *delegationsProcessor) ModuleName() string {
@@ -36,14 +42,23 @@ func (b *delegationsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *delegationsProcessor) UpsertStatement() string {
+	if useSQLGen {
+		return delegationsTable.Upsert()
+	}
 	return upsertDelegation
 }
 
 func (b *delegationsProcessor) InsertStatement() string {
+	if useSQLGen {
+		return delegationsTable.Insert()
+	}
 	return insertDelegation
 }
 
 func (b *delegationsProcessor) DeleteStatement() string {
+	if useSQLGen {
+		return delegationsTable.Delete()
+	}
 	return deleteDelegation
 }
 

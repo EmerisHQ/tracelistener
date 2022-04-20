@@ -5,11 +5,14 @@ import (
 	"sync"
 
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
+	"github.com/emerishq/tracelistener/tracelistener/tables"
 	"go.uber.org/zap"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 )
+
+var validatorsTable = tables.NewValidatorsTable("tracelistener.validators")
 
 type validatorCacheEntry struct {
 	operator string
@@ -22,7 +25,10 @@ type validatorsProcessor struct {
 }
 
 func (*validatorsProcessor) Migrations() []string {
-	return []string{createValidatorsTable, addHeightColumn(validatorsTable), addDeleteHeightColumn(validatorsTable)}
+	if useSQLGen {
+		return []string{validatorsTable.CreateTable()}
+	}
+	return []string{createValidatorsTable, addHeightColumn(validatorsTableOld), addDeleteHeightColumn(validatorsTableOld)}
 }
 
 func (b *validatorsProcessor) ModuleName() string {
@@ -34,14 +40,23 @@ func (b *validatorsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *validatorsProcessor) InsertStatement() string {
+	if useSQLGen {
+		return validatorsTable.Insert()
+	}
 	return insertValidator
 }
 
 func (b *validatorsProcessor) UpsertStatement() string {
+	if useSQLGen {
+		return validatorsTable.Upsert()
+	}
 	return upsertValidator
 }
 
 func (b *validatorsProcessor) DeleteStatement() string {
+	if useSQLGen {
+		return validatorsTable.Delete()
+	}
 	return deleteValidator
 }
 

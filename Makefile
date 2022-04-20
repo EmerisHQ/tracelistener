@@ -74,3 +74,7 @@ generate-test-data:
 	./tracelistener/scripts/generate_txs.sh
 	./tracelistener/scripts/relayer_script.sh
 	./tracelistener/scripts/stop_daemons.sh
+
+sqlgen:
+	rm -rf ./tracelistener/tables
+	go run ./cmd/sqlgen/... --config sqlmodels.yaml --out ./tracelistener/tables
