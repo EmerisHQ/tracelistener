@@ -94,7 +94,7 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	errCh := e.StartReceiving()
 	go func() {
-		e.Stat.Err = <-errCh
+		e.Stat.Errors = append(e.Stat.Errors, <-errCh)
 	}()
 
 	e.statHandler(w, r)
@@ -124,13 +124,13 @@ func (e *Exporter) statHandler(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, err, http.StatusInternalServerError)
 		return
 	}
-	if err := writeJson(w, stat, http.StatusOK); err != nil {
+	if err := writeStat(w, stat, http.StatusOK); err != nil {
 		e.logger.Errorw("StatHandler", "write json", stat, "error", err)
 		writeError(w, err, http.StatusInternalServerError)
 	}
 }
 
-func writeJson(w http.ResponseWriter, stat Stat, code int) error {
+func writeStat(w http.ResponseWriter, stat Stat, code int) error {
 	writeContentType(w, []string{"application/json; charset=utf-8"})
 	w.WriteHeader(code)
 
@@ -159,7 +159,7 @@ func writeError(w http.ResponseWriter, err error, code int) {
 func validateMustBool(p string) (bool, error) {
 	persist, err := strconv.ParseBool(p)
 	if err != nil {
-		return false, fmt.Errorf("invalid query param P, want either t, true, True, f, false, False, got %s", p)
+		return false, fmt.Errorf("invalid query param, want either t, true, True, f, false, False, got %s", p)
 	}
 	return persist, nil
 }

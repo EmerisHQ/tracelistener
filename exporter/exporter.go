@@ -3,6 +3,7 @@ package exporter
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -21,7 +22,7 @@ type (
 		TraceCount    int32         `json:"trace_count"`
 		LocalFile     *os.File      `json:"local_file"`
 		RunningStatus string        `json:"running_status"`
-		Err           error         `json:"error,omitempty"`
+		Errors        []error       `json:"errors,omitempty"`
 	}
 
 	// Params represents the acceptable http request params.
@@ -64,7 +65,7 @@ var (
 
 const (
 	MaxSizeLim    = 1024
-	MaxTraceCount = 1000000
+	MaxTraceCount = 1_000_000
 	MaxDuration   = 24 * time.Hour
 )
 
@@ -92,8 +93,8 @@ func New(opts ...Option) (*Exporter, error) {
 	return e, nil
 }
 
-// Init takes a params as input, then
-// 1. Validate the params. Returns ValidationError if failed.
+// Init takes a Params as input, then
+// 1. Validate the Params. Returns ValidationError if failed.
 // 2. Creates the local file to hold the traces
 // 3. Updates the Exporter in place
 func (e *Exporter) Init(params *Params) error {
@@ -138,15 +139,15 @@ func (e *Exporter) Init(params *Params) error {
 		TraceCount:    0,
 		LocalFile:     localFile,
 		RunningStatus: "Init",
-		Err:           nil,
+		Errors:        make([]error, 0),
 	}
 
 	if e.params.NumTraces == 0 {
 		e.params.NumTraces = MaxTraceCount
 	}
-	e.params.SizeLim *= 100_000_0 // Convert to byte
+	e.params.SizeLim *= 1_000_000 // Convert to byte
 	if e.params.SizeLim == 0 {
-		e.params.SizeLim = MaxSizeLim * 100_000_0 // 1024 MB converted to bytes
+		e.params.SizeLim = MaxSizeLim * 1_000_000 // 1024 MB converted to bytes
 	}
 	if e.params.Duration == 0 {
 		e.params.Duration = MaxDuration
@@ -171,7 +172,7 @@ func (e *Exporter) StartReceiving() chan error {
 		errChan <- err
 		return errChan
 	}
-	e.Stat.RunningStatus = "Receiving"
+	e.Stat.RunningStatus = "Receiving traces"
 
 	e.traceChan = make(chan []byte, e.params.NumTraces)
 	e.doneChan = make(chan struct{})
@@ -193,7 +194,7 @@ func (e *Exporter) StopReceiving() error {
 	e.doOnce(func() {
 		close(e.traceChan)
 		close(e.doneChan)
-		e.Stat.RunningStatus = "Exporter stopped receiving traces, Finishing remaining tasks"
+		e.Stat.RunningStatus = "Stopped receiving traces, processing remaining traces"
 	})
 	return nil
 }
@@ -241,10 +242,11 @@ func (e *Exporter) finish() error {
 	}
 
 	if e.params.Clean {
-		if _, err := os.Stat(e.Stat.LocalFile.Name()); !os.IsNotExist(err) {
-			err2 := os.Remove(e.Stat.LocalFile.Name())
-			if err2 != nil {
-				return err2
+		if _, err := os.Stat(e.Stat.LocalFile.Name()); !errors.Is(err, fs.ErrNotExist) {
+			if err2 := os.Remove(e.Stat.LocalFile.Name()); err2 != nil {
+				e.logger.Errorw("finish: could not remove",
+					"file", e.Stat.LocalFile.Name(),
+					"error", err2.Error())
 			}
 		}
 	}
@@ -262,10 +264,8 @@ func (e *Exporter) UnblockedReceive(trace []byte) error {
 	}
 	select {
 	case e.traceChan <- trace:
-		e.logger.Debugw("UnblockedReceive:", "e.traceChan <- trace:", trace)
 		e.Stat.TraceCount++
 		e.Stat.TotalSize += int32(len(trace))
-		e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
 		// Stop export process if condition reached.
 		if e.reachedTraceCount() || e.reachedSizeLimit() ||
 			time.Since(e.Stat.StartTime).Round(0) >= e.params.Duration {
@@ -287,24 +287,20 @@ func (e *Exporter) HandleTrace() error {
 		case <-e.doneChan:
 			// Drain the traceChan.
 			for r := range e.traceChan {
-				e.logger.Debugw("HandleTrace:", "draining: r", r)
-				n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...))
-				if err != nil {
+				if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
+					e.logger.Debugw("HandleTrace: failed to write", "size", n, "bytes", r)
 					return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 				}
-				e.logger.Debugw("HandleTrace:", "Write size", n, "bytes", r)
 			}
 			return nil
 		case r, ok := <-e.traceChan:
-			e.logger.Debugw("HandleTrace:", "from <-e.traceChan", r, "ok", ok)
 			if !ok {
 				return nil
 			}
-			n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...))
-			if err != nil {
+			if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
+				e.logger.Debugw("HandleTrace: failed to write", "size", n, "bytes", r)
 				return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 			}
-			e.logger.Debugw("HandleTrace:", "Wrote size", n, "bytes", r)
 		}
 	}
 }
@@ -362,6 +358,7 @@ func (e *Exporter) GetStat() (Stat, error) {
 	if e.Stat == nil {
 		return Stat{}, ErrExporterNotRunning
 	}
+	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
 	return *e.Stat, nil
 }
 
@@ -380,6 +377,14 @@ func (e *Exporter) reachedSizeLimit() bool {
 }
 
 func (s Stat) Public() any {
+	errMsg := make([]string, 0, len(s.Errors))
+	for _, e := range s.Errors {
+		if e == nil {
+			errMsg = append(errMsg, "no error")
+			continue
+		}
+		errMsg = append(errMsg, e.Error())
+	}
 	return struct {
 		StartTime  time.Time `json:"start_time"`
 		Runtime    string    `json:"runtime"`
@@ -387,15 +392,15 @@ func (s Stat) Public() any {
 		TraceCount int32     `json:"trace_count"`
 		LocalFile  string    `json:"file_name"`
 		Status     string    `json:"status"`
-		Error      error     `json:"error,omitempty"`
+		Errors     []string  `json:"errors,omitempty"`
 	}{
 		s.StartTime,
 		s.RunningTime.String(),
-		fmt.Sprintf("%0.8f MB", float32(s.TotalSize)/1000000.0),
+		fmt.Sprintf("%0.8f MB", float32(s.TotalSize)/1_000_000.0),
 		s.TraceCount,
 		s.LocalFile.Name(),
 		s.RunningStatus,
-		s.Err,
+		errMsg,
 	}
 }
 
