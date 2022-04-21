@@ -301,7 +301,7 @@ func (tr *TraceWatcher) Watch(exporter *exporter.Exporter) {
 			// Feed data to exporter.
 			if exporter != nil && exporter.IsAcceptingData() {
 				if err := exporter.UnblockedReceive(lineBytes); err != nil {
-					tr.Logger.Infow("exporter", "err receive trace", err)
+					tr.Logger.Errorw("exporter", "receive trace err", err)
 				}
 			}
 

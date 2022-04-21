@@ -269,13 +269,12 @@ func (e *Exporter) UnblockedReceive(trace []byte) error {
 		// Stop export process if condition reached.
 		if e.reachedTraceCount() || e.reachedSizeLimit() ||
 			time.Since(e.Stat.StartTime).Round(0) >= e.params.Duration {
-			e.logger.Debugw("UnblockedReceive: called StopReceiving")
 			if err := e.StopReceiving(); err != nil {
 				return err
 			}
 		}
 	default:
-		e.logger.Debugw("UnblockedReceive:", "blocked on chan; trace", trace)
+		e.logger.Errorw("UnblockedReceive:", "blocked on chan; trace", trace)
 		return fmt.Errorf("blocked on sending data to trace channel")
 	}
 	return nil
@@ -288,7 +287,7 @@ func (e *Exporter) HandleTrace() error {
 			// Drain the traceChan.
 			for r := range e.traceChan {
 				if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
-					e.logger.Debugw("HandleTrace: failed to write", "size", n, "bytes", r)
+					e.logger.Errorw("HandleTrace: failed to write", "size", n, "bytes", r)
 					return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 				}
 			}
@@ -298,7 +297,7 @@ func (e *Exporter) HandleTrace() error {
 				return nil
 			}
 			if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
-				e.logger.Debugw("HandleTrace: failed to write", "size", n, "bytes", r)
+				e.logger.Errorw("HandleTrace: failed to write", "size", n, "bytes", r)
 				return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 			}
 		}

@@ -1,12 +1,14 @@
 package tracelistener_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"syscall"
 	"testing"
 	"time"
 
@@ -670,10 +672,12 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 				Logger:         l.Sugar(),
 			}
 
-			p, err := getFreePort(t)
-			require.NoError(t, err)
 			exp, err := exporter.New(exporter.WithLogger(l.Sugar()))
 			require.NoError(t, err)
+
+			p, err := getFreePort(t)
+			require.NoError(t, err)
+
 			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", p))
 			go tw.Watch(exp)
 
@@ -692,6 +696,100 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 			n, err := f.Write([]byte(tt.data))
 			require.NoError(t, err)
 			require.Equal(t, len(tt.data), n)
+		})
+	}
+}
+
+func TestTracelistener_Exporter_success(t *testing.T) {
+	op := `{"operation":"write","key":"aWJjL2Z3ZC8weGMwMDA0ZThkMzg=","value":"cG9ydHMvdHJhbnNmZXI=","metadata":null}`
+	tests := []struct {
+		name          string
+		N             int
+		params        string
+		generateTrace int
+	}{
+		{
+			"Capture N traces",
+			10,
+			"?N=10N",
+			20,
+		},
+		{
+			"Capture N traces: N satisfied earliest",
+			10,
+			"?N=10N&M=100MB&D=1h",
+			200,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pipeFile := fmt.Sprintf("fifo%d.fifo", i)
+			_ = os.Remove(pipeFile)
+			require.NoError(t, syscall.Mkfifo(pipeFile, 0666))
+
+			l, _ := zap.NewDevelopment()
+			tw := tracelistener.TraceWatcher{
+				DataSourcePath: pipeFile,
+				WatchedOps:     []tracelistener.Operation{},
+				DataChan:       make(chan tracelistener.TraceOperation),
+				ErrorChan:      make(chan error),
+				Logger:         l.Sugar(),
+			}
+
+			exp, err := exporter.New(exporter.WithLogger(l.Sugar()))
+			require.NoError(t, err)
+
+			port, err := getFreePort(t)
+			require.NoError(t, err)
+
+			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", port))
+			go tw.Watch(exp)
+
+			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", port, tt.params))
+			var stat1 any
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
+			ssGet, ok := stat1.(map[string]any)
+			require.True(t, ok)
+
+			t.Cleanup(func() {
+				_ = os.Remove(pipeFile)
+				_ = os.Remove(fmt.Sprint(ssGet["file_name"]))
+			})
+			require.NoError(t, r.Body.Close())
+
+			r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", port))
+			require.NoError(t, err)
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
+			ssStat, ok := stat1.(map[string]any)
+			require.True(t, ok)
+			require.NoError(t, r.Body.Close())
+
+			require.Equal(t, ssGet["file_name"], ssStat["file_name"])
+			require.Equal(t, ssGet["start_time"], ssStat["start_time"])
+			require.Equal(t, ssGet["trace_count"], ssStat["trace_count"])
+
+			f, err := os.OpenFile(pipeFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
+			require.NoError(t, err)
+
+			for i := 0; i < tt.generateTrace; i++ {
+				n, err := f.WriteString(op + "\n")
+				require.NoError(t, err)
+				require.Equal(t, len(op)+1, n)
+			}
+
+			require.Eventually(t, func() bool {
+				r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", port))
+				require.NoError(t, err)
+				var stat any
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&stat))
+				ssStat, ok := stat.(map[string]any)
+				require.True(t, ok)
+				require.NoError(t, r.Body.Close())
+				traceCountFromStat, ok := ssStat["trace_count"].(float64)
+				require.True(t, ok)
+				return int(traceCountFromStat) == tt.N
+			}, time.Second*10, time.Second*2)
 		})
 	}
 }
