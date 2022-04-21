@@ -44,7 +44,7 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 	var persist bool
 	var err error
 
-	validParams := map[string]bool{"N": true, "M": true, "P": true, "D": true}
+	validParams := map[string]bool{"N": true, "M": true, "P": true, "D": true, "id": true}
 	for p := range qp {
 		if _, ok := validParams[p]; !ok {
 			writeError(w, fmt.Errorf("validation error: unknown param %s", p), http.StatusBadRequest)
