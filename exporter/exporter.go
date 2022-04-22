@@ -38,6 +38,7 @@ type (
 	Exporter struct {
 		running   bool
 		muRunning sync.Mutex
+		muStat    sync.Mutex
 		params    *Params
 		Stat      *Stat
 		logger    *zap.SugaredLogger
@@ -82,6 +83,7 @@ func WithLogger(l *zap.SugaredLogger) Option {
 func New(opts ...Option) (*Exporter, error) {
 	e := &Exporter{
 		muRunning: sync.Mutex{},
+		muStat:    sync.Mutex{},
 		logger:    zap.NewNop().Sugar(),
 		running:   false, // Being explicit!
 	}
@@ -172,7 +174,10 @@ func (e *Exporter) StartReceiving() chan error {
 		errChan <- err
 		return errChan
 	}
+
+	e.muStat.Lock()
 	e.Stat.RunningStatus = "Receiving traces"
+	e.muStat.Unlock()
 
 	e.traceChan = make(chan []byte, e.params.NumTraces)
 	e.doneChan = make(chan struct{})
@@ -192,9 +197,10 @@ func (e *Exporter) StopReceiving() error {
 		return ErrExporterNotRunning
 	}
 	e.doOnce(func() {
-		close(e.traceChan)
 		close(e.doneChan)
+		e.muStat.Lock()
 		e.Stat.RunningStatus = "Stopped receiving traces, processing remaining traces"
+		e.muStat.Unlock()
 	})
 	return nil
 }
@@ -236,7 +242,6 @@ func (e *Exporter) finish() error {
 	}
 	// TODO: Process user report
 
-	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
 	if err := e.Stat.LocalFile.Close(); err != nil {
 		return err
 	}
@@ -248,13 +253,17 @@ func (e *Exporter) finish() error {
 					"file", e.Stat.LocalFile.Name(),
 					"error", err2.Error())
 			}
+			e.Stat.LocalFile = nil
 		}
 	}
 
 	if err := e.setRunning(false); err != nil {
 		return err
 	}
+	e.muStat.Lock()
 	e.Stat.RunningStatus = "Finished"
+	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
+	e.muStat.Unlock()
 	return nil
 }
 
@@ -285,17 +294,18 @@ func (e *Exporter) HandleTrace() error {
 		select {
 		case <-e.doneChan:
 			// Drain the traceChan.
-			for r := range e.traceChan {
-				if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
-					e.logger.Errorw("HandleTrace: failed to write", "size", n, "bytes", r)
-					return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
+			for {
+				select {
+				case r := <-e.traceChan:
+					if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
+						e.logger.Errorw("HandleTrace: failed to write", "size", n, "bytes", r)
+						return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
+					}
+				default:
+					return nil
 				}
 			}
-			return nil
-		case r, ok := <-e.traceChan:
-			if !ok {
-				return nil
-			}
+		case r := <-e.traceChan:
 			if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
 				e.logger.Errorw("HandleTrace: failed to write", "size", n, "bytes", r)
 				return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
@@ -307,7 +317,7 @@ func (e *Exporter) HandleTrace() error {
 // IsAcceptingData checks if exporter is running i.e. traceChan
 // is not nil AND done channel is not closed.
 func (e *Exporter) IsAcceptingData() bool {
-	if e.traceChan == nil {
+	if e.traceChan == nil || e.doneChan == nil {
 		return false
 	}
 	select {
@@ -354,10 +364,14 @@ func (e *Exporter) GetDoneChan() (chan struct{}, error) {
 }
 
 func (e *Exporter) GetStat() (Stat, error) {
+	e.muStat.Lock()
+	defer e.muStat.Unlock()
 	if e.Stat == nil {
 		return Stat{}, ErrExporterNotRunning
 	}
-	e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
+	if e.IsRunning() {
+		e.Stat.RunningTime = time.Since(e.Stat.StartTime).Round(0)
+	}
 	return *e.Stat, nil
 }
 
@@ -384,6 +398,10 @@ func (s Stat) Public() any {
 		}
 		errMsg = append(errMsg, e.Error())
 	}
+	fileName := "-- Removed --"
+	if s.LocalFile != nil {
+		fileName = s.LocalFile.Name()
+	}
 	return struct {
 		StartTime  time.Time `json:"start_time"`
 		Runtime    string    `json:"runtime"`
@@ -397,7 +415,7 @@ func (s Stat) Public() any {
 		s.RunningTime.String(),
 		fmt.Sprintf("%0.8f MB", float32(s.TotalSize)/1_000_000.0),
 		s.TraceCount,
-		s.LocalFile.Name(),
+		fileName,
 		s.RunningStatus,
 		errMsg,
 	}

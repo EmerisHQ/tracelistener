@@ -103,7 +103,10 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 
 	errCh := e.StartReceiving()
 	go func() {
-		e.Stat.Errors = append(e.Stat.Errors, <-errCh)
+		err := <-errCh
+		e.muStat.Lock()
+		e.Stat.Errors = append(e.Stat.Errors, err)
+		e.muStat.Unlock()
 	}()
 
 	e.statHandler(w, r)
@@ -113,8 +116,16 @@ func (e *Exporter) stopHandler(w http.ResponseWriter, r *http.Request) {
 	qp := r.URL.Query()
 	var err error
 
+	validParams := map[string]bool{"clean": true}
+	for p := range qp {
+		if _, ok := validParams[p]; !ok {
+			writeError(w, fmt.Errorf("validation error: unknown param %s", p), http.StatusBadRequest)
+			return
+		}
+	}
+
 	c := qp.Get("clean")
-	if len(c) > 0 {
+	if len(c) > 0 && e.IsRunning() {
 		if e.params.Clean, err = validateMustBool(c); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
@@ -157,12 +168,15 @@ func writeContentType(w http.ResponseWriter, value []string) {
 }
 
 func writeError(w http.ResponseWriter, err error, code int) {
+	writeContentType(w, []string{"application/json; charset=utf-8"})
 	w.WriteHeader(code)
-	msg := "nil"
+	errMsg := "no error"
 	if err != nil {
-		msg = "Error: " + err.Error()
+		errMsg = err.Error()
 	}
-	_, _ = w.Write([]byte(msg))
+	_ = json.NewEncoder(w).Encode(struct {
+		Error string `json:"error"`
+	}{errMsg})
 }
 
 func validateMustBool(p string) (bool, error) {

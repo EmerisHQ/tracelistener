@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -26,13 +27,12 @@ func TestNew(t *testing.T) {
 	require.False(t, ex.IsRunning())
 	require.False(t, ex.IsAcceptingData())
 
-	errCh := ex.StartReceiving()
+	_ = ex.StartReceiving()
 	require.True(t, ex.IsRunning())
 	require.True(t, ex.IsAcceptingData())
 
 	// Only one running process allowed
-	errCh = ex.StartReceiving()
-	require.ErrorIs(t, <-errCh, exporter.ErrExporterRunning)
+	require.ErrorIs(t, <-ex.StartReceiving(), exporter.ErrExporterRunning)
 
 	// StopReceiving must be idempotent
 	for i := 0; i < 10; i++ {
@@ -95,18 +95,20 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 
 	ex, err := exporter.New(exporter.WithLogger(logging.New(logging.LoggingConfig{Debug: true})))
 	require.NoError(t, err)
-	// Build the exporter.
-	err = ex.Init(&params)
-	require.NoError(t, err)
+	// Init the exporter.
+	require.NoError(t, ex.Init(&params))
 
 	errCh := ex.StartReceiving()
 
 	dataInserterDone := make(chan struct{})
 	dataInsertInterval := 300 * time.Millisecond
+	var wg sync.WaitGroup
+	wg.Add(1)
 	// Simulate: traces capture until stopped.
-	go func(t *testing.T, selfDone chan struct{}, interval time.Duration) {
+	go func(t *testing.T, selfDone chan struct{}, interval time.Duration, wg *sync.WaitGroup) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
+		defer wg.Done()
 		for {
 			select {
 			case <-ticker.C:
@@ -116,13 +118,14 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 				return
 			}
 		}
-	}(t, dataInserterDone, dataInsertInterval)
+	}(t, dataInserterDone, dataInsertInterval, &wg)
 
 	// Ensure at least some data get accepted.
 	time.Sleep(3 * dataInsertInterval)
 
-	// 1. Simulate: no more data.
+	// 1. Simulate: no more data. (Being explicit for reader's ease).
 	close(dataInserterDone)
+	wg.Wait()
 	// 2. User called stop.
 	require.NoError(t, ex.StopReceiving())
 	//_, err = ex.Stop(false, doOnce, false)
@@ -132,7 +135,7 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 	// Check exporter.finish() was called.
 	require.Eventually(t, func() bool {
 		return !ex.IsRunning()
-	}, time.Second*4, time.Millisecond*100)
+	}, time.Second*4, dataInsertInterval)
 
 	// Ensure something is written to the file.
 	f, err := os.Open(ex.Stat.LocalFile.Name())
