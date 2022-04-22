@@ -65,8 +65,9 @@ var (
 )
 
 const (
+	Million       = 1_000_000
 	MaxSizeLim    = 1024
-	MaxTraceCount = 1_000_000
+	MaxTraceCount = Million
 	MaxDuration   = 24 * time.Hour
 )
 
@@ -147,9 +148,9 @@ func (e *Exporter) Init(params *Params) error {
 	if e.params.NumTraces == 0 {
 		e.params.NumTraces = MaxTraceCount
 	}
-	e.params.SizeLim *= 1_000_000 // Convert to byte
+	e.params.SizeLim *= Million // Convert to byte
 	if e.params.SizeLim == 0 {
-		e.params.SizeLim = MaxSizeLim * 1_000_000 // 1024 MB converted to bytes
+		e.params.SizeLim = MaxSizeLim * Million // 1024 * 1_000_000; 1 GB converted to bytes
 	}
 	if e.params.Duration == 0 {
 		e.params.Duration = MaxDuration
@@ -413,7 +414,7 @@ func (s Stat) Public() any {
 	}{
 		s.StartTime,
 		s.RunningTime.String(),
-		fmt.Sprintf("%0.8f MB", float32(s.TotalSize)/1_000_000.0),
+		fmt.Sprintf("%0.8f MB", float32(s.TotalSize)/float32(Million)),
 		s.TraceCount,
 		fileName,
 		s.RunningStatus,
