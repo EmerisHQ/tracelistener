@@ -16,13 +16,13 @@ import (
 type (
 	// Stat used to report progress to the caller.
 	Stat struct {
-		StartTime     time.Time     `json:"start_time"`
-		RunningTime   time.Duration `json:"running_time"`
-		TotalSize     int32         `json:"total_size"`
-		TraceCount    int32         `json:"trace_count"`
-		LocalFile     *os.File      `json:"local_file"`
-		RunningStatus string        `json:"running_status"`
-		Errors        []error       `json:"errors,omitempty"`
+		StartTime     time.Time
+		RunningTime   time.Duration
+		TotalSize     int32
+		TraceCount    int32
+		LocalFile     *os.File
+		RunningStatus string
+		Errors        []error
 	}
 
 	// Params represents the acceptable http request params.
@@ -104,15 +104,14 @@ func (e *Exporter) Init(params *Params) error {
 	if e.IsRunning() {
 		return ErrExporterRunning
 	}
-	err := runParamValidators(
+	if err := runParamValidators(
 		params,
 		validateSizeLim,          // 0 <= size <= MaxSizeLim.
 		validateNumTrace,         // 0 <= trace count <= MaxTraceCount.
 		validateDuration,         // 0 <= duration <= 24 hours.
 		validateFileId,           // len(id) <= 10; only alphanumeric.
 		ValidateParamCombination, // At least one valid param present.
-	)
-	if err != nil {
+	); err != nil {
 		return err
 	}
 
@@ -221,7 +220,7 @@ func (e *Exporter) Orchestrate() error {
 
 // finish the trace exporting process. This method must be called once.
 // multiple calls to this method indicates logical error in code.
-// 1. Uploads file to cloud if necessary.
+// 1. Uploads file to cloud if necessary. <- Not yet; proposed.
 // 2. Closes the local file descriptor.
 // 3. Removed the local file if necessary.
 // 4. sets state for running to false.
@@ -241,7 +240,6 @@ func (e *Exporter) finish() error {
 		// 3. Delete local file
 		e.logger.Debugw("Upload", e.params.Upload)
 	}
-	// TODO: Process user report
 
 	if err := e.Stat.LocalFile.Close(); err != nil {
 		return err

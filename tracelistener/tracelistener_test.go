@@ -139,7 +139,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			f, err := os.CreateTemp("", "test_data")
 			require.NoError(t, err)
 
-			defer os.Remove(f.Name())
+			defer func() { _ = os.Remove(f.Name()) }()
 
 			dataChan := make(chan tracelistener.TraceOperation)
 			errChan := make(chan error)
@@ -765,13 +765,18 @@ func TestTracelistener_Exporter_success(t *testing.T) {
 			require.True(t, ok)
 			require.NoError(t, r.Body.Close())
 
+			// trace_count must be same as we haven't fed any traces yet.
+			// file_name and start_time are thrown in for readers sanity.
 			require.Equal(t, ssGet["file_name"], ssStat["file_name"])
 			require.Equal(t, ssGet["start_time"], ssStat["start_time"])
+			require.InDelta(t, ssGet["trace_count"], 0, 0)
 			require.Equal(t, ssGet["trace_count"], ssStat["trace_count"])
 
 			f, err := os.OpenFile(pipeFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
 			require.NoError(t, err)
 
+			// Simulate a chain. Feed data to the fifo. Which will be captured & processed
+			// by TL. Also, tt.N traces should be captured by exporter.
 			for i := 0; i < tt.generateTrace; i++ {
 				n, err := f.WriteString(op + "\n")
 				require.NoError(t, err)
@@ -789,7 +794,7 @@ func TestTracelistener_Exporter_success(t *testing.T) {
 				traceCountFromStat, ok := ssStat["trace_count"].(float64)
 				require.True(t, ok)
 				return int(traceCountFromStat) == tt.N
-			}, time.Second*10, time.Second*2)
+			}, time.Second*10, time.Millisecond*200)
 		})
 	}
 }
@@ -805,6 +810,6 @@ func getFreePort(t *testing.T) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
