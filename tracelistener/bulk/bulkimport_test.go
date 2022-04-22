@@ -82,6 +82,33 @@ func TestImporterDo(t *testing.T) {
 			true,
 		},
 		{
+			"Importer - no error - using sqlgen",
+			config.Config{
+				FIFOPath:  "./tracelistener.fifo",
+				ChainName: "gaia",
+				Debug:     true,
+				UseSQLGen: true,
+			},
+			bulk.Importer{
+				Path: "./testdata/application.db",
+				TraceWatcher: tracelistener.TraceWatcher{
+					DataSourcePath: "./tracelistener.fifo",
+					WatchedOps: []tracelistener.Operation{
+						tracelistener.WriteOp,
+						tracelistener.DeleteOp,
+					},
+					ErrorChan: make(chan error),
+					Logger:    logger,
+				},
+				Logger: logger,
+			},
+			"",
+			false,
+			false,
+			true,
+			true,
+		},
+		{
 			"cannot open chain database - error",
 			config.Config{
 				FIFOPath:  "./tracelistener.fifo",

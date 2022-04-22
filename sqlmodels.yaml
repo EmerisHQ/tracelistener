@@ -1,0 +1,274 @@
+tables:
+  - name: balances
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: address
+        type: text
+      - name: amount
+        type: text
+      - name: denom
+        type: text
+    unique_columns:
+      - chain_name
+      - address
+      - denom
+
+  - name: connections
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: connection_id
+        type: text
+      - name: client_id
+        type: text
+      - name: state
+        type: text
+      - name: counter_connection_id
+        type: text
+      - name: counter_client_id
+        type: text
+    unique_columns:
+      - chain_name
+      - connection_id
+      - client_id
+
+  - name: delegations
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: delegator_address
+        type: text
+      - name: validator_address
+        type: text
+      - name: amount
+        type: text
+    unique_columns:
+      - chain_name
+      - delegator_address
+      - validator_address
+
+  - name: unbonding_delegations
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: delegator_address
+        type: text
+      - name: validator_address
+        type: text
+      - name: entries
+        type: jsonb
+    unique_columns:
+      - chain_name
+      - delegator_address
+      - validator_address
+
+  - name: auth
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: address
+        type: text
+      - name: sequence_number
+        type: numeric
+      - name: account_number
+        type: numeric
+    unique_columns:
+      - chain_name
+      - address
+      - account_number
+
+  - name: denom_traces
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: path
+        type: text
+      - name: base_denom
+        type: text
+      - name: hash
+        type: text
+    unique_columns:
+      - chain_name
+      - hash
+
+  - name: channels
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: channel_id
+        type: text
+      - name: counter_channel_id
+        type: text
+      - name: port
+        type: text
+      - name: state
+        type: integer
+      - name: hops
+        type: text[]
+    unique_columns:
+      - chain_name
+      - channel_id
+      - port
+
+  - name: clients
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: chain_id
+        type: text
+      - name: client_id
+        type: text
+      - name: latest_height
+        type: numeric
+      - name: trusting_period
+        type: numeric
+    unique_columns:
+      - chain_name
+      - chain_id
+      - client_id
+
+  - name: validators
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: operator_address
+        type: text
+      - name: consensus_pubkey_type
+        type: text
+        nullable: true
+      - name: consensus_pubkey_value
+        type: bytes
+        nullable: true
+      - name: jailed
+        type: bool
+      - name: status
+        type: integer
+      - name: tokens
+        type: text
+      - name: delegator_shares
+        type: text
+      - name: moniker
+        type: text
+        nullable: true
+      - name: identity
+        type: text
+        nullable: true
+      - name: website
+        type: text
+        nullable: true
+      - name: security_contact
+        type: text
+        nullable: true
+      - name: details
+        type: text
+        nullable: true
+      - name: unbonding_height
+        type: bigint
+        nullable: true
+      - name: unbonding_time
+        type: text
+        nullable: true
+      - name: commission_rate
+        type: text
+      - name: max_rate
+        type: text
+      - name: max_change_rate
+        type: text
+      - name: update_time
+        type: text
+      - name: min_self_delegation
+        type: text
+    unique_columns:
+      - chain_name
+      - operator_address

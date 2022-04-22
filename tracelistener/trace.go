@@ -19,7 +19,8 @@ type TraceOperation struct {
 
 	// SuggestedProcessor signals to the trace processor that
 	// what SDK module this trace comes from.
-	SuggestedProcessor SDKModuleName
+	// Json key is defined here: https://github.com/cosmos/cosmos-sdk/blob/9898ac5e9dea5f40427f925c70bbc1ab0d52ed77/store/cachemulti/store.go#L18.
+	SuggestedProcessor SDKModuleName `json:"store_name"`
 }
 
 func (t TraceOperation) String() string {
