@@ -128,8 +128,6 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 	wg.Wait()
 	// 2. User called stop.
 	require.NoError(t, ex.StopReceiving())
-	//_, err = ex.Stop(false, doOnce, false)
-	//require.NoError(t, err)
 	require.NoError(t, <-errCh)
 
 	// Check exporter.finish() was called.

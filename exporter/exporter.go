@@ -45,7 +45,7 @@ type (
 
 		traceChan chan []byte
 		doneChan  chan struct{}
-		doOnce    sync.Once
+		once      sync.Once
 	}
 
 	Option func(*Exporter) error
@@ -155,7 +155,7 @@ func (e *Exporter) Init(params *Params) error {
 		e.params.Duration = MaxDuration
 	}
 
-	e.doOnce = sync.Once{}
+	e.once = sync.Once{}
 	e.doneChan = nil // Indicates that exporter is initialised, but not yet ready to receive traces.
 	e.traceChan = nil
 
@@ -196,7 +196,7 @@ func (e *Exporter) StopReceiving() error {
 	if !e.IsRunning() {
 		return ErrExporterNotRunning
 	}
-	e.doOnce.Do(func() {
+	e.once.Do(func() {
 		close(e.doneChan)
 		e.muStat.Lock()
 		e.Stat.RunningStatus = "Stopped receiving traces, processing remaining traces"
