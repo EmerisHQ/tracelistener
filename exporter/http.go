@@ -44,7 +44,7 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 	var persist bool
 	var err error
 
-	validParams := map[string]bool{"N": true, "M": true, "P": true, "D": true, "id": true}
+	validParams := map[string]bool{"count": true, "size": true, "persist": true, "duration": true, "id": true}
 	for p := range qp {
 		if _, ok := validParams[p]; !ok {
 			writeError(w, fmt.Errorf("validation error: unknown param %s", p), http.StatusBadRequest)
@@ -52,33 +52,35 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	n := qp.Get("N")
-	if len(n) > 0 {
-		if numTraces, err = validateMustIntMustSuffix(n, "N", "N"); err != nil {
+	count := qp.Get("count")
+	if len(count) > 0 {
+		if numTraces, err = validateMustIntMustSuffix(count, "N", "count"); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
 	}
 
-	m := qp.Get("M")
-	if len(m) > 0 {
-		if sizeLim, err = validateMustIntMustSuffix(m, "MB", "M"); err != nil {
+	size := qp.Get("size")
+	if len(size) > 0 {
+		if sizeLim, err = validateMustIntMustSuffix(size, "MB", "size"); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
 	}
 
-	d := qp.Get("D")
-	if len(d) > 0 {
-		if duration, err = validateMustDuration(d); err != nil {
+	dur := qp.Get("duration")
+	if len(dur) > 0 {
+		if duration, err = validateMustDuration(dur); err != nil {
 			writeError(w, err, http.StatusBadRequest)
+			return
 		}
 	}
 
-	p := qp.Get("P")
-	if len(p) > 0 {
-		if persist, err = validateMustBool(p); err != nil {
+	ps := qp.Get("persis")
+	if len(ps) > 0 {
+		if persist, err = validateMustBool(ps); err != nil {
 			writeError(w, err, http.StatusBadRequest)
+			return
 		}
 	}
 
@@ -124,9 +126,9 @@ func (e *Exporter) stopHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	c := qp.Get("clean")
-	if len(c) > 0 && e.IsRunning() {
-		if e.params.Clean, err = validateMustBool(c); err != nil {
+	clean := qp.Get("clean")
+	if len(clean) > 0 && e.IsRunning() {
+		if e.params.Clean, err = validateMustBool(clean); err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
 		}
@@ -195,12 +197,12 @@ func validateMustDuration(d string) (time.Duration, error) {
 	return duration, nil
 }
 
-func validateMustIntMustSuffix(n string, suf string, pName string) (int32, error) {
-	if !strings.HasSuffix(n, suf) {
-		return 0, fmt.Errorf("invalid query param %s, want format 20%s got %s", pName, suf, n)
+func validateMustIntMustSuffix(s string, suf string, pName string) (int32, error) {
+	if !strings.HasSuffix(s, suf) {
+		return 0, fmt.Errorf("invalid query param %s, want format 20%s got %s", pName, suf, s)
 	}
-	n = strings.TrimSuffix(n, suf)
-	val, err := strconv.ParseInt(n, 10, 32)
+	s = strings.TrimSuffix(s, suf)
+	val, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
 		return 0, fmt.Errorf("invalid query param %s, %w", pName, err)
 	}

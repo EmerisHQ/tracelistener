@@ -45,7 +45,7 @@ type (
 
 		traceChan chan []byte
 		doneChan  chan struct{}
-		doOnce    func(func())
+		doOnce    sync.Once
 	}
 
 	Option func(*Exporter) error
@@ -155,7 +155,7 @@ func (e *Exporter) Init(params *Params) error {
 		e.params.Duration = MaxDuration
 	}
 
-	e.doOnce = (&sync.Once{}).Do
+	e.doOnce = sync.Once{}
 	e.doneChan = nil // Indicates that exporter is initialised, but not yet ready to receive traces.
 	e.traceChan = nil
 
@@ -193,10 +193,10 @@ func (e *Exporter) StartReceiving() chan error {
 // 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
 // 2. When user calls stop from rest endpoint.
 func (e *Exporter) StopReceiving() error {
-	if e.doOnce == nil {
+	if !e.IsRunning() {
 		return ErrExporterNotRunning
 	}
-	e.doOnce(func() {
+	e.doOnce.Do(func() {
 		close(e.doneChan)
 		e.muStat.Lock()
 		e.Stat.RunningStatus = "Stopped receiving traces, processing remaining traces"
