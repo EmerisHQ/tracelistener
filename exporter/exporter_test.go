@@ -34,9 +34,13 @@ func TestNew(t *testing.T) {
 	// Only one running process allowed
 	require.ErrorIs(t, <-ex.StartReceiving(), exporter.ErrExporterRunning)
 
-	// StopReceiving must be idempotent
 	for i := 0; i < 10; i++ {
-		require.NoError(t, ex.StopReceiving())
+		require.Condition(t, func() bool {
+			if e := ex.StopReceiving(); e != nil {
+				return errors.Is(e, exporter.ErrExporterNotRunning)
+			}
+			return true
+		})
 	}
 
 	require.Eventually(t, func() bool {
