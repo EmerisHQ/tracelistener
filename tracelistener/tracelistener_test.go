@@ -700,6 +700,9 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 			go tw.Watch(exp)
 
 			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", p, tt.params))
+			require.Eventually(t, func() bool {
+				return r.Body != nil
+			}, time.Second*5, time.Millisecond*100)
 			by, err := ioutil.ReadAll(r.Body)
 			require.NoError(t, err)
 			require.NoError(t, r.Body.Close())
@@ -707,6 +710,9 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 
 			r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", p))
 			require.NoError(t, err)
+			require.Eventually(t, func() bool {
+				return r.Body != nil
+			}, time.Second*5, time.Millisecond*100)
 			by, err = ioutil.ReadAll(r.Body)
 			require.Contains(t, string(by), exporter.ErrExporterNotRunning.Error())
 			require.NoError(t, r.Body.Close())
