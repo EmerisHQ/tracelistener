@@ -128,11 +128,14 @@ func (e *Exporter) Init(params *Params) error {
 	if err != nil {
 		return err
 	}
+	// Close and reopen with updated permissions.
+	if err = f.Close(); err != nil {
+		return err
+	}
 	localFile, err := os.OpenFile(f.Name(), os.O_APPEND|os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
-
 	e.Stat = &Stat{
 		StartTime:     startTime,
 		RunningTime:   0,
@@ -206,15 +209,17 @@ func (e *Exporter) StopReceiving() error {
 }
 
 func (e *Exporter) Orchestrate() error {
-	if err := e.HandleTrace(); err != nil {
-		return err
+	if errHandler := e.HandleTrace(); errHandler != nil {
+		if errFinish := e.finish(); errFinish != nil {
+			return fmt.Errorf("handler error: %s, findish error %w", errHandler.Error(), errFinish)
+		}
+		return errHandler
 	}
 	// e.HandleTrace returned with no error. That means e.StopReceiving was called.
 	// Now we finish the exporter i.e. upload file to cloud, cleanup etc.
 	if err := e.finish(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
