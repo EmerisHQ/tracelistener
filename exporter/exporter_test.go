@@ -65,7 +65,7 @@ func TestStart_AcceptXXXRecords(t *testing.T) {
 
 	// After XXX records, no more processed.
 	for i, record := range records {
-		err = ex.UnblockedReceive(record)
+		err = ex.NonblockingReceive(record)
 		if i < int(XXX) {
 			require.NoError(t, err)
 			continue
@@ -116,7 +116,7 @@ func TestExporter_User_Called_Stop(t *testing.T) {
 		for {
 			select {
 			case <-ticker.C:
-				err := ex.UnblockedReceive([]byte{66, 66, 66, 66}) // Simulate trace capture
+				err := ex.NonblockingReceive([]byte{66, 66, 66, 66}) // Simulate trace capture
 				require.NoError(t, err)
 			case <-selfDone:
 				return
@@ -174,7 +174,7 @@ func TestExporter_DurationExpired(t *testing.T) {
 		for {
 			select {
 			case <-ticker.C:
-				err := ex.UnblockedReceive([]byte{33, 44, 55, 66})
+				err := ex.NonblockingReceive([]byte{33, 44, 55, 66})
 				require.Condition(t, func() bool {
 					if err == nil {
 						return true

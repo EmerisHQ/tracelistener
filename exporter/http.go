@@ -76,7 +76,7 @@ func (e *Exporter) startHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ps := qp.Get("persis")
+	ps := qp.Get("persist")
 	if len(ps) > 0 {
 		if persist, err = validateMustBool(ps); err != nil {
 			writeError(w, err, http.StatusBadRequest)

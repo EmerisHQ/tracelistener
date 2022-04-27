@@ -133,7 +133,6 @@ func (e *Exporter) Init(params *Params) error {
 		return err
 	}
 
-	e.params = params
 	e.Stat = &Stat{
 		StartTime:     startTime,
 		RunningTime:   0,
@@ -144,6 +143,7 @@ func (e *Exporter) Init(params *Params) error {
 		Errors:        make([]error, 0),
 	}
 
+	e.params = params
 	if e.params.NumTraces == 0 {
 		e.params.NumTraces = MaxTraceCount
 	}
@@ -190,7 +190,7 @@ func (e *Exporter) StartReceiving() chan error {
 }
 
 // StopReceiving is idempotent, it can be called multiple times. It's used in
-// 1. UnblockedReceive: we've reached limit fot NumTraces or SizeLim.
+// 1. NonblockingReceive: we've reached limit fot NumTraces or SizeLim.
 // 2. When user calls stop from rest endpoint.
 func (e *Exporter) StopReceiving() error {
 	if !e.IsRunning() {
@@ -266,7 +266,7 @@ func (e *Exporter) finish() error {
 	return nil
 }
 
-func (e *Exporter) UnblockedReceive(trace []byte) error {
+func (e *Exporter) NonblockingReceive(trace []byte) error {
 	if !e.IsAcceptingData() {
 		return ErrNotAcceptingData
 	}
@@ -282,7 +282,7 @@ func (e *Exporter) UnblockedReceive(trace []byte) error {
 			}
 		}
 	default:
-		e.logger.Errorw("UnblockedReceive:", "blocked on chan; trace", trace)
+		e.logger.Errorw("NonblockingReceive:", "blocked on chan; trace", trace)
 		return fmt.Errorf("blocked on sending data to trace channel")
 	}
 	return nil
