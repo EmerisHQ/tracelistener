@@ -296,7 +296,7 @@ func (e *Exporter) HandleTrace() error {
 			for {
 				select {
 				case r := <-e.traceChan:
-					if n, err := e.Stat.LocalFile.Write(append(r, []byte("\n")...)); err != nil {
+					if n, err := e.Stat.LocalFile.Write(append(r, '\n')); err != nil {
 						e.logger.Errorw("HandleTrace: failed to write", "size", n, "bytes", r)
 						return fmt.Errorf("handleTrace: could not write to file, error: %w", err)
 					}
