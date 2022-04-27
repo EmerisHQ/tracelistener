@@ -39,13 +39,16 @@ func (r {{ .StructName }}) Upsert() string {
 		ON CONFLICT ({{ Join .Config.UniqueColumns }})
 		DO UPDATE
 		SET {{ Join .Config.UpsertSet }}
-	` + "`" + `, r.tableName)
+		WHERE %s.height < EXCLUDED.height
+	` + "`" + `, r.tableName, r.tableName)
 }
 
 func (r {{ .StructName }}) Delete() string {
 	return fmt.Sprintf(` + "`" + `
-		DELETE FROM %s
+		UPDATE %s
+		SET delete_height = :height, height = :height
 		WHERE {{ JoinAnd .Config.WhereConditions }}
+		AND delete_height IS NULL
 	` + "`" + `, r.tableName)
 }
 `

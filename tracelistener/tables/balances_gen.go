@@ -19,7 +19,7 @@ func NewBalancesTable(tableName string) BalancesTable {
 func (r BalancesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, address text NOT NULL, amount text NOT NULL, denom text NOT NULL, UNIQUE (chain_name, address, denom))
+		(id serial PRIMARY KEY NOT NULL, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, address text NOT NULL, amount text NOT NULL, denom text NOT NULL, UNIQUE (chain_name, address, denom))
 	`, r.tableName)
 }
 
@@ -37,12 +37,15 @@ func (r BalancesTable) Upsert() string {
 		ON CONFLICT (chain_name, address, denom)
 		DO UPDATE
 		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, address = EXCLUDED.address, amount = EXCLUDED.amount, denom = EXCLUDED.denom
-	`, r.tableName)
+		WHERE %s.height < EXCLUDED.height
+	`, r.tableName, r.tableName)
 }
 
 func (r BalancesTable) Delete() string {
 	return fmt.Sprintf(`
-		DELETE FROM %s
+		UPDATE %s
+		SET delete_height = :height, height = :height
 		WHERE chain_name=:chain_name AND address=:address AND denom=:denom
+		AND delete_height IS NULL
 	`, r.tableName)
 }
