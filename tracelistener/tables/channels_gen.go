@@ -19,7 +19,7 @@ func NewChannelsTable(tableName string) ChannelsTable {
 func (r ChannelsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
-		(id serial PRIMARY KEY, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, channel_id text NOT NULL, counter_channel_id text NOT NULL, port text NOT NULL, state integer NOT NULL, hops text[] NOT NULL, UNIQUE (chain_name, channel_id, port))
+		(id serial PRIMARY KEY NOT NULL, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, channel_id text NOT NULL, counter_channel_id text NOT NULL, port text NOT NULL, state integer NOT NULL, hops text[] NOT NULL, UNIQUE (chain_name, channel_id, port))
 	`, r.tableName)
 }
 
@@ -37,12 +37,15 @@ func (r ChannelsTable) Upsert() string {
 		ON CONFLICT (chain_name, channel_id, port)
 		DO UPDATE
 		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, channel_id = EXCLUDED.channel_id, counter_channel_id = EXCLUDED.counter_channel_id, port = EXCLUDED.port, state = EXCLUDED.state, hops = EXCLUDED.hops
-	`, r.tableName)
+		WHERE %s.height < EXCLUDED.height
+	`, r.tableName, r.tableName)
 }
 
 func (r ChannelsTable) Delete() string {
 	return fmt.Sprintf(`
-		DELETE FROM %s
+		UPDATE %s
+		SET delete_height = :height, height = :height
 		WHERE chain_name=:chain_name AND channel_id=:channel_id AND port=:port
+		AND delete_height IS NULL
 	`, r.tableName)
 }
