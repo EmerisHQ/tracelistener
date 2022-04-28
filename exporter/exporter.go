@@ -211,7 +211,7 @@ func (e *Exporter) StopReceiving() error {
 func (e *Exporter) Orchestrate() error {
 	if errHandler := e.HandleTrace(); errHandler != nil {
 		if errFinish := e.finish(); errFinish != nil {
-			return fmt.Errorf("handler error: %s, findish error %w", errHandler.Error(), errFinish)
+			return fmt.Errorf("handler error: %s, finish error %w", errHandler.Error(), errFinish)
 		}
 		return errHandler
 	}
