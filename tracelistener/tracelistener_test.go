@@ -699,6 +699,8 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", p))
 			go tw.Watch(exp)
 
+			time.Sleep(1 * time.Second)
+
 			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", p, tt.params))
 			require.Eventually(t, func() bool {
 				return r.Body != nil
