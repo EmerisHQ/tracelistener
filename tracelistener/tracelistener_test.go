@@ -699,10 +699,9 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", p))
 			go tw.Watch(exp)
 
-			time.Sleep(1 * time.Second)
-
-			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", p, tt.params))
+			var r *http.Response
 			require.Eventually(t, func() bool {
+				r, _ = http.Get(fmt.Sprintf("http://localhost:%d/start%s", p, tt.params))
 				return r.Body != nil
 			}, time.Second*15, time.Millisecond*100)
 			by, err := ioutil.ReadAll(r.Body)
@@ -710,11 +709,12 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 			require.NoError(t, r.Body.Close())
 			require.Contains(t, string(by), tt.getRespMsg)
 
-			r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", p))
-			require.NoError(t, err)
 			require.Eventually(t, func() bool {
+				r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", p))
 				return r.Body != nil
 			}, time.Second*15, time.Millisecond*100)
+			require.NoError(t, err)
+
 			by, err = ioutil.ReadAll(r.Body)
 			require.Contains(t, string(by), exporter.ErrExporterNotRunning.Error())
 			require.NoError(t, r.Body.Close())
