@@ -712,7 +712,7 @@ func TestTracelistener_Exporter_invalidParams(t *testing.T) {
 			require.NoError(t, err)
 			require.Eventually(t, func() bool {
 				return r.Body != nil
-			}, time.Second*5, time.Millisecond*100)
+			}, time.Second*15, time.Millisecond*100)
 			by, err = ioutil.ReadAll(r.Body)
 			require.Contains(t, string(by), exporter.ErrExporterNotRunning.Error())
 			require.NoError(t, r.Body.Close())
