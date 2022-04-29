@@ -1,10 +1,18 @@
 package tracelistener_test
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"os"
 	"strconv"
+	"syscall"
 	"testing"
 	"time"
+
+	"github.com/emerishq/tracelistener/exporter"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
@@ -131,7 +139,7 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			f, err := os.CreateTemp("", "test_data")
 			require.NoError(t, err)
 
-			defer os.Remove(f.Name())
+			defer func() { _ = os.Remove(f.Name()) }()
 
 			dataChan := make(chan tracelistener.TraceOperation)
 			errChan := make(chan error)
@@ -147,10 +155,10 @@ func TestTraceWatcher_Watch(t *testing.T) {
 			go func() {
 				if tt.shouldPanic {
 					require.Panics(t, func() {
-						tw.Watch()
+						tw.Watch(nil)
 					})
 				} else {
-					tw.Watch()
+					tw.Watch(nil)
 				}
 			}()
 
@@ -573,4 +581,261 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 
 		require.NoError(t, insertErr)
 	}
+}
+
+func TestTracelistener_Exporter_invalidParams(t *testing.T) {
+	op := `{"operation":"write","key":"aWJjL2Z3ZC8weGMwMDA0ZThkMzg=","value":"cG9ydHMvdHJhbnNmZXI=","metadata":null}`
+	tests := []struct {
+		name       string
+		data       string
+		params     string
+		getRespMsg string
+	}{
+		{
+			"no param: returns validation error",
+			op,
+			"",
+			"invalid param combination",
+		},
+		{
+			"duration invalid param: exceeds the range",
+			op,
+			"?duration=30h",
+			fmt.Sprintf("validation error: accepted duration 1s-%s received %s", exporter.MaxDuration, (time.Hour * 30).String()),
+		},
+		{
+			"duration invalid param: below the range",
+			op,
+			"?duration=-30h",
+			fmt.Sprintf("validation error: accepted duration 1s-%s received %s", exporter.MaxDuration, (-time.Hour * 30).String()),
+		},
+		{
+			"duration invalid param: wrong signature",
+			op,
+			"?D=30m",
+			"validation error: unknown param D",
+		},
+		{
+			"count invalid param: malformed, missing suffix `N`",
+			op,
+			fmt.Sprintf("?count=%d", exporter.MaxTraceCount+1),
+			"invalid query param count, want format 20N got " + fmt.Sprint(exporter.MaxTraceCount+1),
+		},
+		{
+			"count invalid param: exceeds the range",
+			op,
+			fmt.Sprintf("?count=%dN", exporter.MaxTraceCount+1),
+			"validation error: accepted trace count 1-1000000 received " + fmt.Sprint(exporter.MaxTraceCount+1),
+		},
+		{
+			"count invalid param: below the range",
+			op,
+			fmt.Sprintf("?count=%dN", -1),
+			"validation error: accepted trace count 1-1000000 received -1",
+		},
+		{
+			"count invalid param: wrong signature",
+			op,
+			fmt.Sprintf("?N=%dN", -1),
+			"validation error: unknown param N",
+		},
+		{
+			"size invalid param: malformed, missing suffix `MB`",
+			op,
+			fmt.Sprintf("?size=%d", exporter.MaxSizeLim),
+			"invalid query param size, want format 20MB got " + fmt.Sprint(exporter.MaxSizeLim),
+		},
+		{
+			"size invalid param: exceeds the range",
+			op,
+			fmt.Sprintf("?size=%dMB", exporter.MaxSizeLim+1),
+			fmt.Sprintf("validation error: accepted record file size 1-%dMB received %d", exporter.MaxSizeLim, exporter.MaxSizeLim+1),
+		},
+		{
+			"size invalid param: below the range",
+			op,
+			fmt.Sprintf("?size=%dMB", -1),
+			fmt.Sprintf("validation error: accepted record file size 1-%dMB received %d", exporter.MaxSizeLim, -1),
+		},
+		{
+			"size invalid param: wrong signature",
+			op,
+			fmt.Sprintf("?M=%dMB", 10),
+			"validation error: unknown param M",
+		},
+		{
+			"invalid param xxxx: returns validation error",
+			op,
+			"?count=10N&xxxx=yyyy",
+			"validation error: unknown param xxxx",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := os.CreateTemp("", "test_data")
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				_ = os.Remove(f.Name())
+			})
+
+			dataChan := make(chan tracelistener.TraceOperation)
+			errChan := make(chan error)
+			l, _ := zap.NewDevelopment()
+			tw := tracelistener.TraceWatcher{
+				DataSourcePath: f.Name(),
+				WatchedOps:     []tracelistener.Operation{},
+				DataChan:       dataChan,
+				ErrorChan:      errChan,
+				Logger:         l.Sugar(),
+			}
+
+			exp, err := exporter.New(exporter.WithLogger(l.Sugar()))
+			require.NoError(t, err)
+
+			p, err := getFreePort(t)
+			require.NoError(t, err)
+
+			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", p))
+			go tw.Watch(exp)
+
+			var r *http.Response
+			require.Eventually(t, func() bool {
+				r, _ = http.Get(fmt.Sprintf("http://localhost:%d/start%s", p, tt.params))
+				return r.Body != nil
+			}, time.Second*15, time.Millisecond*100)
+			by, err := ioutil.ReadAll(r.Body)
+			require.NoError(t, err)
+			require.NoError(t, r.Body.Close())
+			require.Contains(t, string(by), tt.getRespMsg)
+
+			require.Eventually(t, func() bool {
+				r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", p))
+				return r.Body != nil
+			}, time.Second*15, time.Millisecond*100)
+			require.NoError(t, err)
+
+			by, err = ioutil.ReadAll(r.Body)
+			require.Contains(t, string(by), exporter.ErrExporterNotRunning.Error())
+			require.NoError(t, r.Body.Close())
+
+			n, err := f.Write([]byte(tt.data))
+			require.NoError(t, err)
+			require.Equal(t, len(tt.data), n)
+		})
+	}
+}
+
+func TestTracelistener_Exporter_success(t *testing.T) {
+	op := `{"operation":"write","key":"aWJjL2Z3ZC8weGMwMDA0ZThkMzg=","value":"cG9ydHMvdHJhbnNmZXI=","metadata":null}`
+	tests := []struct {
+		name          string
+		N             int
+		params        string
+		generateTrace int
+	}{
+		{
+			"Capture N traces",
+			10,
+			"?count=10N",
+			20,
+		},
+		{
+			"Capture N traces: N satisfied earliest",
+			10,
+			"?count=10N&size=100MB&duration=1h",
+			200,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pipeFile := fmt.Sprintf("fifo%d.fifo", i)
+			_ = os.Remove(pipeFile)
+			require.NoError(t, syscall.Mkfifo(pipeFile, 0666))
+
+			l, _ := zap.NewDevelopment()
+			tw := tracelistener.TraceWatcher{
+				DataSourcePath: pipeFile,
+				WatchedOps:     []tracelistener.Operation{},
+				DataChan:       make(chan tracelistener.TraceOperation),
+				ErrorChan:      make(chan error),
+				Logger:         l.Sugar(),
+			}
+
+			exp, err := exporter.New(exporter.WithLogger(l.Sugar()))
+			require.NoError(t, err)
+
+			port, err := getFreePort(t)
+			require.NoError(t, err)
+
+			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", port))
+			go tw.Watch(exp)
+
+			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", port, tt.params))
+			var stat1 any
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
+			ssGet, ok := stat1.(map[string]any)
+			require.True(t, ok)
+
+			t.Cleanup(func() {
+				_ = os.Remove(pipeFile)
+				_ = os.Remove(fmt.Sprint(ssGet["file_name"]))
+			})
+			require.NoError(t, r.Body.Close())
+
+			r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", port))
+			require.NoError(t, err)
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
+			ssStat, ok := stat1.(map[string]any)
+			require.True(t, ok)
+			require.NoError(t, r.Body.Close())
+
+			// trace_count must be same as we haven't fed any traces yet.
+			// file_name and start_time are thrown in for readers sanity.
+			require.Equal(t, ssGet["file_name"], ssStat["file_name"])
+			require.Equal(t, ssGet["start_time"], ssStat["start_time"])
+			require.InDelta(t, ssGet["trace_count"], 0, 0)
+			require.Equal(t, ssGet["trace_count"], ssStat["trace_count"])
+
+			f, err := os.OpenFile(pipeFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
+			require.NoError(t, err)
+
+			// Simulate a chain. Feed data to the fifo. Which will be captured & processed
+			// by TL. Also, tt.N traces should be captured by exporter.
+			for i := 0; i < tt.generateTrace; i++ {
+				n, err := f.WriteString(op + "\n")
+				require.NoError(t, err)
+				require.Equal(t, len(op)+1, n)
+			}
+
+			require.Eventually(t, func() bool {
+				r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", port))
+				require.NoError(t, err)
+				var stat any
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&stat))
+				ssStat, ok := stat.(map[string]any)
+				require.True(t, ok)
+				require.NoError(t, r.Body.Close())
+				traceCountFromStat, ok := ssStat["trace_count"].(float64)
+				require.True(t, ok)
+				return int(traceCountFromStat) == tt.N
+			}, time.Second*10, time.Millisecond*200)
+		})
+	}
+}
+
+func getFreePort(t *testing.T) (int, error) {
+	t.Helper()
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = l.Close() }()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

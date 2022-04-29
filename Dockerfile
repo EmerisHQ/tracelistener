@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine3.14 as builder
+FROM golang:1.18-alpine3.14 as builder
 
 ARG GIT_TOKEN
 ARG SDK_TARGET
@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates mailcap && addgroup -S app && adduser -S app -G app
+RUN apk --no-cache add ca-certificates mailcap tar && addgroup -S app && adduser -S app -G app
 
 COPY --from=builder /app/build/tracelistener /usr/local/bin/tracelistener
 USER app

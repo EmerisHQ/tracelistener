@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/emerishq/emeris-utils/logging"
+	"github.com/emerishq/tracelistener/exporter"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/blocktime"
 	"github.com/emerishq/tracelistener/tracelistener/bulk"
@@ -116,7 +117,13 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	go watcher.Watch()
+	traceExporter, err := exporter.New(exporter.WithLogger(logger))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	go traceExporter.ListenAndServeHTTP(cfg.ExporterHTTPPort)
+
+	go watcher.Watch(traceExporter)
 
 	for {
 		select {
