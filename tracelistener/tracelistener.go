@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/emerishq/tracelistener/exporter"
+
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/nxadm/tail"
 
@@ -268,7 +270,7 @@ type TraceWatcher struct {
 	Logger         *zap.SugaredLogger
 }
 
-func (tr *TraceWatcher) Watch() {
+func (tr *TraceWatcher) Watch(exporter *exporter.Exporter) {
 	errorHappened := false
 	for { // infinite cycle, if something goes wrong in reading the fifo we restart the cycle
 		if errorHappened {
@@ -288,12 +290,20 @@ func (tr *TraceWatcher) Watch() {
 		for line := range t.Lines {
 			if line.Err != nil {
 				tr.ErrorChan <- fmt.Errorf("line reading error, line %v, error %w", line, err)
+				errorHappened = true
 				break // restart the reading loop
 			}
 
 			tr.Logger.Debugw("new line read from reader", "line", line.Text)
 
 			lineBytes := []byte(line.Text)
+
+			// Feed data to exporter.
+			if exporter != nil && exporter.IsAcceptingData() {
+				if err := exporter.NonblockingReceive(lineBytes); err != nil {
+					tr.Logger.Errorw("exporter", "receive trace err", err)
+				}
+			}
 
 			// Log line used to trigger Grafana alerts.
 			// Do not modify or remove without changing the corresponding dashboards

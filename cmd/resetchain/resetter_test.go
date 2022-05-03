@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/emerishq/emeris-utils/database"
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/emerishq/emeris-utils/database"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
