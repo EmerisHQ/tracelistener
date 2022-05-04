@@ -28,7 +28,12 @@ func (*validatorsProcessor) Migrations() []string {
 	if useSQLGen {
 		return []string{validatorsTable.CreateTable()}
 	}
-	return []string{createValidatorsTable, addHeightColumn(validatorsTableOld), addDeleteHeightColumn(validatorsTableOld)}
+	return []string{
+		createValidatorsTable,
+		addValAddressColumn,
+		addHeightColumn(validatorsTableOld),
+		addDeleteHeightColumn(validatorsTableOld),
+	}
 }
 
 func (b *validatorsProcessor) ModuleName() string {
