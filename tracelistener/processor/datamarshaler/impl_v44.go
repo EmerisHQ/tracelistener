@@ -499,7 +499,13 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 
 	k := hex.EncodeToString(data.Key)
 
+	valAddress, err := b32Hex(v.OperatorAddress)
+	if err != nil {
+		return models.ValidatorRow{}, fmt.Errorf("cannot convert operator address from bech32 to hex, %w", err)
+	}
+
 	d.l.Debugw("new validator write",
+		"validator_address", valAddress,
 		"operator_address", v.OperatorAddress,
 		"height", data.BlockHeight,
 		"txHash", data.TxHash,
@@ -509,6 +515,7 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 	)
 
 	return models.ValidatorRow{
+		ValidatorAddress:     valAddress,
 		OperatorAddress:      v.OperatorAddress,
 		ConsensusPubKeyType:  v.ConsensusPubkey.GetTypeUrl(),
 		ConsensusPubKeyValue: v.ConsensusPubkey.Value,

@@ -504,7 +504,7 @@ DO UPDATE SET
 `
 
 	addValAddressColumn = `
-	ALTER TABLE tracelistener.` + validatorsTableOld + ` ADD COLUMN IF NOT EXISTS validator_address text not null;
+	ALTER TABLE tracelistener.` + validatorsTableOld + ` ADD COLUMN IF NOT EXISTS validator_address text;
 	`
 )
 

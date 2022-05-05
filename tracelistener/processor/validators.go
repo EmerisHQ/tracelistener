@@ -26,7 +26,7 @@ type validatorsProcessor struct {
 
 func (*validatorsProcessor) Migrations() []string {
 	if useSQLGen {
-		return []string{validatorsTable.CreateTable()}
+		return []string{validatorsTable.CreateTable(), addValAddressColumn}
 	}
 	return []string{
 		createValidatorsTable,
