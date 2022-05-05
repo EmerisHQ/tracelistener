@@ -434,6 +434,8 @@ github.com/emerishq/demeris-backend-models v1.4.0 h1:vFdiK1Ylcc5vhZWG/hHmUJP0Hk1
 github.com/emerishq/demeris-backend-models v1.4.0/go.mod h1:1+h5uREsxHEWUbfdowE10imcluyW/Z0IgCpnihDJTyQ=
 github.com/emerishq/demeris-backend-models v1.5.0 h1:PBldMVGK+jswfmKrtHZB7K6HI0SvjwDlEfPxPoH3azo=
 github.com/emerishq/demeris-backend-models v1.5.0/go.mod h1:1+h5uREsxHEWUbfdowE10imcluyW/Z0IgCpnihDJTyQ=
+github.com/emerishq/demeris-backend-models v1.6.0 h1:HilyaGc+SRztmmtfFOVW8v23lnhLOjbHPWWhxXlLl14=
+github.com/emerishq/demeris-backend-models v1.6.0/go.mod h1:u1VJc568kwprMLUU7QH6RFkbv1iOK6pOb1oowHiMVwc=
 github.com/emerishq/emeris-utils v1.3.0 h1:dVWtigVeUb7h/jQL2ofu1YZy61jxJ76BY9+fpzuEOmc=
 github.com/emerishq/emeris-utils v1.3.0/go.mod h1:rZguErkL/bsJ1Nj0LN5Rfm9qcI1XIwHpr5XwSJwSvN0=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
@@ -1045,6 +1047,8 @@ github.com/lib/pq v1.10.0/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/lib/pq v1.10.2/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/lib/pq v1.10.4 h1:SO9z7FRPzA03QhHKJrH5BXA6HU1rS4V2nIVrrNC1iYk=
 github.com/lib/pq v1.10.4/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/lib/pq v1.10.5 h1:J+gdV2cUmX7ZqL2B0lFcW0m+egaHC2V3lpO8nWxyYiQ=
+github.com/lib/pq v1.10.5/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/libp2p/go-buffer-pool v0.0.2 h1:QNK2iAFa8gjAe1SPz6mHSMuCcjs+X1wlHzeOSqcmlfs=
 github.com/libp2p/go-buffer-pool v0.0.2/go.mod h1:MvaB6xw5vOrDl8rYZGLFdKAuk/hRoRZd1Vi32+RXyFM=
 github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-bc2310a04743/go.mod h1:qklhhLq1aX+mtWk9cPHPzaBjWImj5ULL6C7HFJtXQMM=
