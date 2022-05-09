@@ -424,6 +424,7 @@ CREATE TABLE IF NOT EXISTS tracelistener.` + validatorsTableOld + ` (
 	insertValidator = `
 INSERT INTO tracelistener.` + validatorsTableOld + ` (
         chain_name,
+		validator_address,
         operator_address,
         consensus_pubkey_type,
         consensus_pubkey_value,
@@ -446,6 +447,7 @@ INSERT INTO tracelistener.` + validatorsTableOld + ` (
     )
 VALUES (
         :chain_name,
+		:validator_address,
         :operator_address,
         :consensus_pubkey_type,
         :consensus_pubkey_value,
@@ -472,6 +474,7 @@ VALUES (
 ON CONFLICT (chain_name, operator_address) 
 DO UPDATE SET 
     chain_name = EXCLUDED.chain_name,
+	validator_address = EXCLUDED.validator_address,
     operator_address = EXCLUDED.operator_address,
     consensus_pubkey_type = EXCLUDED.consensus_pubkey_type,
     consensus_pubkey_value = EXCLUDED.consensus_pubkey_value,
@@ -499,6 +502,10 @@ DO UPDATE SET
 		AND
 		operator_address = :operator_address
 `
+
+	addValAddressColumn = `
+	ALTER TABLE tracelistener.` + validatorsTableOld + ` ADD COLUMN IF NOT EXISTS validator_address text DEFAULT '';
+	`
 )
 
 func addHeightColumn(tableName string) string {
