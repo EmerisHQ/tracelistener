@@ -1,0 +1,22 @@
+name: Auto Label Patch to PR
+
+on:
+  pull_request:
+    types: opened
+    branches: main
+
+  workflow_dispatch:
+
+jobs:
+  set-label:
+    runs-on: self-hosted
+    name: Check and set label
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'patch') &&
+      !contains(github.event.pull_request.labels.*.name, 'minor') &&
+      !contains(github.event.pull_request.labels.*.name, 'major')
+    steps:
+      - uses: actions/labeler@v2
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/auto-label-config.yml
