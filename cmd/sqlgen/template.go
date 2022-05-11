@@ -38,7 +38,7 @@ func (r {{ .StructName }}) Upsert() string {
 		VALUES ({{ Join .Config.InsertColumnsParams }})
 		ON CONFLICT ({{ Join .Config.UniqueColumns }})
 		DO UPDATE
-		SET {{ Join .Config.UpsertSet }}
+		SET delete_height = NULL, {{ Join .Config.UpsertSet }}
 		WHERE %s.height < EXCLUDED.height
 	` + "`" + `, r.tableName, r.tableName)
 }
