@@ -772,7 +772,8 @@ func TestTracelistener_Exporter_success(t *testing.T) {
 			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", port))
 			go tw.Watch(exp)
 
-			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", port, tt.params))
+			r, err := http.Get(fmt.Sprintf("http://localhost:%d/start%s", port, tt.params))
+			require.NoError(t, err)
 			var stat1 any
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
 			ssGet, ok := stat1.(map[string]any)

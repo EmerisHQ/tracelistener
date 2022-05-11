@@ -36,7 +36,7 @@ func (r ClientsTable) Upsert() string {
 		VALUES (:height, :chain_name, :chain_id, :client_id, :latest_height, :trusting_period)
 		ON CONFLICT (chain_name, chain_id, client_id)
 		DO UPDATE
-		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, chain_id = EXCLUDED.chain_id, client_id = EXCLUDED.client_id, latest_height = EXCLUDED.latest_height, trusting_period = EXCLUDED.trusting_period
+		SET delete_height = NULL, height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, chain_id = EXCLUDED.chain_id, client_id = EXCLUDED.client_id, latest_height = EXCLUDED.latest_height, trusting_period = EXCLUDED.trusting_period
 		WHERE %s.height < EXCLUDED.height
 	`, r.tableName, r.tableName)
 }

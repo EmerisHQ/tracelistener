@@ -36,7 +36,7 @@ func (r AuthTable) Upsert() string {
 		VALUES (:height, :chain_name, :address, :sequence_number, :account_number)
 		ON CONFLICT (chain_name, address, account_number)
 		DO UPDATE
-		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, address = EXCLUDED.address, sequence_number = EXCLUDED.sequence_number, account_number = EXCLUDED.account_number
+		SET delete_height = NULL, height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, address = EXCLUDED.address, sequence_number = EXCLUDED.sequence_number, account_number = EXCLUDED.account_number
 		WHERE %s.height < EXCLUDED.height
 	`, r.tableName, r.tableName)
 }

@@ -36,7 +36,7 @@ func (r ChannelsTable) Upsert() string {
 		VALUES (:height, :chain_name, :channel_id, :counter_channel_id, :port, :state, :hops)
 		ON CONFLICT (chain_name, channel_id, port)
 		DO UPDATE
-		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, channel_id = EXCLUDED.channel_id, counter_channel_id = EXCLUDED.counter_channel_id, port = EXCLUDED.port, state = EXCLUDED.state, hops = EXCLUDED.hops
+		SET delete_height = NULL, height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, channel_id = EXCLUDED.channel_id, counter_channel_id = EXCLUDED.counter_channel_id, port = EXCLUDED.port, state = EXCLUDED.state, hops = EXCLUDED.hops
 		WHERE %s.height < EXCLUDED.height
 	`, r.tableName, r.tableName)
 }
