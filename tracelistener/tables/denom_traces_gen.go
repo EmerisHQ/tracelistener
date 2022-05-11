@@ -36,7 +36,7 @@ func (r DenomTracesTable) Upsert() string {
 		VALUES (:height, :chain_name, :path, :base_denom, :hash)
 		ON CONFLICT (chain_name, hash)
 		DO UPDATE
-		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, path = EXCLUDED.path, base_denom = EXCLUDED.base_denom, hash = EXCLUDED.hash
+		SET delete_height = NULL, height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, path = EXCLUDED.path, base_denom = EXCLUDED.base_denom, hash = EXCLUDED.hash
 		WHERE %s.height < EXCLUDED.height
 	`, r.tableName, r.tableName)
 }

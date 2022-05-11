@@ -36,7 +36,7 @@ func (r UnbondingDelegationsTable) Upsert() string {
 		VALUES (:height, :chain_name, :delegator_address, :validator_address, :entries)
 		ON CONFLICT (chain_name, delegator_address, validator_address)
 		DO UPDATE
-		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, delegator_address = EXCLUDED.delegator_address, validator_address = EXCLUDED.validator_address, entries = EXCLUDED.entries
+		SET delete_height = NULL, height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, delegator_address = EXCLUDED.delegator_address, validator_address = EXCLUDED.validator_address, entries = EXCLUDED.entries
 		WHERE %s.height < EXCLUDED.height
 	`, r.tableName, r.tableName)
 }
