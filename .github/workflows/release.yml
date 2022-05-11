@@ -18,6 +18,6 @@ jobs:
         uses: K-Phoen/semver-release-action@master
         with:
           release_branch: main
-          tag_format: "v%major%.%minor%.0"
+          tag_format: "v%major%.%minor%.%patch%"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
