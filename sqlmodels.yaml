@@ -24,6 +24,59 @@ tables:
       - address
       - denom
 
+  - name: cw20_balances
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: contract_address
+        type: text
+      - name: address
+        type: text
+      - name: amount
+        type: text
+    unique_columns:
+      - chain_name
+      - contract_address
+      - address
+
+  - name: cw20_token_info
+    columns:
+      - name: id
+        type: serial
+        skip_on_insert: true
+        primary: true
+      - name: height
+        type: integer
+      - name: delete_height
+        type: integer
+        skip_on_insert: true
+        nullable: true
+      - name: chain_name
+        type: text
+      - name: contract_address
+        type: text
+      - name: name
+        type: text
+      - name: symbol
+        type: text
+      - name: decimals
+        type: integer
+      - name: total_supply
+        type: text
+    unique_columns:
+      - chain_name
+      - contract_address
+
   - name: connections
     columns:
       - name: id

@@ -45,6 +45,9 @@ const (
 
 	// Account storage SDK module
 	Acc SDKModuleName = "acc"
+
+	// CW20 token module
+	CW20 SDKModuleName = "cw20"
 )
 
 // SupportedSDKModuleList holds all the Cosmos SDK module names tracelistener supports.
@@ -55,6 +58,7 @@ var SupportedSDKModuleList = map[SDKModuleName]struct{}{
 	Distribution: {},
 	Transfer:     {},
 	Acc:          {},
+	CW20:         {},
 }
 
 const (

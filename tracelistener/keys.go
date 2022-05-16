@@ -1,8 +1,11 @@
 package tracelistener
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
 // SplitDelegationKey given a key, split it into prefix, delegator and
@@ -65,4 +68,77 @@ func FromLengthPrefix(rawData []byte) ([]byte, error) {
 	}
 
 	return rawData, nil
+}
+
+var (
+	wasmContractStorePrefix  = []byte{0x03}
+	wasmContractBalanceKey   = append([]byte{0, 7}, []byte("balance")...)
+	wasmContractTokenInfoKey = []byte("token_info")
+)
+
+// SplitCW20BalanceKey returns the contract and the holder address of a given
+// CW20 balance key, or an error if it's not valid.
+// param <key> is a list of bytes. The key is a concatenation of 5 parts,
+// 1. Prefix                  length: 1 Byte (always 03 for ContractStorePrefix)
+// 2. Contract Address    		length: 32 Bytes
+// 3. Type Len              	length: 2 Bytes
+// 4. Type                  	length: From 3
+// 5. Holder Address          length: the remaining bytes
+// key : <prefix><contract-address><type-len><type><holder-address>
+// Len	    1	          32             2     0-510    at least 43
+//
+// Note: Address len 0 does not make sense, but since in the SDK it's "possible" to
+// have 0 len address for delegator/validator, we also consider empty address valid.
+func SplitCW20BalanceKey(key []byte) (string, string, error) {
+	const (
+		// At-least: 1+32+2+43 bytes
+		minLen = 1 + 32 + 2 + 43
+		// At-maxLen  : 1+32+2+510+43 bytes
+		maxLen = minLen + 510
+	)
+	if len(key) < minLen || len(key) > maxLen {
+		return "", "",
+			fmt.Errorf("malformed cw20 balance key: length %d not in range %d-%d",
+				len(key), minLen, maxLen)
+	}
+	if !bytes.HasPrefix(key, wasmContractStorePrefix) {
+		return "", "", fmt.Errorf("not a wasm contract store key")
+	}
+	if !bytes.HasPrefix(key[33:], wasmContractBalanceKey) {
+		return "", "", fmt.Errorf("not a cw20 balance key")
+	}
+	contractAddr := hex.EncodeToString(key[1:33])
+	// holder addr must be bech32 decoded
+	_, bz, err := bech32.DecodeAndConvert(string(key[42:]))
+	if err != nil {
+		return "", "", fmt.Errorf("decode holder address: %w", err)
+	}
+	holderAddr := hex.EncodeToString(bz)
+	return contractAddr, holderAddr, nil
+}
+
+// SplitCW20TokenInfoKey returns the contract address of a given
+// CW20 token_info key, or an error if it's not valid.
+// param <key> is a list of bytes. The key is a concatenation of 5 parts,
+// 1. Prefix                  length: 1 Byte (always 03 for ContractStorePrefix)
+// 2. Contract Address    		length: 32 Bytes
+// 4. Type                  	length: 10 Bytes (always token_info)
+// key : <prefix><contract-address><type>
+// Len	    1	          32           10
+func SplitCW20TokenInfoKey(key []byte) (string, error) {
+	const expectedLen = 1 + 32 + 10
+	if len(key) != expectedLen {
+		return "", fmt.Errorf(
+			"malformed cw20 token_info key: length %d not equal to %d",
+			len(key), expectedLen,
+		)
+	}
+	if !bytes.HasPrefix(key, wasmContractStorePrefix) {
+		return "", fmt.Errorf("not a wasm contract store key")
+	}
+	if !bytes.HasPrefix(key[33:], wasmContractTokenInfoKey) {
+		return "", fmt.Errorf("not a cw20 token_info key")
+	}
+	contractAddr := hex.EncodeToString(key[1:33])
+	return contractAddr, nil
 }
