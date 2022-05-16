@@ -41,7 +41,7 @@ func (b *cw20TokenInfoProcessor) InsertStatement() string {
 }
 
 func (b *cw20TokenInfoProcessor) DeleteStatement() string {
-	panic("cw20TokenInfo processor never deletes")
+	return cw20TokenInfoTable.Delete()
 }
 
 func (b *cw20TokenInfoProcessor) SDKModuleName() tracelistener.SDKModuleName {

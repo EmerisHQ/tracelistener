@@ -40,7 +40,7 @@ func (b *cw20BalanceProcessor) InsertStatement() string {
 }
 
 func (b *cw20BalanceProcessor) DeleteStatement() string {
-	panic("cw20Balance processor never deletes")
+	return cw20BalanceTable.Delete()
 }
 
 func (b *cw20BalanceProcessor) SDKModuleName() tracelistener.SDKModuleName {
