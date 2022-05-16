@@ -44,19 +44,21 @@ func (i *Instance) Add(query string, data []interface{}, sleepFunc func()) error
 // Ex: delta: 10s     factor: 10   => sleep can be anything from  1 sec to 10 sec.
 //     delta: 10s     factor: 20   => sleep can be anything from .5 sec to 10 sec.
 //     delta: 10s     factor: 100  => sleep can be anything from .1 sec to 10 sec.
+//
+// Min sleep time is 10MS. We are implementing something similar to equal jitter
+// (as we don't have backoff, there's no memory). But following the philosophy of
+// equal jitter and not allowing a very small sleep time.
 func Jitter(delta time.Duration, factor int) func() {
 	return func() {
-		if delta <= 0 {
+		if delta <= 0 || factor <= 0 {
 			return
-		}
-		if factor <= 0 || factor >= 100 {
-			return
-		}
-		if delta < time.Millisecond*10 {
-			delta = time.Millisecond * 10
 		}
 		rand.Seed(time.Now().Unix())
 		factor = rand.Intn(factor) + 1 //nolint:gosec
-		time.Sleep(delta / time.Duration(factor))
+		delta /= time.Duration(factor)
+		if delta < time.Millisecond*10 {
+			delta = time.Millisecond * 10
+		}
+		time.Sleep(delta)
 	}
 }
