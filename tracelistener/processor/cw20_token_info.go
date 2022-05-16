@@ -41,7 +41,6 @@ func (b *cw20TokenInfoProcessor) InsertStatement() string {
 }
 
 func (b *cw20TokenInfoProcessor) DeleteStatement() string {
-	// FIXME(tb): are we sure about that?
 	panic("cw20TokenInfo processor never deletes")
 }
 
@@ -97,6 +96,9 @@ func (b *cw20TokenInfoProcessor) Process(data tracelistener.TraceOperation) erro
 			},
 		}
 	)
+	// token_info value is a json string that contains the name, the symbol,
+	// the decimals and the total_supply of the token. To copy those values in
+	// the CW20TokenInfoRow, we can simply json.Unmarshal the value to the struct.
 	err = json.Unmarshal(data.Value, &val)
 	if err != nil {
 		return fmt.Errorf("unmarshal cw20 token_info value: %w", err)

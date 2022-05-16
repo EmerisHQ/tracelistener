@@ -92,7 +92,8 @@ func (b *cw20BalanceProcessor) Process(data tracelistener.TraceOperation) error 
 		val = models.CW20BalanceRow{
 			ContractAddress: contractAddr,
 			Address:         holderAddr,
-			Amount:          string(data.Value),
+			// balance trace value is the amount.
+			Amount: string(data.Value),
 			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
 				Height: data.BlockHeight,
 			},
