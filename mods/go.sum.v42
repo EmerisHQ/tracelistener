@@ -460,6 +460,8 @@ github.com/emerishq/demeris-backend-models v1.5.0 h1:PBldMVGK+jswfmKrtHZB7K6HI0S
 github.com/emerishq/demeris-backend-models v1.5.0/go.mod h1:1+h5uREsxHEWUbfdowE10imcluyW/Z0IgCpnihDJTyQ=
 github.com/emerishq/demeris-backend-models v1.6.0 h1:HilyaGc+SRztmmtfFOVW8v23lnhLOjbHPWWhxXlLl14=
 github.com/emerishq/demeris-backend-models v1.6.0/go.mod h1:u1VJc568kwprMLUU7QH6RFkbv1iOK6pOb1oowHiMVwc=
+github.com/emerishq/demeris-backend-models v1.7.0 h1:6RRrTge8ooTFTxejBohSmGn7ux3RbJNpEeQrsjSGIIY=
+github.com/emerishq/demeris-backend-models v1.7.0/go.mod h1:/EHVMxWWvtl6iTrXY5smC5s1oB0BrkHXkSaG+dSsrXU=
 github.com/emerishq/emeris-utils v1.3.0 h1:dVWtigVeUb7h/jQL2ofu1YZy61jxJ76BY9+fpzuEOmc=
 github.com/emerishq/emeris-utils v1.3.0/go.mod h1:rZguErkL/bsJ1Nj0LN5Rfm9qcI1XIwHpr5XwSJwSvN0=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
@@ -620,6 +622,8 @@ github.com/go-playground/validator/v10 v10.10.0 h1:I7mrTYv78z8k8VXa/qJlOlEXn/nBh
 github.com/go-playground/validator/v10 v10.10.0/go.mod h1:74x4gJWsvQexRdW8Pn3dXSGrTK4nAUsbPlLADvpJkos=
 github.com/go-playground/validator/v10 v10.10.1 h1:uA0+amWMiglNZKZ9FJRKUAe9U3RX91eVn1JYXMWt7ig=
 github.com/go-playground/validator/v10 v10.10.1/go.mod h1:i+3WkQ1FvaUjjxh1kSvIA4dMGDBiPU55YFDl0WbKdWU=
+github.com/go-playground/validator/v10 v10.11.0 h1:0W+xRM511GY47Yy3bZUbJVitCNg2BOGlCyvTqsp/xIw=
+github.com/go-playground/validator/v10 v10.11.0/go.mod h1:i+3WkQ1FvaUjjxh1kSvIA4dMGDBiPU55YFDl0WbKdWU=
 github.com/go-redis/redis/v8 v8.11.4/go.mod h1:2Z2wHZXdQpCDXEGzqMockDpNyYvi2l4Pxt6RJr792+w=
 github.com/go-sourcemap/sourcemap v2.1.2+incompatible/go.mod h1:F8jJfvm2KbVjc5NqelyYJmf/v5J0dwNLS2mL4sNA1Jg=
 github.com/go-sourcemap/sourcemap v2.1.3+incompatible/go.mod h1:F8jJfvm2KbVjc5NqelyYJmf/v5J0dwNLS2mL4sNA1Jg=
