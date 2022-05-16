@@ -145,7 +145,8 @@ func main() {
 						continue
 					}
 
-					if err := di.Add(wbUnit.Statement, is); err != nil {
+					// Add a Jitter of [50..500] Millisecond in DB add.
+					if err := di.Add(wbUnit.Statement, is, database.Jitter(time.Millisecond*500, 10)); err != nil {
 						logger.Errorw("database error",
 							"error", err,
 							"statement", wbUnit.Statement,

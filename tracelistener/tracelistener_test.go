@@ -559,7 +559,7 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 		Data: insertData,
 	}
 
-	insertErr := i.Add(insert, dbe.InterfaceSlice())
+	insertErr := i.Add(insert, dbe.InterfaceSlice(), nil)
 
 	require.Error(t, insertErr)
 	require.Contains(t, insertErr.Error(), "placeholder index must be between 1 and 65536", insertErr.Error())
@@ -577,7 +577,7 @@ func TestWritebackOp_ChunkingWorks(t *testing.T) {
 
 	// insert with chunking
 	for _, chunk := range splitStatements {
-		insertErr := i.Add(insert, chunk.InterfaceSlice())
+		insertErr := i.Add(insert, chunk.InterfaceSlice(), nil)
 
 		require.NoError(t, insertErr)
 	}
@@ -772,19 +772,32 @@ func TestTracelistener_Exporter_success(t *testing.T) {
 			go exp.ListenAndServeHTTP(fmt.Sprintf("%d", port))
 			go tw.Watch(exp)
 
-			r, _ := http.Get(fmt.Sprintf("http://localhost:%d/start%s", port, tt.params))
+			var ssGet map[string]any
+			var ok bool
 			var stat1 any
-			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
-			ssGet, ok := stat1.(map[string]any)
-			require.True(t, ok)
+			require.Eventually(t, func() bool {
+				r, err := http.Get(fmt.Sprintf("http://localhost:%d/start%s", port, tt.params))
+				if err != nil {
+					t.Log("TestTracelistener_Exporter_success",
+						"Capture N traces: N satisfied earliest",
+						"GET", fmt.Sprintf("http://localhost:%d/start%s", port, tt.params),
+						"error", err)
+					return false
+				}
+
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
+				ssGet, ok = stat1.(map[string]any)
+				require.True(t, ok)
+				require.NoError(t, r.Body.Close())
+				return true
+			}, time.Second*10, time.Millisecond*50)
 
 			t.Cleanup(func() {
 				_ = os.Remove(pipeFile)
 				_ = os.Remove(fmt.Sprint(ssGet["file_name"]))
 			})
-			require.NoError(t, r.Body.Close())
 
-			r, err = http.Get(fmt.Sprintf("http://localhost:%d/stat", port))
+			r, err := http.Get(fmt.Sprintf("http://localhost:%d/stat", port))
 			require.NoError(t, err)
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&stat1))
 			ssStat, ok := stat1.(map[string]any)
