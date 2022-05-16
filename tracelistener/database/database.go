@@ -1,9 +1,10 @@
 package database
 
 import (
-	dbutils "github.com/emerishq/emeris-utils/database"
 	"math/rand"
 	"time"
+
+	dbutils "github.com/emerishq/emeris-utils/database"
 )
 
 type Instance struct {
@@ -55,7 +56,7 @@ func Jitter(delta time.Duration, factor int) func() {
 			delta = time.Millisecond * 10
 		}
 		rand.Seed(time.Now().Unix())
-		factor = rand.Intn(factor) + 1
+		factor = rand.Intn(factor) + 1 //nolint:gosec
 		time.Sleep(delta / time.Duration(factor))
 	}
 }

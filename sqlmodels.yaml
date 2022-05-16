@@ -222,6 +222,8 @@ tables:
         nullable: true
       - name: chain_name
         type: text
+      - name: validator_address
+        type: text
       - name: operator_address
         type: text
       - name: consensus_pubkey_type

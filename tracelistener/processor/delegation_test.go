@@ -4,12 +4,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/tracelistener/database"
 	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 )
 
@@ -240,4 +242,84 @@ func TestDelegationFlushCache(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Upsert_After_Soft_Delete_Restore_Row(t *testing.T) {
+	requireT := require.New(t)
+	db, err := prepareDelegationDatabase(t)
+	requireT.NoError(err)
+
+	row := models.DelegationRow{
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			ChainName:    "chain",
+			Height:       1,
+			DeleteHeight: nil,
+		},
+		Delegator: "delegator",
+		Validator: "validator",
+		Amount:    "100stake",
+	}
+
+	// Create a delegation
+	_, err = db.Instance.DB.NamedExec(
+		delegationsTable.Upsert(),
+		row,
+	)
+	requireT.NoError(err)
+
+	// Delete that delegation
+	row.Height = 2
+	_, err = db.Instance.DB.NamedExec(
+		delegationsTable.Delete(),
+		row,
+	)
+	requireT.NoError(err)
+
+	// Create a new delegation with the same validator and delegator
+	row.Amount = "42stake"
+	row.Height = 3
+	_, err = db.Instance.DB.NamedExec(
+		delegationsTable.Upsert(),
+		row,
+	)
+	requireT.NoError(err)
+
+	// Assert a single (non soft-deleted) row exists in database
+	var result models.DelegationRow
+	err = db.Instance.DB.Get(
+		&result,
+		"SELECT * FROM tracelistener.delegations WHERE delegator_address=$1 AND validator_address=$2 AND delete_height IS NULL",
+		"delegator",
+		"validator",
+	)
+	requireT.NoError(err)
+	requireT.Equal(uint64(3), result.Height)
+	requireT.Equal("42stake", result.Amount)
+	requireT.Nil(result.DeleteHeight)
+}
+
+func prepareDelegationDatabase(t *testing.T) (*database.Instance, error) {
+	ts, err := testserver.NewTestServer()
+	if err != nil {
+		return nil, err
+	}
+	t.Cleanup(ts.Stop)
+
+	connString := ts.PGURL().String()
+	di, err := database.New(connString)
+	if err != nil {
+		return nil, err
+	}
+
+	// _, err = di.Instance.DB.Exec("CREATE DATABASE tracelistener")
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	_, err = di.Instance.DB.Exec(delegationsTable.CreateTable())
+	if err != nil {
+		return nil, err
+	}
+
+	return di, nil
 }

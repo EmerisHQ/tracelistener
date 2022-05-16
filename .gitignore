@@ -26,3 +26,5 @@ build/
 # mods live under the `mods` directory
 go.mod
 go.sum
+
+heap_profiler/

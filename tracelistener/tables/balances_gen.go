@@ -36,7 +36,7 @@ func (r BalancesTable) Upsert() string {
 		VALUES (:height, :chain_name, :address, :amount, :denom)
 		ON CONFLICT (chain_name, address, denom)
 		DO UPDATE
-		SET height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, address = EXCLUDED.address, amount = EXCLUDED.amount, denom = EXCLUDED.denom
+		SET delete_height = NULL, height = EXCLUDED.height, chain_name = EXCLUDED.chain_name, address = EXCLUDED.address, amount = EXCLUDED.amount, denom = EXCLUDED.denom
 		WHERE %s.height < EXCLUDED.height
 	`, r.tableName, r.tableName)
 }

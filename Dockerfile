@@ -11,7 +11,6 @@ RUN go env -w GOPRIVATE=github.com/emerishq,github.com/allinbits
 RUN git config --global url."https://git:${GIT_TOKEN}@github.com".insteadOf "https://github.com"
 
 WORKDIR /app
-COPY go.mod go.sum* ./
 COPY . .
 RUN make clean
 
