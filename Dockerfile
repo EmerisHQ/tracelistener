@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates mailcap tar && addgroup -S app && adduser -S app -G app
+RUN apk --no-cache add ca-certificates mailcap tar curl && addgroup -S app && adduser -S app -G app
 
 COPY --from=builder /app/build/tracelistener /usr/local/bin/tracelistener
 USER app

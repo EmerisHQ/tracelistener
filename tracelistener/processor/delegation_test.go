@@ -245,9 +245,9 @@ func TestDelegationFlushCache(t *testing.T) {
 }
 
 func Test_Upsert_After_Soft_Delete_Restore_Row(t *testing.T) {
-	require := require.New(t)
+	requireT := require.New(t)
 	db, err := prepareDelegationDatabase(t)
-	require.NoError(err)
+	requireT.NoError(err)
 
 	row := models.DelegationRow{
 		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
@@ -265,7 +265,7 @@ func Test_Upsert_After_Soft_Delete_Restore_Row(t *testing.T) {
 		delegationsTable.Upsert(),
 		row,
 	)
-	require.NoError(err)
+	requireT.NoError(err)
 
 	// Delete that delegation
 	row.Height = 2
@@ -273,7 +273,7 @@ func Test_Upsert_After_Soft_Delete_Restore_Row(t *testing.T) {
 		delegationsTable.Delete(),
 		row,
 	)
-	require.NoError(err)
+	requireT.NoError(err)
 
 	// Create a new delegation with the same validator and delegator
 	row.Amount = "42stake"
@@ -282,7 +282,7 @@ func Test_Upsert_After_Soft_Delete_Restore_Row(t *testing.T) {
 		delegationsTable.Upsert(),
 		row,
 	)
-	require.NoError(err)
+	requireT.NoError(err)
 
 	// Assert a single (non soft-deleted) row exists in database
 	var result models.DelegationRow
@@ -292,10 +292,10 @@ func Test_Upsert_After_Soft_Delete_Restore_Row(t *testing.T) {
 		"delegator",
 		"validator",
 	)
-	require.NoError(err)
-	require.Equal(uint64(3), result.Height)
-	require.Equal("42stake", result.Amount)
-	require.Nil(result.DeleteHeight)
+	requireT.NoError(err)
+	requireT.Equal(uint64(3), result.Height)
+	requireT.Equal("42stake", result.Amount)
+	requireT.Nil(result.DeleteHeight)
 }
 
 func prepareDelegationDatabase(t *testing.T) (*database.Instance, error) {
