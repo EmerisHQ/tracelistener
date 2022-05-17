@@ -16,6 +16,8 @@ func NewDenomTracesTable(tableName string) DenomTracesTable {
 	}
 }
 
+func (r DenomTracesTable) Name() string { return r.tableName }
+
 func (r DenomTracesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

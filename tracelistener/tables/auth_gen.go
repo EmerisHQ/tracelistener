@@ -16,6 +16,8 @@ func NewAuthTable(tableName string) AuthTable {
 	}
 }
 
+func (r AuthTable) Name() string { return r.tableName }
+
 func (r AuthTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

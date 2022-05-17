@@ -25,10 +25,7 @@ type authProcessor struct {
 }
 
 func (*authProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{authTable.CreateTable()}
-	}
-	return []string{createAuthTable, addHeightColumn(authTableOld), addDeleteHeightColumn(authTableOld)}
+	return []string{authTable.CreateTable()}
 }
 
 func (b *authProcessor) ModuleName() string {
@@ -40,17 +37,11 @@ func (b *authProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *authProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return authTable.Upsert()
-	}
-	return upsertAuth
+	return authTable.Upsert()
 }
 
 func (b *authProcessor) InsertStatement() string {
-	if useSQLGen {
-		return authTable.Insert()
-	}
-	return insertAuth
+	return authTable.Insert()
 }
 
 func (b *authProcessor) DeleteStatement() string {

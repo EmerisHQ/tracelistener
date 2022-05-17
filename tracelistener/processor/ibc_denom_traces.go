@@ -21,10 +21,7 @@ type ibcDenomTracesProcessor struct {
 }
 
 func (*ibcDenomTracesProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{denomTracesTable.CreateTable()}
-	}
-	return []string{createDenomTracesTable, addHeightColumn(denomTracesTableOld), addDeleteHeightColumn(denomTracesTableOld)}
+	return []string{denomTracesTable.CreateTable()}
 }
 
 func (b *ibcDenomTracesProcessor) ModuleName() string {
@@ -36,17 +33,11 @@ func (b *ibcDenomTracesProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *ibcDenomTracesProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return denomTracesTable.Upsert()
-	}
-	return upsertDenomTrace
+	return denomTracesTable.Upsert()
 }
 
 func (b *ibcDenomTracesProcessor) InsertStatement() string {
-	if useSQLGen {
-		return denomTracesTable.Insert()
-	}
-	return insertDenomTrace
+	return denomTracesTable.Insert()
 }
 
 func (b *ibcDenomTracesProcessor) DeleteStatement() string {

@@ -16,6 +16,8 @@ func NewClientsTable(tableName string) ClientsTable {
 	}
 }
 
+func (r ClientsTable) Name() string { return r.tableName }
+
 func (r ClientsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

@@ -16,6 +16,8 @@ func NewUnbondingDelegationsTable(tableName string) UnbondingDelegationsTable {
 	}
 }
 
+func (r UnbondingDelegationsTable) Name() string { return r.tableName }
+
 func (r UnbondingDelegationsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

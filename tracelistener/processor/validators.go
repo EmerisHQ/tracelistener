@@ -24,15 +24,14 @@ type validatorsProcessor struct {
 	m                     sync.Mutex
 }
 
+var (
+	addValAddressColumn = `ALTER TABLE ` + validatorsTable.Name() + ` ADD COLUMN IF NOT EXISTS validator_address text DEFAULT '';`
+)
+
 func (*validatorsProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{validatorsTable.CreateTable(), addValAddressColumn}
-	}
 	return []string{
-		createValidatorsTable,
+		validatorsTable.CreateTable(),
 		addValAddressColumn,
-		addHeightColumn(validatorsTableOld),
-		addDeleteHeightColumn(validatorsTableOld),
 	}
 }
 
@@ -45,24 +44,15 @@ func (b *validatorsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *validatorsProcessor) InsertStatement() string {
-	if useSQLGen {
-		return validatorsTable.Insert()
-	}
-	return insertValidator
+	return validatorsTable.Insert()
 }
 
 func (b *validatorsProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return validatorsTable.Upsert()
-	}
-	return upsertValidator
+	return validatorsTable.Upsert()
 }
 
 func (b *validatorsProcessor) DeleteStatement() string {
-	if useSQLGen {
-		return validatorsTable.Delete()
-	}
-	return deleteValidator
+	return validatorsTable.Delete()
 }
 
 func (b *validatorsProcessor) FlushCache() []tracelistener.WritebackOp {

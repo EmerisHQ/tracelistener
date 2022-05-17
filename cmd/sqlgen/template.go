@@ -18,6 +18,8 @@ func New{{ .StructName }}(tableName string) {{ .StructName }} {
 	}
 }
 
+func (r {{ .StructName }}) Name() string { return r.tableName }
+
 func (r {{ .StructName }}) CreateTable() string {
 	return fmt.Sprintf(` + "`" + `
 		CREATE TABLE IF NOT EXISTS %s

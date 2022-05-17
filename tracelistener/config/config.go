@@ -16,8 +16,6 @@ type Config struct {
 	JSONLogs              bool
 	EnableCpuProfiling    bool
 
-	UseSQLGen bool
-
 	// Processors configs
 	Processor ProcessorConfig
 

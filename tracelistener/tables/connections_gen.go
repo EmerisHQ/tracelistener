@@ -16,6 +16,8 @@ func NewConnectionsTable(tableName string) ConnectionsTable {
 	}
 }
 
+func (r ConnectionsTable) Name() string { return r.tableName }
+
 func (r ConnectionsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

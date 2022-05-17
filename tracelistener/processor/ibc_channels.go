@@ -27,10 +27,7 @@ type ibcChannelsProcessor struct {
 }
 
 func (*ibcChannelsProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{channelsTable.CreateTable(), addHeightColumn(channelsTableOld), addDeleteHeightColumn(channelsTableOld)}
-	}
-	return []string{createChannelsTable, addHeightColumn(channelsTableOld), addDeleteHeightColumn(channelsTableOld)}
+	return []string{channelsTable.CreateTable()}
 }
 
 func (b *ibcChannelsProcessor) ModuleName() string {
@@ -42,17 +39,11 @@ func (b *ibcChannelsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *ibcChannelsProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return channelsTable.Upsert()
-	}
-	return upsertChannel
+	return channelsTable.Upsert()
 }
 
 func (b *ibcChannelsProcessor) InsertStatement() string {
-	if useSQLGen {
-		return channelsTable.Insert()
-	}
-	return insertChannel
+	return channelsTable.Insert()
 }
 
 func (b *ibcChannelsProcessor) DeleteStatement() string {
