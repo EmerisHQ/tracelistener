@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 )
@@ -176,6 +177,165 @@ func TestFromLengthPrefix(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, tt.want, res)
+		})
+	}
+}
+
+func TestSplitCW20BalanceKey(t *testing.T) {
+	var (
+		// Reference values
+		contractAddr             = "ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b"
+		holderAddr               = "7761736d313467307339773373797965766b3366347a70327265637470646b376633757371676e35783666"
+		holderAddr_bech32Decoded = "aa1f02ba302132cb453510543ce1616dbc98f200"
+
+		// Handy function to build a cw20 balance key
+		buildKey = func(prefix []byte, contractAddr string, typ []byte, holderAddr string) []byte {
+			ca, _ := hex.DecodeString(contractAddr)
+			key := append(prefix, ca...)
+			key = append(key, typ...)
+			ha, _ := hex.DecodeString(holderAddr)
+			key = append(key, ha...)
+			return key
+		}
+
+		// rawKey ensures the whole test doesn't only rely on the buildKey func
+		rawkey, _ = hex.DecodeString("03ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b000762616c616e63657761736d313467307339773373797965766b3366347a70327265637470646b376633757371676e35783666a")
+	)
+	tests := []struct {
+		name                 string
+		key                  []byte
+		expectedContractAddr string
+		expectedHolderAddr   string
+		expectedError        string
+	}{
+		{
+			name:          "empty",
+			expectedError: "malformed cw20 balance key: length 0 not in range 78-588",
+		},
+		{
+			name:          "too short",
+			key:           []byte{1},
+			expectedError: "malformed cw20 balance key: length 1 not in range 78-588",
+		},
+		{
+			name:          "too long",
+			key:           make([]byte, 1024),
+			expectedError: "malformed cw20 balance key: length 1024 not in range 78-588",
+		},
+		{
+			name: "wrong prefix",
+			key: buildKey(
+				[]byte{42}, contractAddr, wasmContractBalanceKey, holderAddr,
+			),
+			expectedError: "not a wasm contract store key",
+		},
+		{
+			name: "wrong type",
+			key: buildKey(wasmContractStorePrefix, contractAddr,
+				append([]byte{0, 7}, []byte("balancx")...),
+				holderAddr),
+			expectedError: "not a cw20 balance key",
+		},
+		{
+			name: "ok",
+			key: buildKey(
+				wasmContractStorePrefix, contractAddr,
+				wasmContractBalanceKey, holderAddr,
+			),
+			expectedContractAddr: contractAddr,
+			expectedHolderAddr:   holderAddr_bech32Decoded,
+		},
+		{
+			name:                 "ok raw key",
+			key:                  rawkey,
+			expectedContractAddr: contractAddr,
+			expectedHolderAddr:   holderAddr_bech32Decoded,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			contractAddr, holderAddr, err := SplitCW20BalanceKey(tt.key)
+
+			if tt.expectedError != "" {
+				assert.EqualError(err, tt.expectedError)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tt.expectedContractAddr, contractAddr)
+			assert.Equal(tt.expectedHolderAddr, holderAddr)
+		})
+	}
+}
+
+func TestSplitCW20TokenInfoKey(t *testing.T) {
+	var (
+		// Reference values
+		contractAddr = "ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b"
+
+		// Handy function to build a cw20 token_info key
+		buildKey = func(prefix []byte, contractAddr string, typ []byte) []byte {
+			ca, _ := hex.DecodeString(contractAddr)
+			key := append(prefix, ca...)
+			key = append(key, typ...)
+			return key
+		}
+
+		// rawKey ensures the whole test doesn't only rely on the buildKey func
+		rawkey, _ = hex.DecodeString("03ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b746f6b656e5f696e666f")
+	)
+	tests := []struct {
+		name                 string
+		key                  []byte
+		expectedContractAddr string
+		expectedError        string
+	}{
+		{
+			name:          "wrong length",
+			expectedError: "malformed cw20 token_info key: length 0 not equal to 43",
+		},
+		{
+			name: "wrong prefix",
+			key: buildKey(
+				[]byte{42}, contractAddr, wasmContractTokenInfoKey,
+			),
+			expectedError: "not a wasm contract store key",
+		},
+		{
+			name: "wrong type",
+			key: buildKey(
+				wasmContractStorePrefix, contractAddr, []byte("token_infx"),
+			),
+			expectedError: "not a cw20 token_info key",
+		},
+		{
+			name: "ok",
+			key: buildKey(
+				wasmContractStorePrefix, contractAddr, wasmContractTokenInfoKey,
+			),
+			expectedContractAddr: contractAddr,
+		},
+		{
+			name:                 "ok raw key",
+			key:                  rawkey,
+			expectedContractAddr: contractAddr,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			contractAddr, err := SplitCW20TokenInfoKey(tt.key)
+
+			if tt.expectedError != "" {
+				assert.EqualError(err, tt.expectedError)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tt.expectedContractAddr, contractAddr)
 		})
 	}
 }

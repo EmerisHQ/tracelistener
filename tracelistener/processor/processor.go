@@ -39,6 +39,8 @@ var defaultProcessors = []string{
 	"ibc_connections",
 	"ibc_denom_traces",
 	"validators",
+	"cw20_balances",
+	"cw20_token_infos",
 }
 
 type Processor struct {
@@ -191,6 +193,16 @@ func processorByName(name string, logger *zap.SugaredLogger) (Module, error) {
 			l:                     logger,
 			insertValidatorsCache: map[validatorCacheEntry]models.ValidatorRow{},
 			deleteValidatorsCache: map[validatorCacheEntry]models.ValidatorRow{},
+		}, nil
+	case (&cw20BalanceProcessor{}).ModuleName():
+		return &cw20BalanceProcessor{
+			l:           logger,
+			heightCache: map[cw20BalanceCacheEntry]models.CW20BalanceRow{},
+		}, nil
+	case (&cw20TokenInfoProcessor{}).ModuleName():
+		return &cw20TokenInfoProcessor{
+			l:           logger,
+			heightCache: map[cw20TokenInfoCacheEntry]models.CW20TokenInfoRow{},
 		}, nil
 	}
 }
