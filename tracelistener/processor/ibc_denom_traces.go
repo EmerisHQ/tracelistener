@@ -21,7 +21,7 @@ type ibcDenomTracesProcessor struct {
 }
 
 var (
-	denomTracePathIndex = `CREATE INDEX ON ` + denomTracesTable.Name() + `(path)`
+	denomTracePathIndex = `CREATE INDEX IF NOT EXISTS denom_traces_path_idx ON ` + denomTracesTable.Name() + `(path)`
 )
 
 func (*ibcDenomTracesProcessor) Migrations() []string {
