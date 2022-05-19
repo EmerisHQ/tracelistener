@@ -11,12 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// useSQLGen enables the use of the `tables` pkg that contains SQL queries
-// generated automatically.
-// This feature flag will be removed once the change is correctly deployed and
-// tested.
-var useSQLGen = false
-
 type Module interface {
 	FlushCache() []tracelistener.WritebackOp
 	OwnsKey(key []byte) bool
@@ -76,8 +70,6 @@ func (p *Processor) ErrorsChan() chan error {
 }
 
 func New(logger *zap.SugaredLogger, cfg *config.Config) (tracelistener.DataProcessor, error) {
-	useSQLGen = cfg.UseSQLGen
-
 	c := cfg.Processor
 
 	if c.ProcessorsEnabled == nil {

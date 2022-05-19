@@ -16,6 +16,8 @@ func NewBalancesTable(tableName string) BalancesTable {
 	}
 }
 
+func (r BalancesTable) Name() string { return r.tableName }
+
 func (r BalancesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

@@ -27,15 +27,9 @@ type unbondingDelegationsProcessor struct {
 }
 
 func (*unbondingDelegationsProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{
-			unbondingDelegationsTable.CreateTable(),
-			addHeightColumn(unbondingDelegationsTableOld),
-			addDeleteHeightColumn(unbondingDelegationsTableOld),
-		}
+	return []string{
+		unbondingDelegationsTable.CreateTable(),
 	}
-	return []string{createUnbondingDelegationsTable, addHeightColumn(unbondingDelegationsTableOld),
-		addDeleteHeightColumn(unbondingDelegationsTableOld)}
 }
 
 func (b *unbondingDelegationsProcessor) ModuleName() string {
@@ -47,24 +41,15 @@ func (b *unbondingDelegationsProcessor) SDKModuleName() tracelistener.SDKModuleN
 }
 
 func (b *unbondingDelegationsProcessor) InsertStatement() string {
-	if useSQLGen {
-		return unbondingDelegationsTable.Insert()
-	}
-	return insertUnbondingDelegation
+	return unbondingDelegationsTable.Insert()
 }
 
 func (b *unbondingDelegationsProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return unbondingDelegationsTable.Upsert()
-	}
-	return upsertUnbondingDelegation
+	return unbondingDelegationsTable.Upsert()
 }
 
 func (b *unbondingDelegationsProcessor) DeleteStatement() string {
-	if useSQLGen {
-		return unbondingDelegationsTable.Delete()
-	}
-	return deleteUnbondingDelegation
+	return unbondingDelegationsTable.Delete()
 }
 
 func (b *unbondingDelegationsProcessor) FlushCache() []tracelistener.WritebackOp {

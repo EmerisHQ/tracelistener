@@ -16,6 +16,8 @@ func NewChannelsTable(tableName string) ChannelsTable {
 	}
 }
 
+func (r ChannelsTable) Name() string { return r.tableName }
+
 func (r ChannelsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

@@ -16,6 +16,8 @@ func NewValidatorsTable(tableName string) ValidatorsTable {
 	}
 }
 
+func (r ValidatorsTable) Name() string { return r.tableName }
+
 func (r ValidatorsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

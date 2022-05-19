@@ -87,7 +87,6 @@ func TestImporterDo(t *testing.T) {
 				FIFOPath:  "./tracelistener.fifo",
 				ChainName: "gaia",
 				Debug:     true,
-				UseSQLGen: true,
 			},
 			bulk.Importer{
 				Path: "./testdata/application.db",

@@ -16,6 +16,8 @@ func NewDelegationsTable(tableName string) DelegationsTable {
 	}
 }
 
+func (r DelegationsTable) Name() string { return r.tableName }
+
 func (r DelegationsTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s

@@ -31,10 +31,7 @@ type ibcConnectionsProcessor struct {
 }
 
 func (*ibcConnectionsProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{connectionsTable.CreateTable()}
-	}
-	return []string{createConnectionsTable, addHeightColumn(connectionsTableOld), addDeleteHeightColumn(connectionsTableOld)}
+	return []string{connectionsTable.CreateTable()}
 }
 
 func (b *ibcConnectionsProcessor) ModuleName() string {
@@ -46,17 +43,11 @@ func (b *ibcConnectionsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *ibcConnectionsProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return connectionsTable.Upsert()
-	}
-	return upsertConnection
+	return connectionsTable.Upsert()
 }
 
 func (b *ibcConnectionsProcessor) InsertStatement() string {
-	if useSQLGen {
-		return connectionsTable.Insert()
-	}
-	return insertConnection
+	return connectionsTable.Insert()
 }
 
 func (b *ibcConnectionsProcessor) DeleteStatement() string {

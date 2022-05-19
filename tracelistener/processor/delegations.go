@@ -27,10 +27,7 @@ type delegationsProcessor struct {
 }
 
 func (*delegationsProcessor) Migrations() []string {
-	if useSQLGen {
-		return []string{delegationsTable.CreateTable(), addHeightColumn(delegationsTableOld), addDeleteHeightColumn(delegationsTableOld)}
-	}
-	return []string{createDelegationsTable, addHeightColumn(delegationsTableOld), addDeleteHeightColumn(delegationsTableOld)}
+	return []string{delegationsTable.CreateTable()}
 }
 
 func (b *delegationsProcessor) ModuleName() string {
@@ -42,24 +39,15 @@ func (b *delegationsProcessor) SDKModuleName() tracelistener.SDKModuleName {
 }
 
 func (b *delegationsProcessor) UpsertStatement() string {
-	if useSQLGen {
-		return delegationsTable.Upsert()
-	}
-	return upsertDelegation
+	return delegationsTable.Upsert()
 }
 
 func (b *delegationsProcessor) InsertStatement() string {
-	if useSQLGen {
-		return delegationsTable.Insert()
-	}
-	return insertDelegation
+	return delegationsTable.Insert()
 }
 
 func (b *delegationsProcessor) DeleteStatement() string {
-	if useSQLGen {
-		return delegationsTable.Delete()
-	}
-	return deleteDelegation
+	return delegationsTable.Delete()
 }
 
 func (b *delegationsProcessor) FlushCache() []tracelistener.WritebackOp {
