@@ -25,6 +25,16 @@ func (r ConnectionsTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r ConnectionsTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r ConnectionsTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r ConnectionsTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, connection_id, client_id, state, counter_connection_id, counter_client_id)

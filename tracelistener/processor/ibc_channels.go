@@ -27,7 +27,7 @@ type ibcChannelsProcessor struct {
 }
 
 func (*ibcChannelsProcessor) Migrations() []string {
-	return []string{channelsTable.CreateTable()}
+	return channelsTable.Migrations()
 }
 
 func (b *ibcChannelsProcessor) ModuleName() string {

@@ -27,6 +27,18 @@ func (r {{ .StructName }}) CreateTable() string {
 	` + "`" + `, r.tableName)
 }
 
+func (r {{ .StructName }}) CreateIndexes() []string {
+	return []string{
+		{{ range $indexStatement := .Config.CreateIndexStatements }}
+			"{{ $indexStatement }}",
+		{{ end }}
+	}
+}
+
+func (r {{ .StructName }}) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r {{ .StructName }}) Insert() string {
 	return fmt.Sprintf(` + "`" + `
 		INSERT INTO %s ({{ Join .Config.InsertColumns }})

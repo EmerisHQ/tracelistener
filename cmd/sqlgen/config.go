@@ -10,15 +10,23 @@ type YamlData struct {
 }
 
 type TableConfig struct {
-	Name    string
-	Columns []struct {
-		Name         string
-		Type         string
-		Primary      bool
-		SkipOnInsert bool `yaml:"skip_on_insert"`
-		Nullable     bool
-	}
+	Name          string
+	Columns       []Column
 	UniqueColumns []string `yaml:"unique_columns,flow"`
+	Indexes       []Index
+}
+
+type Column struct {
+	Name         string
+	Type         string
+	Primary      bool
+	SkipOnInsert bool `yaml:"skip_on_insert"`
+	Nullable     bool
+}
+
+type Index struct {
+	Name    string
+	Columns []string
 }
 
 func (t TableConfig) Validate() error {
@@ -45,7 +53,18 @@ func (t TableConfig) Validate() error {
 		}
 	}
 
+	if err := validateIndexes(t, names); err != nil {
+		return fmt.Errorf("validating indexs: %w", err)
+	}
 	return nil
+}
+
+func (t TableConfig) CreateIndexStatements() (ret []string) {
+	for _, index := range t.Indexes {
+		sqlStatement := fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s (%s)", index.Name, t.Name, strings.Join(index.Columns, ","))
+		ret = append(ret, sqlStatement)
+	}
+	return
 }
 
 func (t TableConfig) ColumnsDefinition() []string {

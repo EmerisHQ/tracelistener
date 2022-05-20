@@ -25,6 +25,18 @@ func (r BalancesTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r BalancesTable) CreateIndexes() []string {
+	return []string{
+		
+			"CREATE INDEX IF NOT EXISTS chain_name_address_demon_index ON balances (chain_name,address,denom)",
+		
+	}
+}
+
+func (r BalancesTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r BalancesTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, address, amount, denom)

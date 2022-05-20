@@ -25,6 +25,16 @@ func (r DelegationsTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r DelegationsTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r DelegationsTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r DelegationsTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, delegator_address, validator_address, amount)

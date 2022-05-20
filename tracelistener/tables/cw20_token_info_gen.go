@@ -16,11 +16,23 @@ func NewCw20TokenInfoTable(tableName string) Cw20TokenInfoTable {
 	}
 }
 
+func (r Cw20TokenInfoTable) Name() string { return r.tableName }
+
 func (r Cw20TokenInfoTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
 		(id serial PRIMARY KEY NOT NULL, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, contract_address text NOT NULL, name text NOT NULL, symbol text NOT NULL, decimals integer NOT NULL, total_supply text NOT NULL, UNIQUE (chain_name, contract_address))
 	`, r.tableName)
+}
+
+func (r Cw20TokenInfoTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r Cw20TokenInfoTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
 }
 
 func (r Cw20TokenInfoTable) Insert() string {

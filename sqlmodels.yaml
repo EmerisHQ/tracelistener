@@ -23,6 +23,9 @@ tables:
       - chain_name
       - address
       - denom
+    indexes:
+      - name: chain_name_address_demon_index
+        columns: [chain_name, address, denom]
 
   - name: cw20_balances
     columns:

@@ -25,6 +25,16 @@ func (r ClientsTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r ClientsTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r ClientsTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r ClientsTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, chain_id, client_id, latest_height, trusting_period)

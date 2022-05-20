@@ -31,7 +31,7 @@ type ibcConnectionsProcessor struct {
 }
 
 func (*ibcConnectionsProcessor) Migrations() []string {
-	return []string{connectionsTable.CreateTable()}
+	return connectionsTable.Migrations()
 }
 
 func (b *ibcConnectionsProcessor) ModuleName() string {

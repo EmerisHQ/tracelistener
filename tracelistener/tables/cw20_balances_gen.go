@@ -16,11 +16,23 @@ func NewCw20BalancesTable(tableName string) Cw20BalancesTable {
 	}
 }
 
+func (r Cw20BalancesTable) Name() string { return r.tableName }
+
 func (r Cw20BalancesTable) CreateTable() string {
 	return fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s
 		(id serial PRIMARY KEY NOT NULL, height integer NOT NULL, delete_height integer, chain_name text NOT NULL, contract_address text NOT NULL, address text NOT NULL, amount text NOT NULL, UNIQUE (chain_name, contract_address, address))
 	`, r.tableName)
+}
+
+func (r Cw20BalancesTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r Cw20BalancesTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
 }
 
 func (r Cw20BalancesTable) Insert() string {

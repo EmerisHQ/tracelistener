@@ -25,6 +25,16 @@ func (r UnbondingDelegationsTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r UnbondingDelegationsTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r UnbondingDelegationsTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r UnbondingDelegationsTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, delegator_address, validator_address, entries)

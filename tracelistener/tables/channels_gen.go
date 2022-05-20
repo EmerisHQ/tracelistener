@@ -25,6 +25,16 @@ func (r ChannelsTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r ChannelsTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r ChannelsTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r ChannelsTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, channel_id, counter_channel_id, port, state, hops)

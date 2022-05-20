@@ -25,6 +25,16 @@ func (r AuthTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r AuthTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r AuthTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r AuthTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, address, sequence_number, account_number)

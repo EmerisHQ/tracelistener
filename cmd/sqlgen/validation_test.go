@@ -59,3 +59,45 @@ func Test_validateName(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateIndexes(t *testing.T) {
+	apple_index := Index{Name: "apple_index", Columns: []string{"apple"}}
+	no_name_index := Index{Name: "", Columns: []string{"apple"}}
+	apple_pear_index := Index{Name: "apple_pear_index", Columns: []string{"apple", "pear"}}
+
+	testCases := []struct {
+		testName string
+		t        TableConfig
+		names    map[string]bool
+		wantErr  bool
+	}{
+		{
+			testName: "happy path",
+			t:        TableConfig{Name: "table1", Indexes: []Index{apple_index}},
+			names:    map[string]bool{"apple": true},
+			wantErr:  false,
+		},
+		{
+			testName: "no index name",
+			t:        TableConfig{Name: "table2", Indexes: []Index{no_name_index}},
+			names:    map[string]bool{"apple": true},
+			wantErr:  true,
+		},
+		{
+			testName: "no matching column",
+			t:        TableConfig{Name: "table3", Indexes: []Index{apple_pear_index}},
+			names:    map[string]bool{"apple": true},
+			wantErr:  true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			err := validateIndexes(tc.t, tc.names)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}

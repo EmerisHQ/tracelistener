@@ -25,6 +25,16 @@ func (r ValidatorsTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r ValidatorsTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r ValidatorsTable) Migrations() []string {
+	return append(r.CreateIndexes(), r.CreateTable())
+}
+
 func (r ValidatorsTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, validator_address, operator_address, consensus_pubkey_type, consensus_pubkey_value, jailed, status, tokens, delegator_shares, moniker, identity, website, security_contact, details, unbonding_height, unbonding_time, commission_rate, max_rate, max_change_rate, update_time, min_self_delegation)
