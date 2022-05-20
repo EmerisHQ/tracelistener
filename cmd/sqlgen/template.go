@@ -36,7 +36,7 @@ func (r {{ .StructName }}) CreateIndexes() []string {
 }
 
 func (r {{ .StructName }}) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r {{ .StructName }}) Insert() string {
