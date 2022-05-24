@@ -27,6 +27,7 @@ type Column struct {
 type Index struct {
 	Name    string
 	Columns []string
+	Unique  bool
 }
 
 func (t TableConfig) Validate() error {
@@ -61,8 +62,12 @@ func (t TableConfig) Validate() error {
 
 func (t TableConfig) CreateIndexStatements() (ret []string) {
 	for _, index := range t.Indexes {
-		sqlStatement := fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s (%s)", index.Name, t.Name, strings.Join(index.Columns, ","))
-		ret = append(ret, sqlStatement)
+		sql := "CREATE "
+		if index.Unique {
+			sql = sql + "UNIQUE "
+		}
+		sql = sql + fmt.Sprintf("INDEX IF NOT EXISTS %s ON %s (%s)", index.Name, t.Name, strings.Join(index.Columns, ","))
+		ret = append(ret, sql)
 	}
 	return
 }
