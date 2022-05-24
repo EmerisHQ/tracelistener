@@ -32,7 +32,7 @@ func (r Cw20BalancesTable) CreateIndexes() []string {
 }
 
 func (r Cw20BalancesTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r Cw20BalancesTable) Insert() string {

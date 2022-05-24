@@ -34,7 +34,7 @@ func (r BalancesTable) CreateIndexes() []string {
 }
 
 func (r BalancesTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r BalancesTable) Insert() string {

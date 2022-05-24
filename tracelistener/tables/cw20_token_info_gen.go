@@ -32,7 +32,7 @@ func (r Cw20TokenInfoTable) CreateIndexes() []string {
 }
 
 func (r Cw20TokenInfoTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r Cw20TokenInfoTable) Insert() string {

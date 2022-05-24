@@ -32,7 +32,7 @@ func (r DelegationsTable) CreateIndexes() []string {
 }
 
 func (r DelegationsTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r DelegationsTable) Insert() string {

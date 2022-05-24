@@ -32,7 +32,7 @@ func (r ConnectionsTable) CreateIndexes() []string {
 }
 
 func (r ConnectionsTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r ConnectionsTable) Insert() string {

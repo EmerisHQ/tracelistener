@@ -32,7 +32,7 @@ func (r AuthTable) CreateIndexes() []string {
 }
 
 func (r AuthTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r AuthTable) Insert() string {

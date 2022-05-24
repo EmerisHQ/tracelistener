@@ -32,7 +32,7 @@ func (r ValidatorsTable) CreateIndexes() []string {
 }
 
 func (r ValidatorsTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r ValidatorsTable) Insert() string {

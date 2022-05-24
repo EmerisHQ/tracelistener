@@ -32,7 +32,7 @@ func (r ChannelsTable) CreateIndexes() []string {
 }
 
 func (r ChannelsTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r ChannelsTable) Insert() string {

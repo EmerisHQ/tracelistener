@@ -32,7 +32,7 @@ func (r ClientsTable) CreateIndexes() []string {
 }
 
 func (r ClientsTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r ClientsTable) Insert() string {

@@ -32,7 +32,7 @@ func (r DenomTracesTable) CreateIndexes() []string {
 }
 
 func (r DenomTracesTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r DenomTracesTable) Insert() string {

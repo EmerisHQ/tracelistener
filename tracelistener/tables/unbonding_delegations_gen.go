@@ -32,7 +32,7 @@ func (r UnbondingDelegationsTable) CreateIndexes() []string {
 }
 
 func (r UnbondingDelegationsTable) Migrations() []string {
-	return append(r.CreateIndexes(), r.CreateTable())
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
 }
 
 func (r UnbondingDelegationsTable) Insert() string {
