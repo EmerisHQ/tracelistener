@@ -46,12 +46,12 @@ func TestDataMarshalerBank(t *testing.T) {
 			expectedError: "cannot parse address from balance store key, invalid key",
 		},
 		{
-			name: "ok: value is empty",
+			name: "fail: value is empty",
 			tr: tracelistener.TraceOperation{
 				Operation: tracelistener.WriteOp.String(),
 				Key:       append(types.BalancesPrefix, []byte{3, 'a', 'd', 'd'}...),
 			},
-			expectedBalanceRow: models.BalanceRow{},
+			expectedError: "invalid balance coin: invalid denom: ",
 		},
 		{
 			name: "ok: value is not a valid coin",
@@ -60,6 +60,7 @@ func TestDataMarshalerBank(t *testing.T) {
 				Key:       append(types.BalancesPrefix, []byte{3, 'a', 'd', 'd'}...),
 				Value:     []byte("\n$\n\x05uiris\x12\x1b509625143506063788050678455"),
 			},
+			expectedError: "invalid balance coin: invalid denom: \n\x05uiris\x12\x1b509625143506063788050678455",
 		},
 		{
 			name: "ok: value is not a valid coin but operation is delete",
