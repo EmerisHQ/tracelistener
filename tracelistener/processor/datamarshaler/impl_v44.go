@@ -72,7 +72,7 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 	}
 
 	if err := getCodec().Unmarshal(data.Value, &coins); err != nil {
-		return models.BalanceRow{}, err
+		return models.BalanceRow{}, fmt.Errorf("cannot unmarshal balance coin: %w", err)
 	}
 
 	// Since SDK 0.44.x x/bank now deletes keys from store when the balance is 0
