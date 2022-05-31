@@ -2,8 +2,6 @@ name: Auto Label Patch to PR
 
 on:
   pull_request_target:
-    types: opened
-    branches: main
 
   workflow_dispatch:
 
