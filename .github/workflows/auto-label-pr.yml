@@ -2,8 +2,8 @@ name: Auto Label Patch to PR
 
 on:
   pull_request:
-    types: [opened]
-    branches: [main]
+    types: opened
+    branches: main
 
   workflow_dispatch:
 
@@ -16,7 +16,6 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'minor') &&
       !contains(github.event.pull_request.labels.*.name, 'major')
     steps:
-      - uses: actions/labeler@v2
+      - uses: actions/labeler@v4
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          configuration-path: .github/auto-label-config.yml
