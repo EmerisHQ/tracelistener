@@ -72,21 +72,21 @@ func (d DataMarshaler) Bank(data tracelistener.TraceOperation) (models.BalanceRo
 	}
 
 	if err := getCodec().Unmarshal(data.Value, &coins); err != nil {
-		return models.BalanceRow{}, err
+		return models.BalanceRow{}, fmt.Errorf("cannot unmarshal balance coin: %w", err)
 	}
 
 	// Since SDK 0.44.x x/bank now deletes keys from store when the balance is 0
 	// (picture someone who sends all their balance to another address).
 	// To work around this issue, we don't return when coin is invalid when data.Operation is "delete",
 	// and we set balance == 0 instead.
-	if !coins.IsValid() {
+	if err := coins.Validate(); err != nil {
 		if data.Operation == tracelistener.DeleteOp.String() {
 			// rawAddress still contains the length prefix, so we have to jump it by
 			// reading 1 byte after len(addrBytes)
 			denom := rawAddress[len(addrBytes)+1:]
 			coins.Denom = string(denom)
 		} else {
-			return models.BalanceRow{}, nil
+			return models.BalanceRow{}, fmt.Errorf("invalid balance coin: %w", err)
 		}
 	}
 

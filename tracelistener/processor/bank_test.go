@@ -14,7 +14,6 @@ import (
 
 func TestBankProcessorOwnsKey(t *testing.T) {
 	d := bankProcessor{}
-
 	tests := []struct {
 		name        string
 		prefix      []byte
