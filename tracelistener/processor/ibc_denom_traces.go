@@ -20,8 +20,15 @@ type ibcDenomTracesProcessor struct {
 	m                sync.Mutex
 }
 
+var (
+	denomTracePathIndex = `CREATE INDEX IF NOT EXISTS denom_traces_path_idx ON ` + denomTracesTable.Name() + `(path)`
+)
+
 func (*ibcDenomTracesProcessor) Migrations() []string {
-	return []string{denomTracesTable.CreateTable()}
+	return []string{
+		denomTracesTable.CreateTable(),
+		denomTracePathIndex,
+	}
 }
 
 func (b *ibcDenomTracesProcessor) ModuleName() string {
