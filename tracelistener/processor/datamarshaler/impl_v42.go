@@ -472,3 +472,10 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 		},
 	}, nil
 }
+func (d DataMarshaler) CW20Balance(data tracelistener.TraceOperation) (models.CW20BalanceRow, error) {
+	panic("CW20 balances not implemented in v0.42")
+}
+
+func (d DataMarshaler) CW20TokenInfo(data tracelistener.TraceOperation) (models.CW20TokenInfoRow, error) {
+	panic("CW20 token info not implemented in v0.42")
+}

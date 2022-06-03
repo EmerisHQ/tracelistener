@@ -15,33 +15,28 @@ import (
 func TestBankProcessorOwnsKey(t *testing.T) {
 	d := bankProcessor{}
 	tests := []struct {
-		name        string
-		prefix      []byte
-		key         string
-		expectedErr bool
+		name         string
+		key          []byte
+		expectedOwns bool
 	}{
 		{
-			"Correct prefix- no error",
-			datamarshaler.BankKey,
-			"key",
-			false,
+			name:         "Correct prefix- no error",
+			key:          append(datamarshaler.BankKey, []byte{1, 1, 'a', 't', 'o', 'm'}...),
+			expectedOwns: false,
 		},
 		{
-			"Incorrect prefix- error",
-			[]byte{0x0},
-			"key",
-			true,
+			name:         "Incorrect prefix- error",
+			key:          []byte{0x0},
+			expectedOwns: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if tt.expectedErr {
-				require.False(t, d.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
-			} else {
-				require.True(t, d.OwnsKey(append(tt.prefix, []byte(tt.key)...)))
-			}
+			owns := d.OwnsKey(tt.key)
+
+			require.Equal(t, tt.expectedOwns, owns)
 		})
 	}
 }

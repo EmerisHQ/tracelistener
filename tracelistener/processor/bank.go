@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"bytes"
 	"sync"
 
 	"go.uber.org/zap"
@@ -74,7 +73,7 @@ func (b *bankProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *bankProcessor) OwnsKey(key []byte) bool {
-	return bytes.HasPrefix(key, datamarshaler.BankKey)
+	return datamarshaler.IsBankBalanceKey(key)
 }
 
 func (b *bankProcessor) Process(data tracelistener.TraceOperation) error {
