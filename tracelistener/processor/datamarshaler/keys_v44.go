@@ -36,17 +36,17 @@ var (
 
 func isBankBalanceKey(key []byte) bool {
 	_, _, err := splitBalanceKey(key)
-	return err != nil
+	return err == nil
 }
 
 func isCW20BalanceKey(key []byte) bool {
 	_, _, err := splitCW20BalanceKey(key)
-	return err != nil
+	return err == nil
 }
 
 func isCW20TokenInfoKey(key []byte) bool {
 	_, err := splitCW20TokenInfoKey(key)
-	return err != nil
+	return err == nil
 }
 
 // splitBalanceKey returns the address and the denom of a given balance key,

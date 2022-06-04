@@ -31,9 +31,11 @@ func isBankBalanceKey(key []byte) bool {
 }
 
 func isCW20BalanceKey(key []byte) bool {
-	panic("CW20Balance not implemented in v42")
+	// CW20Balance not implemented in v42
+  return false
 }
 
 func isCW20TokenInfoKey(key []byte) bool {
-	panic("CW20TokenInfo not implemented in v42")
+	// CW20TokenInfo not implemented in v42
+  return false
 }

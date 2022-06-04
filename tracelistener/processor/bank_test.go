@@ -22,12 +22,12 @@ func TestBankProcessorOwnsKey(t *testing.T) {
 		{
 			name:         "Correct prefix- no error",
 			key:          append(datamarshaler.BankKey, []byte{1, 1, 'a', 't', 'o', 'm'}...),
-			expectedOwns: false,
+			expectedOwns: true,
 		},
 		{
 			name:         "Incorrect prefix- error",
 			key:          []byte{0x0},
-			expectedOwns: true,
+			expectedOwns: false,
 		},
 	}
 
