@@ -16,7 +16,7 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'minor') &&
       !contains(github.event.pull_request.labels.*.name, 'major')
     steps:
-      - uses: actions/labeler@v2
+      - uses: actions/labeler@v4
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/auto-label-config.yml
