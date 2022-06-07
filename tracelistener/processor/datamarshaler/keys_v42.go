@@ -32,10 +32,10 @@ func isBankBalanceKey(key []byte) bool {
 
 func isCW20BalanceKey(key []byte) bool {
 	// CW20Balance not implemented in v42
-  return false
+	return false
 }
 
 func isCW20TokenInfoKey(key []byte) bool {
 	// CW20TokenInfo not implemented in v42
-  return false
+	return false
 }
