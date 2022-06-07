@@ -15,7 +15,7 @@ func IsCW20TokenInfoKey(key []byte) bool {
 }
 
 // fromLengthPrefix returns the amount of data signaled by the single-byte length prefix in rawData.
-func fromLengthPrefix(rawData []byte) ([]byte, error) {
+func fromLengthPrefix(rawData []byte) ([]byte, error) { //nolint:unused
 	if len(rawData) == 0 {
 		return nil, fmt.Errorf("data is nil")
 	}
