@@ -23,6 +23,7 @@ func TestDataMarshalerBank(t *testing.T) {
 		}
 		coinBz, _ = coins.Marshal()
 	)
+
 	tests := []struct {
 		name               string
 		tr                 tracelistener.TraceOperation
@@ -54,7 +55,7 @@ func TestDataMarshalerBank(t *testing.T) {
 			expectedError: "invalid balance coin: invalid denom: ",
 		},
 		{
-			name: "ok: value is not a valid coin",
+			name: "fail: value is not a valid coin",
 			tr: tracelistener.TraceOperation{
 				Operation: tracelistener.WriteOp.String(),
 				Key:       append(types.BalancesPrefix, []byte{3, 'a', 'd', 'd'}...),

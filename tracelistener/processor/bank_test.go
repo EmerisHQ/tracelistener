@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,19 +15,31 @@ import (
 
 func TestBankProcessorOwnsKey(t *testing.T) {
 	d := bankProcessor{}
+
+	// Setup a case for an iris trace that was interpreted as a bank trace
+	irisTrace := []byte("{\"operation\":\"write\",\"key\":\"AhT+5cRMA/vuTTyGA9Qqcf/L5yTzpA==\",\"value\":\"CiQKBXVpcmlzEhs1MDk2MjUxNDM1MDYwNjM3ODgwNTA2Nzg0NTU=\",\"metadata\":{\"blockHeight\":15065683,\"txHash\":\"31647EB774FDC743E067FA459AA05CD5B0F315431CCCA54F98D877D7C26BCFC4\"}}")
+	var irisTraceOperation tracelistener.TraceOperation
+	err := json.Unmarshal(irisTrace, &irisTraceOperation)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name         string
 		key          []byte
 		expectedOwns bool
 	}{
 		{
-			name:         "Correct prefix- no error",
+			name:         "ok",
 			key:          append(datamarshaler.BankKey, []byte{1, 1, 'a', 't', 'o', 'm'}...),
 			expectedOwns: true,
 		},
 		{
-			name:         "Incorrect prefix- error",
+			name:         "fail: incorrect prefix",
 			key:          []byte{0x0},
+			expectedOwns: false,
+		},
+		{
+			name:         "fail: not a bank balance trace",
+			key:          irisTraceOperation.Key,
 			expectedOwns: false,
 		},
 	}
