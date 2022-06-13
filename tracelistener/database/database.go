@@ -34,7 +34,8 @@ func (i *Instance) Add(query string, data []interface{}, sleepFunc func()) error
 	if sleepFunc != nil {
 		sleepFunc()
 	}
-	return i.Instance.Exec(query, data, nil)
+	_, err := i.Instance.DB.NamedExec(query, data)
+	return err
 }
 
 // Jitter takes a duration <param: delta> and a dividing factor <param: factor>
