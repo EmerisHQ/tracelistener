@@ -18,6 +18,8 @@ type Handler interface {
 	IBCDenomTraces(data tracelistener.TraceOperation) (models.IBCDenomTraceRow, error)
 	UnbondingDelegations(data tracelistener.TraceOperation) (models.UnbondingDelegationRow, error)
 	Validators(data tracelistener.TraceOperation) (models.ValidatorRow, error)
+	CW20Balance(tracelistener.TraceOperation) (models.CW20BalanceRow, error)
+	CW20TokenInfo(tracelistener.TraceOperation) (models.CW20TokenInfoRow, error)
 }
 
 type TestHandler interface {

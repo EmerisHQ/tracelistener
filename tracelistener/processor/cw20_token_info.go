@@ -1,14 +1,13 @@
 package processor
 
 import (
-	"encoding/json"
-	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"github.com/emerishq/tracelistener/tracelistener/tables"
 )
 
@@ -73,36 +72,19 @@ func (b *cw20TokenInfoProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *cw20TokenInfoProcessor) OwnsKey(key []byte) bool {
-	_, err := tracelistener.SplitCW20TokenInfoKey(key)
-	return err == nil
+	return datamarshaler.IsCW20TokenInfoKey(key)
 }
 
 func (b *cw20TokenInfoProcessor) Process(data tracelistener.TraceOperation) error {
 	b.m.Lock()
 	defer b.m.Unlock()
 
-	contractAddr, err := tracelistener.SplitCW20TokenInfoKey(data.Key)
+	row, err := datamarshaler.NewDataMarshaler(b.l).CW20TokenInfo(data)
 	if err != nil {
 		return err
 	}
-	var (
-		key = cw20TokenInfoCacheEntry{
-			contractAddress: contractAddr,
-		}
-		val = models.CW20TokenInfoRow{
-			ContractAddress: contractAddr,
-			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
-				Height: data.BlockHeight,
-			},
-		}
-	)
-	// token_info value is a json string that contains the name, the symbol,
-	// the decimals and the total_supply of the token. To copy those values in
-	// the CW20TokenInfoRow, we can simply json.Unmarshal the value to the struct.
-	err = json.Unmarshal(data.Value, &val)
-	if err != nil {
-		return fmt.Errorf("unmarshal cw20 token_info value: %w", err)
-	}
-	b.heightCache[key] = val
+	b.heightCache[cw20TokenInfoCacheEntry{
+		contractAddress: row.ContractAddress,
+	}] = row
 	return nil
 }

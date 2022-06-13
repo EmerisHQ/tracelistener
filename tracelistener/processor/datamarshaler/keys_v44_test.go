@@ -1,4 +1,6 @@
-package tracelistener
+//go:build sdk_v44
+
+package datamarshaler
 
 import (
 	"encoding/hex"
@@ -60,7 +62,7 @@ func TestValidKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			da, va, err := SplitDelegationKey(tt.key)
+			da, va, err := splitDelegationKey(tt.key)
 			require.NoError(t, err)
 			require.Equal(t, da, tt.wantDelAddr)
 			require.Equal(t, va, tt.wantValAddr)
@@ -115,68 +117,9 @@ func TestInValidKeys(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := SplitDelegationKey(tt.key)
+			_, _, err := splitDelegationKey(tt.key)
 			require.Error(t, err)
 			require.ErrorContains(t, err, tt.errMsg)
-		})
-	}
-}
-
-func TestFromLengthPrefix(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name    string
-		rawData []byte
-		want    []byte
-		wantErr bool
-	}{
-		{
-			"a length-prefix works",
-			[]byte{
-				4,          // length prefix
-				1, 2, 3, 4, // data
-			},
-			[]byte{1, 2, 3, 4},
-			false,
-		},
-		{
-			"a length-prefix with more data than anticipated",
-			[]byte{
-				4,             // length prefix
-				1, 2, 3, 4, 5, // data
-			},
-			nil,
-			true,
-		},
-		{
-			"a length-prefix with less data than anticipated",
-			[]byte{
-				4,       // length prefix
-				1, 2, 3, // data
-			},
-			nil,
-			true,
-		},
-		{
-			"nil rawData",
-			nil,
-			nil,
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			res, err := FromLengthPrefix(tt.rawData)
-			if tt.wantErr {
-				require.Error(t, err)
-				require.Empty(t, res)
-				return
-			}
-
-			require.NoError(t, err)
-			require.Equal(t, tt.want, res)
 		})
 	}
 }
@@ -257,7 +200,7 @@ func TestSplitCW20BalanceKey(t *testing.T) {
 			require := require.New(t)
 			assert := assert.New(t)
 
-			contractAddr, holderAddr, err := SplitCW20BalanceKey(tt.key)
+			contractAddr, holderAddr, err := splitCW20BalanceKey(tt.key)
 
 			if tt.expectedError != "" {
 				assert.EqualError(err, tt.expectedError)
@@ -328,7 +271,7 @@ func TestSplitCW20TokenInfoKey(t *testing.T) {
 			require := require.New(t)
 			assert := assert.New(t)
 
-			contractAddr, err := SplitCW20TokenInfoKey(tt.key)
+			contractAddr, err := splitCW20TokenInfoKey(tt.key)
 
 			if tt.expectedError != "" {
 				assert.EqualError(err, tt.expectedError)
@@ -336,6 +279,76 @@ func TestSplitCW20TokenInfoKey(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.Equal(tt.expectedContractAddr, contractAddr)
+		})
+	}
+}
+
+func TestSplitBalanceKey(t *testing.T) {
+	var (
+		addrHexEncoded = "b1f347b54d39acd4b8b8ae571dd69ffdf45cf8c2"
+		addr, _        = hex.DecodeString(addrHexEncoded)
+	)
+	tests := []struct {
+		name          string
+		key           []byte
+		expectedAddr  string
+		expectedDenom string
+		expectedError string
+	}{
+		{
+			name:          "fail: empty key",
+			expectedError: "malformed balance key: length 0 not in range 5-385",
+		},
+		{
+			name:          "fail: key too short",
+			key:           make([]byte, 1),
+			expectedError: "malformed balance key: length 1 not in range 5-385",
+		},
+		{
+			name:          "fail: key too long",
+			key:           make([]byte, 386),
+			expectedError: "malformed balance key: length 386 not in range 5-385",
+		},
+		{
+			name:          "fail: key with wrong prefix",
+			key:           []byte{0, 1, 2, 3, 4},
+			expectedError: "not a balance store key",
+		},
+		{
+			name:          "fail: key length too big",
+			key:           []byte{2, 255, 1, 'd', 'e', 'n', 'o', 'm'},
+			expectedError: "balance addr: invalid key",
+		},
+		{
+			name: "fail: invalid denom",
+			key: append(
+				append([]byte{2, uint8(len(addr))}, addr...),
+				[]byte{'/', 'e', 'n', 'o', 'm'}...),
+			expectedError: "balance denom: invalid denom: /enom",
+		},
+		{
+			name: "ok",
+			key: append(
+				append([]byte{2, uint8(len(addr))}, addr...),
+				[]byte{'d', 'e', 'n', 'o', 'm'}...),
+			expectedAddr:  addrHexEncoded,
+			expectedDenom: "denom",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			addr, denom, err := splitBalanceKey(tt.key)
+
+			if tt.expectedError != "" {
+				require.EqualError(err, tt.expectedError)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tt.expectedAddr, addr)
+			assert.Equal(tt.expectedDenom, denom)
 		})
 	}
 }

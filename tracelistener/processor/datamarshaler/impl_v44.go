@@ -179,7 +179,7 @@ func (d DataMarshaler) Auth(data tracelistener.TraceOperation) (models.AuthRow, 
 
 func (d DataMarshaler) Delegations(data tracelistener.TraceOperation) (models.DelegationRow, error) {
 	if data.Operation == tracelistener.DeleteOp.String() {
-		delegator, validator, err := tracelistener.SplitDelegationKey(data.Key)
+		delegator, validator, err := splitDelegationKey(data.Key)
 		if err != nil {
 			return models.DelegationRow{}, err
 		}
@@ -405,7 +405,7 @@ func (d DataMarshaler) UnbondingDelegations(data tracelistener.TraceOperation) (
 		// Our SplitDelegationKey handles (delegatorAddr, validatorAddr), and somehow the SDK people
 		// have a func that flips the key we're handling, morphing it into something SplitDelegationKey can handle.
 		// Thanks SDK people!
-		delegatorAddr, validatorAddr, err := tracelistener.SplitDelegationKey(stakingTypes.GetUBDKeyFromValIndexKey(data.Key))
+		delegatorAddr, validatorAddr, err := splitDelegationKey(stakingTypes.GetUBDKeyFromValIndexKey(data.Key))
 		if err != nil {
 			return models.UnbondingDelegationRow{}, fmt.Errorf("cannot parse unbonding delegation key, %w", err)
 		}
@@ -473,7 +473,7 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 	if data.Operation == tracelistener.DeleteOp.String() {
 		// strip key prefix
 		key := data.Key[1:]
-		rawAddress, err := tracelistener.FromLengthPrefix(key)
+		rawAddress, err := fromLengthPrefix(key)
 		if err != nil {
 			return models.ValidatorRow{}, fmt.Errorf("cannot parse length-prefixed operator address, %w", err)
 		}
@@ -539,4 +539,41 @@ func (d DataMarshaler) Validators(data tracelistener.TraceOperation) (models.Val
 			Height: data.BlockHeight,
 		},
 	}, nil
+}
+
+func (d DataMarshaler) CW20Balance(data tracelistener.TraceOperation) (models.CW20BalanceRow, error) {
+	contractAddr, holderAddr, err := splitCW20BalanceKey(data.Key)
+	if err != nil {
+		return models.CW20BalanceRow{}, err
+	}
+	return models.CW20BalanceRow{
+		ContractAddress: contractAddr,
+		Address:         holderAddr,
+		// balance trace value is the amount.
+		Amount: string(data.Value),
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
+	}, nil
+}
+
+func (d DataMarshaler) CW20TokenInfo(data tracelistener.TraceOperation) (models.CW20TokenInfoRow, error) {
+	contractAddr, err := splitCW20TokenInfoKey(data.Key)
+	if err != nil {
+		return models.CW20TokenInfoRow{}, err
+	}
+	row := models.CW20TokenInfoRow{
+		ContractAddress: contractAddr,
+		TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
+			Height: data.BlockHeight,
+		},
+	}
+	// token_info value is a json string that contains the name, the symbol,
+	// the decimals and the total_supply of the token. To copy those values in
+	// the CW20TokenInfoRow, we can simply json.Unmarshal the value to the struct.
+	err = json.Unmarshal(data.Value, &row)
+	if err != nil {
+		return models.CW20TokenInfoRow{}, fmt.Errorf("unmarshal cw20 token_info value: %w", err)
+	}
+	return row, nil
 }

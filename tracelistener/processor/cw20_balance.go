@@ -7,6 +7,7 @@ import (
 
 	models "github.com/emerishq/demeris-backend-models/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/processor/datamarshaler"
 	"github.com/emerishq/tracelistener/tracelistener/tables"
 )
 
@@ -72,33 +73,21 @@ func (b *cw20BalanceProcessor) FlushCache() []tracelistener.WritebackOp {
 }
 
 func (b *cw20BalanceProcessor) OwnsKey(key []byte) bool {
-	_, _, err := tracelistener.SplitCW20BalanceKey(key)
-	return err == nil
+	return datamarshaler.IsCW20BalanceKey(key)
 }
 
 func (b *cw20BalanceProcessor) Process(data tracelistener.TraceOperation) error {
 	b.m.Lock()
 	defer b.m.Unlock()
 
-	contractAddr, holderAddr, err := tracelistener.SplitCW20BalanceKey(data.Key)
+	row, err := datamarshaler.NewDataMarshaler(b.l).CW20Balance(data)
 	if err != nil {
 		return err
 	}
-	var (
-		key = cw20BalanceCacheEntry{
-			contractAddress: contractAddr,
-			address:         holderAddr,
-		}
-		val = models.CW20BalanceRow{
-			ContractAddress: contractAddr,
-			Address:         holderAddr,
-			// balance trace value is the amount.
-			Amount: string(data.Value),
-			TracelistenerDatabaseRow: models.TracelistenerDatabaseRow{
-				Height: data.BlockHeight,
-			},
-		}
-	)
-	b.heightCache[key] = val
+	key := cw20BalanceCacheEntry{
+		contractAddress: row.ContractAddress,
+		address:         row.Address,
+	}
+	b.heightCache[key] = row
 	return nil
 }
