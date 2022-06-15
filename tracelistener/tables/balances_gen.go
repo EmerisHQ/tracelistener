@@ -28,7 +28,7 @@ func (r BalancesTable) CreateTable() string {
 func (r BalancesTable) CreateIndexes() []string {
 	return []string{
 		
-			"CREATE INDEX IF NOT EXISTS chain_name_address_demon_index ON balances (chain_name,address,denom)",
+			"CREATE INDEX IF NOT EXISTS chain_name_id_index ON tracelistener.balances (chain_name,id)",
 		
 	}
 }

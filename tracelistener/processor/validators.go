@@ -29,7 +29,7 @@ var (
 )
 
 func (*validatorsProcessor) Migrations() []string {
-	return append(balancesTable.Migrations(), addValAddressColumn)
+	return append(validatorsTable.Migrations(), addValAddressColumn)
 }
 
 func (b *validatorsProcessor) ModuleName() string {

@@ -66,7 +66,7 @@ func (t TableConfig) CreateIndexStatements() (ret []string) {
 		if index.Unique {
 			sql += "UNIQUE "
 		}
-		sql += fmt.Sprintf("INDEX IF NOT EXISTS %s ON %s (%s)", index.Name, t.Name, strings.Join(index.Columns, ","))
+		sql += fmt.Sprintf("INDEX IF NOT EXISTS %s ON tracelistener.%s (%s)", index.Name, t.Name, strings.Join(index.Columns, ","))
 		ret = append(ret, sql)
 	}
 	return
