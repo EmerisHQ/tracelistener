@@ -21,7 +21,7 @@ import (
 	"github.com/emerishq/tracelistener/tracelistener/blocktime"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
-	"github.com/emerishq/emeris-utils/database"
+	"github.com/emerishq/tracelistener/database"
 	"github.com/stretchr/testify/require"
 
 	"go.uber.org/zap"

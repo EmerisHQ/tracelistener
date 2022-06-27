@@ -3,8 +3,8 @@ package config
 import (
 	"github.com/go-playground/validator/v10"
 
-	"github.com/emerishq/emeris-utils/configuration"
-	"github.com/emerishq/emeris-utils/validation"
+	"github.com/emerishq/tracelistener/configuration"
+	"github.com/emerishq/tracelistener/validation"
 )
 
 type Config struct {

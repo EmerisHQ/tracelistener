@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/profile"
 	"go.uber.org/zap"
 
-	"github.com/emerishq/emeris-utils/logging"
 	"github.com/emerishq/tracelistener/exporter"
+	"github.com/emerishq/tracelistener/logging"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/blocktime"
 	"github.com/emerishq/tracelistener/tracelistener/bulk"

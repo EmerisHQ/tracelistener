@@ -9,7 +9,7 @@ import (
 	"github.com/tendermint/tendermint/types"
 	"go.uber.org/zap"
 
-	"github.com/emerishq/emeris-utils/database"
+	"github.com/emerishq/tracelistener/database"
 	"github.com/emerishq/tracelistener/models"
 )
 

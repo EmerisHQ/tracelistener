@@ -3,14 +3,15 @@ package exporter_test
 import (
 	"bytes"
 	"errors"
-	"github.com/emerishq/emeris-utils/logging"
-	"github.com/emerishq/tracelistener/exporter"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/emerishq/tracelistener/exporter"
+	"github.com/emerishq/tracelistener/logging"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNew(t *testing.T) {

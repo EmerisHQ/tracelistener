@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/emerishq/emeris-utils/database"
-	"github.com/emerishq/emeris-utils/logging"
+	"github.com/emerishq/tracelistener/database"
+	"github.com/emerishq/tracelistener/logging"
 )
 
 func main() {
