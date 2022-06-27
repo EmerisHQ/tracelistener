@@ -26,7 +26,7 @@ import (
 	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v2/modules/core/exported"
 	tmIBCTypes "github.com/cosmos/ibc-go/v2/modules/light-clients/07-tendermint/types"
-	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/models"
 	"github.com/emerishq/tracelistener/tracelistener"
 )
 

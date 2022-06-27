@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/models"
 	"github.com/gorilla/websocket"
 
 	"github.com/tendermint/tendermint/types"

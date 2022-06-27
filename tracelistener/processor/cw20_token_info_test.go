@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/models"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

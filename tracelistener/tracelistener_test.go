@@ -15,7 +15,7 @@ import (
 	"github.com/emerishq/tracelistener/exporter"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
-	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/models"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/database"
 	"github.com/stretchr/testify/require"
