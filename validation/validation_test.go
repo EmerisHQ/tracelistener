@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/emerishq/emeris-utils/validation"
+	"github.com/emerishq/tracelistener/validation"
 )
 
 type e struct {
