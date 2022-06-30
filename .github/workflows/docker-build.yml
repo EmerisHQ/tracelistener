@@ -1,5 +1,6 @@
 name: Build and push Docker images
 on:
+  workflow_call: # must be enabled when called from an other workflow
   workflow_dispatch:
   push:
     tags:

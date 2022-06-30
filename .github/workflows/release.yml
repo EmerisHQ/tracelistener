@@ -3,6 +3,7 @@ name: Release
 on:
   pull_request:
     types: [closed]
+    branches: [main]
 
   workflow_dispatch:
 
@@ -21,3 +22,9 @@ jobs:
           tag_format: "v%major%.%minor%.%patch%"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Manually trigger the docker build 
+  # (workflow can't trigger other workflows)
+  docker-build:
+    needs: [release]
+    uses: ./.github/workflows/docker-build.yml
