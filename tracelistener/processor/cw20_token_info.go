@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
-	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/models"
 	"github.com/emerishq/tracelistener/tracelistener"
 	"github.com/emerishq/tracelistener/tracelistener/tables"
 )

@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	models "github.com/allinbits/demeris-backend-models/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener"
-	"github.com/allinbits/tracelistener/tracelistener/config"
+	"github.com/emerishq/tracelistener/models"
+	"github.com/emerishq/tracelistener/tracelistener"
+	"github.com/emerishq/tracelistener/tracelistener/config"
 )
 
 func TestLiquidityPoolProcessOwnsKey(t *testing.T) {

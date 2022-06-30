@@ -5,13 +5,7 @@
 [![Tests status](https://github.com/emerishq/tracelistener/workflows/Tests/badge.svg)](https://github.com/emerishq/tracelistener/commits/main)
 [![Lint](https://github.com/emerishq/tracelistener/workflows/Lint/badge.svg?token)](https://github.com/emerishq/tracelistener/commits/main)
 
-UNIX named pipes-based real-time state listener for Cosmos SDK blockchains.
-
-See also the [demeris-backend](https://github.com/emerishq/demeris-backend) docs for an overview of the architecture.
-
-## Description
-
-### What it is
+## What it is
 
 Tracelistener is a program that reads the Cosmos SDK `store` in real-time and dumps the result in a relational database, essentially creating a 1:1 copy of the data available in a module's prefix store.
 
@@ -29,7 +23,13 @@ By not querying full-nodes, tracelistener reduces nodes load and diminishes the 
 
 Given the tightly-coupled nature of tracelistener to a Cosmos SDK node, they must be executed together on the same machine.
 
-### How it works
+## Running tracelistener locally
+
+Refer to [the dedicated page](./docs/local-dev.md).
+
+## How it works
+
+![overview diagram](./docs/overview.png)
 
 The Cosmos SDK has a little-known feature called **store tracing**, which tracks each and every store operation on a file.
 
@@ -46,7 +46,10 @@ Each store operation is divided by a newline, and the store operation itself is 
 
 To reduce hard drive load on the hardware node which is running, tracelistener opens a UNIX named pipe (commonly referred to as FIFO) on which the Cosmos SDK node will then write store tracing lines.
 
-A UNIX shell proof of concept can be summarized like this:
+### Inspecting traces
+
+First of all launch [gaia](https://github.com/cosmos/gaia) or any Cosmos SDK
+based chain node passing a FIFO as the --trace-store value:
 
 ```bash
 # This example needs to be executed in two separate terminals.
@@ -67,25 +70,31 @@ In the second Terminal the `cat` command starts printing JSON store tracing line
 
 If `cat` is killed before `gaiad`, the latter will experience a consensus failure: this is normal, and happens because it is not possible for a program to write on a closed pipe.
 
+## Tracelistener
+
 In a production environment, tracelistener must always be executed before the SDK node, and killed last.
 
 For each JSON line read, tracelistener unmarshals it into a Go struct and proceeds with the parsing routine — we will refer to this object as **trace operation** from now on.
 
-A trace operation is defined as follows:
+### Anatomy of a trace
 
-```go
-type TraceOperation struct {
-	Operation   string `json:"operation"`
-	Key         []byte `json:"key"`
-	Value       []byte `json:"value"`
-	BlockHeight uint64 `json:"block_height"`
-	TxHash      string `json:"tx_hash"`
+```json
+{
+  "operation": "write",
+  "key": "AWWI/l6u6S5Zhb6vAZgj4emcTZJz",
+  "value": "CiAvY29zbW9zLmF...RjAtwEgutgE",
+  "metadata": {
+    "blockHeight": 4686332,
+    "txHash": "D74A356B73A111E4977619EA22F5597F44F49B15CB5177B59846CC70744A0B4B"
+  }
 }
 ```
 
-In tracelistener, a *processor* is an entity that is capable of handling SDK store rows.
+An incoming trace looks as above when read from the incoming Unix pipe.
 
-Right now there's only one processor, called *gaia**.***
+- key: denotes the SDK module which generated this trace.
+  It also contains other valuable information in the case of some modules (e.g. delegator addresses etc)
+- value: the trace’s payload, i.e. the value to use to update the state
 
 Each processor contains **modules**, which are entities capable of
 
@@ -93,107 +102,90 @@ Each processor contains **modules**, which are entities capable of
 - unmarshal the protobuf bytes contained in `Value`
 - return a database object and `INSERT` statement to be executed
 
+Right now there's only one processor, called \*gaia**.\***
+
 To understand where to route each trace operation, processors look at the prefix bytes on each operation `Key`.
 
 Each module is responsible of validating a trace operation against a well-defined set of rules, because `Key` prefixes could be shared among different Cosmos SDK modules — for example, the `0x02` prefix is used by the IBC channels module as well as the `supply` one, so the IBC channels module must be sure to not write `supply` database rows in its table.
 
-Once a trace operation has been processed, it is then sent over for database execution.
+Once a trace operation has been processed, it is batched and kept on hold until the next block arrives. This means we wait to run database queries until we receive one trace of the next block. We do this because it’s possible to receive multiple traces concerning the same row, and we want to commit to db only the final state.
 
 Database schema is automatically migrated each time tracelistener is executed, but this behavior will change in the future.
 
-## Dependencies
+## How a trace is born
 
- - CockroachDB
- - your Cosmos SDK-based blockchain node
+### Overview
 
-## Configuration
+- An incoming new block is composed of a number of transactions.
+- Each transaction can alter the internal state of a number of SDK components inside the node (change the account’s balance, unstake, etc)
+- Each state alteration is an update to the node’s internal database, [IAVL](https://github.com/cosmos/iavl).
+- These alterations are performed in a sequence.
+  The sequence is not guaranteed by the protocol, but by the code executing on the node.
+  All nodes executing the same code version, will generate the same sequence of updates.
+  Each block contains an application hash which is derived by the code itself as a Merkle tree.
+- IAVL intercepts the updates and generates traces. This is what we receive in Tracelistener.
 
-tracelistener can be configured either through a configuration file or through environment variables.
+### Domain model
 
-The configuration file must be named `tracelistener.toml` and must live in either:
- - `/etc/tracelister/tracelistener.toml`
- - `$HOME/.tracelistener/tracelistener.toml`
- - `./tracelistener.toml`
+![data model diagram](./docs/datamodel.png)
 
-Every configuration entry can be accessed through an environment variable with the same name all uppercase, 
-prefixed with the `TRACELISTENER_` string.
+An attempt to represent the tracing mechanism as a domain model could look as above.
 
-While the configuration file field names are case-insensitive, environment variables are case-sensitive.
+### IAVL and LevelDB
 
-|Configuration value|Default value|Required|Meaning|
-| --- | --- | --- | --- |
-|`FIFOPath`|`.tracelistener.fifo`|no|UNIX named pipe path where tracelistener will read data from|
-|`DatabaseConnectionURL`| |yes|Database connection URL used to connect to CockroachDB|
-|`LogPath`|`./tracelistener.log`|no|Path where tracelistener will write its log file|
-|`Type`| |yes|Type of data processor used by tracelistener to process data it reads from `FIFOPath`|
-|`Debug`|`false`|no|Enable debug logs, disable file logging|
+IAVL is an abstraction layer above a key-value store, allowing taking snapshots of the underlying data, stored in LevelDB.
 
-### Type-specific configuration
+It is important to note here that the underlying DB only stores the state change information:
 
-**Gaia** configuration
+- module key
+- operation
+- payload
 
-This configuration is used when `Type` is `gaia`.
+It does not store trx, block or execution sequence information.
 
-|Configuration value|Default value|Required|Meaning|
-| --- | --- | --- | --- |
-|`ProcessorsEnabled`|`bank`|no|List of module processors to be enabled, and which will process data coming from `FIFOPath`|
+### Bulk-import
 
-The list of processors for **gaia** is the following:
+When we are performing a bulk import we are reading directly from LevelDB, i.e. the latest IAVL snapshot.
 
- - `bank`
- - `ibc`
- - `liquidityPool`
- - `liquiditySwaps`
+The information that we load from a bulk-import is different (less) to what we receive from incoming traces.
 
-## Running tracelistener
+LevelDB is missing
 
-0. run a CockroachDB instance somewhere
+- trx hash
+- block height
 
-1. write a configuration file or set the environment appropriately.
+The mapping between _modules_ (i.e. IAVL tables) and Tracelistener _processors_ is as follows
 
-2. build it:
-    ```shell
-    go build -v --ldflags="-s -w"  github.com/emerishq/tracelistener/cmd/tracelistener
-    ```
-3. run it:
-    ```shell
-   ./tracelistener
-    ```
-4. run your chain with the `--trace-store` parameter
-    ```shell
-   # in this instance, tracelistener FIFO path is set to /home/tl/tracelistener.fifo
-   gaiad start --trace-store=/home/tl/tracelistener.fifo 
-   ```
+- bank: `bank`
+- ibc: `ibc_channels`, `ibc_clients`, `ibc_connections`
+- staking: `validators`, `unbonding_delegations`
+- distribution: `delegations`
+- transfer: `ibc_denom_traces`
+- acc: `auth`
 
-## Docker container
+# Module data models
 
-This repository contains a Docker image which can be used to run a tracelistener container.
+Each Cosmos module is internally state machine, storing its current state in IAVL.
+A trx is causing side-effects and these update the internal state.
 
-Build it with:
+Conceptually the different modules can be split in different categories by the “type” of internal state they maintain.
 
-```shell
- docker build -t tracelistener:latest --build-arg GIT_TOKEN={YOUR-TOKEN} .
- ```
+## State updates
 
-## Dependencies & Licenses
+E.g. the bank module.
 
-The list of non-{Cosmos, AiB, Tendermint} dependencies and their licenses are:
+Here we are simply updating a value, like setting the balance from 10 to 20.
 
-|Module   	                  |License          |
-|---	                      |---  	        |
-|containerd/fifo   	          |Apache 2.0   	|
-|go.uber.org/zap   	          |MIT           	|
-|gorilla/websocket   	      |BSD-2   	        |
-|cockroachdb/cockroach-go     |Apache 2.0   	|
-|stretchr/testify   	      |MIT   	        |
-|gogo/protobuf   	          |Only on redistr. |
-|go-playground/validator   	  |MIT   	        |
-|nxadm/tail   	              |MIT   	        |
-|iamolegga/enviper   	      |MIT   	        |
-|spf13/viper   	              |MIT   	        |
-|jackc/pgx   	              |MIT   	        |
-|jmoiron/sqlx   	          |MIT   	        |
-|gin-gonic/gin   	          |MIT   	        |
-|natefinch/lumberjack  	      |MIT   	        |
-|lib/pq   	                  |Unrestricted   	|
-|ethereum/go-ethereum   	  |GNU LGPL         |
+The incoming trace event only contains the new value.
+
+## Set updates
+
+E.g. validator set.
+
+Here we are inserting and deleting entries in a set of entries.
+
+I.e.
+
+`INSERT INTO XXX (...)`
+
+`DELETE FROM XXX WHERE ...`

@@ -10,7 +10,7 @@ import (
 
 	"github.com/emerishq/tracelistener/exporter"
 
-	models "github.com/emerishq/demeris-backend-models/tracelistener"
+	"github.com/emerishq/tracelistener/models"
 	"github.com/nxadm/tail"
 
 	"github.com/emerishq/tracelistener/tracelistener/config"

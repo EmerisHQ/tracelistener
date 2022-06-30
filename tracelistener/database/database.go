@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	dbutils "github.com/emerishq/emeris-utils/database"
+	dbutils "github.com/emerishq/tracelistener/database"
 )
 
 type Instance struct {
