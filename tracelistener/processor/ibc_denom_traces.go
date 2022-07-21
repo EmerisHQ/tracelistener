@@ -25,10 +25,7 @@ var (
 )
 
 func (*ibcDenomTracesProcessor) Migrations() []string {
-	return []string{
-		denomTracesTable.CreateTable(),
-		denomTracePathIndex,
-	}
+	return append(denomTracesTable.Migrations(), denomTracePathIndex)
 }
 
 func (b *ibcDenomTracesProcessor) ModuleName() string {

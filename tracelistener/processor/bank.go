@@ -26,7 +26,7 @@ type bankProcessor struct {
 }
 
 func (*bankProcessor) Migrations() []string {
-	return []string{balancesTable.CreateTable()}
+	return balancesTable.Migrations()
 }
 
 func (b *bankProcessor) ModuleName() string {

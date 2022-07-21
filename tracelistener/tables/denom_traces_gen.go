@@ -25,6 +25,16 @@ func (r DenomTracesTable) CreateTable() string {
 	`, r.tableName)
 }
 
+func (r DenomTracesTable) CreateIndexes() []string {
+	return []string{
+		
+	}
+}
+
+func (r DenomTracesTable) Migrations() []string {
+	return append([]string{r.CreateTable()}, r.CreateIndexes()...)
+}
+
 func (r DenomTracesTable) Insert() string {
 	return fmt.Sprintf(`
 		INSERT INTO %s (height, chain_name, path, base_denom, hash)

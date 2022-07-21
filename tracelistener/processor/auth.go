@@ -25,7 +25,7 @@ type authProcessor struct {
 }
 
 func (*authProcessor) Migrations() []string {
-	return []string{authTable.CreateTable()}
+	return authTable.Migrations()
 }
 
 func (b *authProcessor) ModuleName() string {

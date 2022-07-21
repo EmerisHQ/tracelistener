@@ -30,3 +30,20 @@ func validateName(name string) error {
 
 	return nil
 }
+
+func validateIndexes(t TableConfig, columnNames map[string]bool) error {
+	for _, index := range t.Indexes {
+		if index.Name == "" {
+			return fmt.Errorf("index name cannot be blank")
+		}
+		if len(index.Columns) < 1 {
+			return fmt.Errorf("there must be at least one column for an index")
+		}
+		for _, column := range index.Columns {
+			if _, found := columnNames[column]; !found {
+				return fmt.Errorf("index column %s not defined in the columns section", column)
+			}
+		}
+	}
+	return nil
+}
