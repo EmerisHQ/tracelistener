@@ -44,7 +44,7 @@ jobs:
         run: make setup-${{ matrix.versions }}
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.2.0
+        uses: golangci/golangci-lint-action@v3.4.0
         with:
           version: v1.45
           args: --timeout 10m --build-tags sdk_${{ matrix.versions }}
